@@ -23,6 +23,8 @@ pub enum Item {
     Material(Material),
     /// An accessory item.
     Accessory(Accessory),
+    /// An off-hand item.
+    OffHand(OffHand),
 }
 
 impl TryFrom<RawItem> for Item {
@@ -36,6 +38,7 @@ impl TryFrom<RawItem> for Item {
             "Head" => Ok(Self::Head(Head::try_from(raw_item)?)),
             "Material" => Ok(Self::Material(Material::try_from(raw_item)?)),
             "Accessory" => Ok(Self::Accessory(Accessory::try_from(raw_item)?)),
+            "Off-hand" => Ok(Self::OffHand(OffHand::try_from(raw_item)?)),
             _ => Err(Error::InvalidField(
                 String::from("Item"),
                 String::from("type"),
@@ -420,6 +423,67 @@ impl TryFrom<RawItem> for Accessory {
 
         let missing_field = |field: &'static str| {
             move || MissingField(String::from("Accessory"), String::from(field))
+        };
+
+        Ok(Self {
+            name: item.name,
+            id: item.id,
+            description: item.description,
+            tier: item.tier,
+            boss: item.boss,
+            arena: item.arena,
+            image: item.image,
+            stats: item.stats.ok_or_else(missing_field("stats"))?,
+            element: item.element,
+            dropped_by: item.dropped_by.unwrap_or_else(Vec::new),
+            quests: item.quests.unwrap_or_else(Vec::new),
+            equipped_by: item.equipped_by.unwrap_or_else(Vec::new),
+            prevents: item.prevents.unwrap_or_else(Vec::new),
+            causes: item.causes.unwrap_or_else(Vec::new),
+            cures: item.cures.unwrap_or_else(Vec::new),
+            gives: item.gives.unwrap_or_else(Vec::new),
+        })
+    }
+}
+
+/// An off-hand item in Orna.
+pub struct OffHand {
+    pub name: String,
+    pub id: u32,
+    pub description: String,
+    pub tier: u32,
+    pub boss: bool,
+    pub arena: bool,
+    pub image: String,
+    pub stats: ItemStats,
+    pub element: Option<String>,
+    pub dropped_by: Vec<ItemDroppedBy>,
+    pub quests: Vec<ItemQuest>,
+    pub equipped_by: Vec<ItemEquippedBy>,
+    pub prevents: Vec<String>,
+    pub causes: Vec<String>,
+    pub cures: Vec<String>,
+    pub gives: Vec<String>,
+}
+
+impl TryFrom<RawItem> for OffHand {
+    type Error = Error;
+
+    /// Create an `OffHand` from a `RawItem`.
+    /// The `RawItem`'s `type` field must be `OffHand`.
+    fn try_from(item: RawItem) -> Result<Self, Self::Error> {
+        use Error::{InvalidField, MissingField};
+
+        if item.type_ != "Off-hand" {
+            return Err(InvalidField(
+                String::from("OffHand"),
+                String::from("type"),
+                Some(item.type_),
+            ));
+        }
+
+        let missing_field = |field: &'static str| {
+            move || MissingField(String::from("OffHand"), String::from(field))
         };
 
         Ok(Self {
