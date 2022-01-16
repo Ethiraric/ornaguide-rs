@@ -1,6 +1,6 @@
 use ornaguide_rs::{
     error::Error,
-    items::{Armor, Item},
+    items::{ArmorItem, Item},
     raw_items::RawItems,
 };
 
@@ -47,7 +47,7 @@ fn read_all_jsons() -> Result<(), Error> {
         .items
         .into_iter()
         .filter_map(|item| match item.type_.as_str() {
-            "Armor" => Some(Armor::try_from(item.clone()).map_err(|e| (item, e))),
+            "Armor" => Some(ArmorItem::try_from(item.clone()).map_err(|e| (item, e))),
             _ => None,
         })
         .collect::<Vec<_>>();

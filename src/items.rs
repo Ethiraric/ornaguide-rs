@@ -12,19 +12,19 @@ pub type ItemStats = raw_items::ItemStats;
 /// An item in Orna. This enum splits into types the different items.
 pub enum Item {
     /// An armor item.
-    Armor(Armor),
+    Armor(ArmorItem),
     /// A weapon item.
-    Weapon(Weapon),
+    Weapon(WeaponItem),
     /// A legs item.
-    Legs(Legs),
+    Legs(LegsItem),
     /// A head item.
-    Head(Head),
+    Head(HeadItem),
     /// A material item.
-    Material(Material),
+    Material(MaterialItem),
     /// An accessory item.
-    Accessory(Accessory),
+    Accessory(AccessoryItem),
     /// An off-hand item.
-    OffHand(OffHand),
+    OffHand(OffHandItem),
 }
 
 impl TryFrom<RawItem> for Item {
@@ -32,13 +32,13 @@ impl TryFrom<RawItem> for Item {
 
     fn try_from(raw_item: RawItem) -> Result<Self, Self::Error> {
         match raw_item.type_.as_str() {
-            "Armor" => Ok(Self::Armor(Armor::try_from(raw_item)?)),
-            "Weapon" => Ok(Self::Weapon(Weapon::try_from(raw_item)?)),
-            "Legs" => Ok(Self::Legs(Legs::try_from(raw_item)?)),
-            "Head" => Ok(Self::Head(Head::try_from(raw_item)?)),
-            "Material" => Ok(Self::Material(Material::try_from(raw_item)?)),
-            "Accessory" => Ok(Self::Accessory(Accessory::try_from(raw_item)?)),
-            "Off-hand" => Ok(Self::OffHand(OffHand::try_from(raw_item)?)),
+            "Armor" => Ok(Self::Armor(ArmorItem::try_from(raw_item)?)),
+            "Weapon" => Ok(Self::Weapon(WeaponItem::try_from(raw_item)?)),
+            "Legs" => Ok(Self::Legs(LegsItem::try_from(raw_item)?)),
+            "Head" => Ok(Self::Head(HeadItem::try_from(raw_item)?)),
+            "Material" => Ok(Self::Material(MaterialItem::try_from(raw_item)?)),
+            "Accessory" => Ok(Self::Accessory(AccessoryItem::try_from(raw_item)?)),
+            "Off-hand" => Ok(Self::OffHand(OffHandItem::try_from(raw_item)?)),
             _ => Err(Error::InvalidField(
                 String::from("Item"),
                 String::from("type"),
@@ -49,7 +49,7 @@ impl TryFrom<RawItem> for Item {
 }
 
 /// An armor item in Orna.
-pub struct Armor {
+pub struct ArmorItem {
     pub name: String,
     pub id: u32,
     pub description: String,
@@ -69,7 +69,7 @@ pub struct Armor {
     pub gives: Vec<String>,
 }
 
-impl TryFrom<RawItem> for Armor {
+impl TryFrom<RawItem> for ArmorItem {
     type Error = Error;
 
     /// Create an `Armor` from a `RawItem`.
@@ -115,7 +115,7 @@ impl TryFrom<RawItem> for Armor {
 }
 
 /// An weapon item in Orna.
-pub struct Weapon {
+pub struct WeaponItem {
     pub name: String,
     pub id: u32,
     pub description: String,
@@ -136,7 +136,7 @@ pub struct Weapon {
     pub category: String,
 }
 
-impl TryFrom<RawItem> for Weapon {
+impl TryFrom<RawItem> for WeaponItem {
     type Error = Error;
 
     /// Create an `Weapon` from a `RawItem`.
@@ -179,7 +179,7 @@ impl TryFrom<RawItem> for Weapon {
 }
 
 /// An legs item in Orna.
-pub struct Legs {
+pub struct LegsItem {
     pub name: String,
     pub id: u32,
     pub description: String,
@@ -199,7 +199,7 @@ pub struct Legs {
     pub gives: Vec<String>,
 }
 
-impl TryFrom<RawItem> for Legs {
+impl TryFrom<RawItem> for LegsItem {
     type Error = Error;
 
     /// Create an `Legs` from a `RawItem`.
@@ -241,7 +241,7 @@ impl TryFrom<RawItem> for Legs {
 }
 
 /// A head item in Orna.
-pub struct Head {
+pub struct HeadItem {
     pub name: String,
     pub id: u32,
     pub description: String,
@@ -261,7 +261,7 @@ pub struct Head {
     pub gives: Vec<String>,
 }
 
-impl TryFrom<RawItem> for Head {
+impl TryFrom<RawItem> for HeadItem {
     type Error = Error;
 
     /// Create an `Head` from a `RawItem`.
@@ -303,7 +303,7 @@ impl TryFrom<RawItem> for Head {
 }
 
 /// A material item in Orna.
-pub struct Material {
+pub struct MaterialItem {
     pub name: String,
     pub id: u32,
     pub description: String,
@@ -317,7 +317,7 @@ pub struct Material {
     pub equipped_by: Vec<ItemEquippedBy>,
 }
 
-impl TryFrom<RawItem> for Material {
+impl TryFrom<RawItem> for MaterialItem {
     type Error = Error;
 
     /// Create an `Material` from a `RawItem`.
@@ -370,7 +370,7 @@ impl TryFrom<RawItem> for Material {
 }
 
 /// An accessory item in Orna.
-pub struct Accessory {
+pub struct AccessoryItem {
     pub name: String,
     pub id: u32,
     pub description: String,
@@ -389,7 +389,7 @@ pub struct Accessory {
     pub gives: Vec<String>,
 }
 
-impl TryFrom<RawItem> for Accessory {
+impl TryFrom<RawItem> for AccessoryItem {
     type Error = Error;
 
     /// Create an `Accessory` from a `RawItem`.
@@ -447,7 +447,7 @@ impl TryFrom<RawItem> for Accessory {
 }
 
 /// An off-hand item in Orna.
-pub struct OffHand {
+pub struct OffHandItem {
     pub name: String,
     pub id: u32,
     pub description: String,
@@ -466,7 +466,7 @@ pub struct OffHand {
     pub gives: Vec<String>,
 }
 
-impl TryFrom<RawItem> for OffHand {
+impl TryFrom<RawItem> for OffHandItem {
     type Error = Error;
 
     /// Create an `OffHand` from a `RawItem`.
