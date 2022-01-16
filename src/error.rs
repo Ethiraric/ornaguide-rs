@@ -2,8 +2,22 @@ use std::fmt::Display;
 
 /// Generic error type.
 pub enum Error {
+    /// There was an error with `serde_json`.
     SerdeJson(serde_json::Error),
+    /// There was an error with `std::io`.
     Io(std::io::Error),
+    /// A field was missing when converting.
+    /// The first `String` is the type of the object that was converted, the second one is the name
+    /// of the field.
+    MissingField(String, String),
+    /// A field that shouldn't appear was found when converting.
+    /// The first `String` is the type of the object that was converted, the second one is the name
+    /// of the field.
+    ExtraField(String, String),
+    /// A field had an incorrect value when converting,
+    /// The first `String` is the type of the object that was converted, the second one is the name
+    /// of the field.
+    InvalidField(String, String),
 }
 
 impl Display for Error {
@@ -11,6 +25,15 @@ impl Display for Error {
         match self {
             Error::SerdeJson(err) => write!(f, "{}", err),
             Error::Io(err) => write!(f, "{}", err),
+            Error::MissingField(from, field) => {
+                write!(f, "Failed to convert to {}: missing field {}", from, field)
+            }
+            Error::ExtraField(from, field) => {
+                write!(f, "Failed to convert to {}: extra field {}", from, field)
+            }
+            Error::InvalidField(from, field) => {
+                write!(f, "Failed to convert to {}: invalid field {}", from, field)
+            }
         }
     }
 }
