@@ -390,7 +390,7 @@ pub struct AccessoryItem {
     pub boss: bool,
     pub arena: bool,
     pub image: String,
-    pub stats: ItemStats,
+    pub stats: Option<ItemStats>,
     pub element: Option<String>,
     pub dropped_by: Vec<ItemDroppedBy>,
     pub quests: Vec<ItemQuest>,
@@ -407,7 +407,7 @@ impl TryFrom<RawItem> for AccessoryItem {
     /// Create an `Accessory` from a `RawItem`.
     /// The `RawItem`'s `type` field must be `Accessory`.
     fn try_from(item: RawItem) -> Result<Self, Self::Error> {
-        use Error::{InvalidField, MissingField};
+        use Error::InvalidField;
 
         if item.type_ != "Accessory" {
             return Err(InvalidField(
@@ -433,10 +433,6 @@ impl TryFrom<RawItem> for AccessoryItem {
             }
         }
 
-        let missing_field = |field: &'static str| {
-            move || MissingField(String::from("Accessory"), String::from(field))
-        };
-
         Ok(Self {
             name: item.name,
             id: item.id,
@@ -445,7 +441,7 @@ impl TryFrom<RawItem> for AccessoryItem {
             boss: item.boss,
             arena: item.arena,
             image: item.image,
-            stats: item.stats.ok_or_else(missing_field("stats"))?,
+            stats: item.stats,
             element: item.element,
             dropped_by: item.dropped_by.unwrap_or_else(Vec::new),
             quests: item.quests.unwrap_or_else(Vec::new),
