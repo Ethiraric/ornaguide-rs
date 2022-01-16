@@ -1,4 +1,8 @@
-use ornaguide_rs::{error::Error, items::Armor, raw_items::RawItems};
+use ornaguide_rs::{
+    error::Error,
+    items::{Armor, Item},
+    raw_items::RawItems,
+};
 
 #[allow(dead_code)]
 fn non_unique_source(items: &RawItems) {
@@ -22,10 +26,16 @@ fn non_unique_source(items: &RawItems) {
 }
 
 fn read_all_jsons() -> Result<(), Error> {
-    let items = RawItems::parse_from_file("jsons/item.json")?;
-    println!("Read {} items.", items.items.len());
+    let raw_items = RawItems::parse_from_file("jsons/item.json")?;
+    println!("Read {} items.", raw_items.items.len());
+    let _items = raw_items
+        .items
+        .iter()
+        .cloned()
+        .map(Item::try_from)
+        .collect::<Result<Vec<_>, Error>>()?;
     // non_unique_source(&items);
-    let mut types = items
+    let mut types = raw_items
         .items
         .iter()
         .map(|item| item.type_.clone())
@@ -33,7 +43,7 @@ fn read_all_jsons() -> Result<(), Error> {
     types.sort();
     types.dedup();
     println!("Item types: {:#?}", types);
-    let armors = items
+    let armors = raw_items
         .items
         .into_iter()
         .filter_map(|item| match item.type_.as_str() {

@@ -16,8 +16,8 @@ pub enum Error {
     ExtraField(String, String),
     /// A field had an incorrect value when converting,
     /// The first `String` is the type of the object that was converted, the second one is the name
-    /// of the field.
-    InvalidField(String, String),
+    /// of the field. The third one is an option of the value of the string.
+    InvalidField(String, String, Option<String>),
 }
 
 impl Display for Error {
@@ -31,9 +31,18 @@ impl Display for Error {
             Error::ExtraField(from, field) => {
                 write!(f, "Failed to convert to {}: extra field {}", from, field)
             }
-            Error::InvalidField(from, field) => {
-                write!(f, "Failed to convert to {}: invalid field {}", from, field)
-            }
+            Error::InvalidField(from, field, value) => match value {
+                Some(s) => {
+                    write!(
+                        f,
+                        "Failed to convert to {}: invalid field {}={}",
+                        from, field, s
+                    )
+                }
+                None => {
+                    write!(f, "Failed to convert to {}: invalid field {}", from, field)
+                }
+            },
         }
     }
 }
