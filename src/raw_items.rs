@@ -7,111 +7,111 @@ use crate::error::Error;
 /// The attack stat from an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct ItemAttackStat {
-    base: i32,
+pub struct ItemAttackStat {
+    pub base: i32,
 }
 
 /// The crit stat from an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct ItemCritStat {
-    base: i32,
+pub struct ItemCritStat {
+    pub base: i32,
 }
 
 /// The defense stat from an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct ItemDefenseStat {
-    base: i32,
+pub struct ItemDefenseStat {
+    pub base: i32,
 }
 
 /// The HP stat from an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct ItemHPStat {
-    base: i32,
+pub struct ItemHPStat {
+    pub base: i32,
 }
 
 /// The magic stat from an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct ItemMagicStat {
-    base: i32,
+pub struct ItemMagicStat {
+    pub base: i32,
 }
 
 /// The mana stat from an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct ItemManaStat {
-    base: i32,
+pub struct ItemManaStat {
+    pub base: i32,
 }
 
 /// The dexterity stat from an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct ItemDexterityStat {
-    base: i32,
+pub struct ItemDexterityStat {
+    pub base: i32,
 }
 
 /// The resistance stat from an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct ItemResistanceStat {
-    base: i32,
+pub struct ItemResistanceStat {
+    pub base: i32,
 }
 
 /// The ward stat from an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
-struct ItemWardStat {
-    base: i32,
+pub struct ItemWardStat {
+    pub base: i32,
 }
 
 /// The stats of an item (equipment, adornment).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ItemStats {
-    attack: Option<ItemAttackStat>,
-    crit: Option<ItemCritStat>,
-    defense: Option<ItemDefenseStat>,
-    hp: Option<ItemHPStat>,
-    magic: Option<ItemMagicStat>,
-    mana: Option<ItemManaStat>,
-    dexterity: Option<ItemDexterityStat>,
-    resistance: Option<ItemResistanceStat>,
-    ward: Option<ItemWardStat>,
+    pub attack: Option<ItemAttackStat>,
+    pub crit: Option<ItemCritStat>,
+    pub defense: Option<ItemDefenseStat>,
+    pub hp: Option<ItemHPStat>,
+    pub magic: Option<ItemMagicStat>,
+    pub mana: Option<ItemManaStat>,
+    pub dexterity: Option<ItemDexterityStat>,
+    pub resistance: Option<ItemResistanceStat>,
+    pub ward: Option<ItemWardStat>,
 }
 
 /// A material needed to upgrade an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ItemMaterial {
-    id: u32,
-    name: String,
+    pub id: u32,
+    pub name: String,
 }
 
 /// A monster that can drop an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ItemDroppedBy {
-    id: u32,
-    name: String,
+    pub id: u32,
+    pub name: String,
 }
 
 /// A quest which rewards with an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ItemQuest {
-    id: u32,
-    name: String,
+    pub id: u32,
+    pub name: String,
 }
 
 /// A category of classes that can equip an item.
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct ItemEquippedBy {
-    id: u32,
-    name: String,
+    pub id: u32,
+    pub name: String,
 }
 
 /// An object representation of an item in Orna from the API json. This encompasses consumables,
