@@ -31,6 +31,8 @@ pub enum Item {
     Adornment(AdornmentItem),
     /// A curative item.
     Curative(CurativeItem),
+    /// An other item.
+    Other(OtherItem),
 }
 
 impl TryFrom<RawItem> for Item {
@@ -48,6 +50,7 @@ impl TryFrom<RawItem> for Item {
             "Item" => Ok(Self::Item(ItemItem::try_from(raw_item)?)),
             "Adornment" => Ok(Self::Adornment(AdornmentItem::try_from(raw_item)?)),
             "Curative" => Ok(Self::Curative(CurativeItem::try_from(raw_item)?)),
+            "Other" => Ok(Self::Other(OtherItem::try_from(raw_item)?)),
             _ => Err(Error::InvalidField(
                 String::from("Item"),
                 String::from("type"),
@@ -686,6 +689,70 @@ impl TryFrom<RawItem> for CurativeItem {
         let missing_field = |field: &'static str| {
             move || MissingField(String::from("Curative"), String::from(field))
         };
+
+        Ok(Self {
+            name: item.name,
+            id: item.id,
+            description: item.description,
+            tier: item.tier,
+            boss: item.boss,
+            arena: item.arena,
+            image: item.image,
+            dropped_by: item.dropped_by.unwrap_or_else(Vec::new),
+            equipped_by: item.equipped_by.ok_or_else(missing_field("equipped_by"))?,
+            quests: item.quests.unwrap_or_else(Vec::new),
+        })
+    }
+}
+
+/// An other item in Orna.
+pub struct OtherItem {
+    pub name: String,
+    pub id: u32,
+    pub description: String,
+    pub tier: u32,
+    pub boss: bool,
+    pub arena: bool,
+    pub image: String,
+    pub dropped_by: Vec<ItemDroppedBy>,
+    pub quests: Vec<ItemQuest>,
+    pub equipped_by: Vec<ItemEquippedBy>,
+}
+
+impl TryFrom<RawItem> for OtherItem {
+    type Error = Error;
+
+    /// Create an `Other` from a `RawItem`.
+    /// The `RawItem`'s `type` field must be `Other`.
+    fn try_from(item: RawItem) -> Result<Self, Self::Error> {
+        use Error::{InvalidField, MissingField};
+
+        if item.type_ != "Other" {
+            return Err(InvalidField(
+                String::from("Other"),
+                String::from("type"),
+                Some(item.type_),
+            ));
+        }
+
+        // Sanity check that a curable is usable by all 3 classes.
+        if let Some(v) = &item.equipped_by {
+            if v.len() != 3 {
+                return Err(InvalidField(
+                    String::from("Other"),
+                    String::from("equipped_by[]"),
+                    Some(
+                        v.iter()
+                            .map(|equip| equip.name.clone())
+                            .collect::<Vec<_>>()
+                            .join(","),
+                    ),
+                ));
+            }
+        }
+
+        let missing_field =
+            |field: &'static str| move || MissingField(String::from("Other"), String::from(field));
 
         Ok(Self {
             name: item.name,
