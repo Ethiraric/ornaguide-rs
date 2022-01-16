@@ -4,22 +4,42 @@ use ornaguide_rs::{
     raw_items::RawItems,
 };
 
+fn emit_warning(warning_name: &str, item_name: &str, warning: &str) {
+    println!("warning: {}: {} ({})", item_name, warning, warning_name);
+}
+
 #[allow(dead_code)]
-fn non_unique_source(items: &RawItems) {
+fn warn_item_no_source(items: &RawItems) {
     for item in items.items.iter() {
         let arena = item.arena;
         let quest = item.quests.is_some() && !item.quests.as_ref().unwrap().is_empty();
         let dropped = item.dropped_by.is_some() && !item.dropped_by.as_ref().unwrap().is_empty();
-        if !((arena && !quest && !dropped)
-            || (!arena && quest && !dropped)
-            || (!arena && !quest && dropped))
-        {
-            println!(
-                "{}: {} {} {}",
-                item.name,
-                if arena { "arena" } else { "." },
-                if quest { "quest" } else { "." },
-                if dropped { "dropped" } else { "." }
+        if !arena && !quest && !dropped {
+            emit_warning("item_no_source", item.name.as_str(), "item has no source");
+        }
+        // if !((arena && !quest && !dropped)
+        //     || (!arena && quest && !dropped)
+        //     || (!arena && !quest && dropped))
+        // {
+        //     println!(
+        //         "{}: {} {} {}",
+        //         item.name,
+        //         if arena { "arena" } else { "." },
+        //         if quest { "quest" } else { "." },
+        //         if dropped { "dropped" } else { "." }
+        //     );
+        // }
+    }
+}
+
+#[allow(dead_code)]
+fn warn_weapon_no_category(items: &RawItems) {
+    for item in items.items.iter() {
+        if item.type_ == "Weapon" && item.category.is_none() {
+            emit_warning(
+                "weapon_no_category",
+                item.name.as_str(),
+                "weapon has no category",
             );
         }
     }
