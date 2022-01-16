@@ -17,6 +17,8 @@ pub enum Item {
     Weapon(Weapon),
     /// A legs item.
     Legs(Legs),
+    /// A Head item.
+    Head(Head),
 }
 
 impl TryFrom<RawItem> for Item {
@@ -27,6 +29,7 @@ impl TryFrom<RawItem> for Item {
             "Armor" => Ok(Self::Armor(Armor::try_from(raw_item)?)),
             "Weapon" => Ok(Self::Weapon(Weapon::try_from(raw_item)?)),
             "Legs" => Ok(Self::Legs(Legs::try_from(raw_item)?)),
+            "Head" => Ok(Self::Head(Head::try_from(raw_item)?)),
             _ => Err(Error::InvalidField(
                 String::from("Item"),
                 String::from("type"),
@@ -205,6 +208,68 @@ impl TryFrom<RawItem> for Legs {
 
         let missing_field =
             |field: &'static str| move || MissingField(String::from("Legs"), String::from(field));
+
+        Ok(Self {
+            name: item.name,
+            id: item.id,
+            description: item.description,
+            tier: item.tier,
+            boss: item.boss,
+            arena: item.arena,
+            image: item.image,
+            stats: item.stats.ok_or_else(missing_field("stats"))?,
+            element: item.element,
+            materials: item.materials.ok_or_else(missing_field("materials"))?,
+            dropped_by: item.dropped_by.unwrap_or_else(Vec::new),
+            quests: item.quests.unwrap_or_else(Vec::new),
+            equipped_by: item.equipped_by.unwrap_or_else(Vec::new),
+            prevents: item.prevents.unwrap_or_else(Vec::new),
+            causes: item.causes.unwrap_or_else(Vec::new),
+            cures: item.cures.unwrap_or_else(Vec::new),
+            gives: item.gives.unwrap_or_else(Vec::new),
+        })
+    }
+}
+
+/// A head item in Orna.
+pub struct Head {
+    pub name: String,
+    pub id: u32,
+    pub description: String,
+    pub tier: u32,
+    pub boss: bool,
+    pub arena: bool,
+    pub image: String,
+    pub stats: ItemStats,
+    pub element: Option<String>,
+    pub materials: Vec<ItemMaterial>,
+    pub dropped_by: Vec<ItemDroppedBy>,
+    pub quests: Vec<ItemQuest>,
+    pub equipped_by: Vec<ItemEquippedBy>,
+    pub prevents: Vec<String>,
+    pub causes: Vec<String>,
+    pub cures: Vec<String>,
+    pub gives: Vec<String>,
+}
+
+impl TryFrom<RawItem> for Head {
+    type Error = Error;
+
+    /// Create an `Head` from a `RawItem`.
+    /// The `RawItem`'s `type` field must be `Head`.
+    fn try_from(item: RawItem) -> Result<Self, Self::Error> {
+        use Error::{InvalidField, MissingField};
+
+        if item.type_ != "Head" {
+            return Err(InvalidField(
+                String::from("Head"),
+                String::from("type"),
+                Some(item.type_),
+            ));
+        }
+
+        let missing_field =
+            |field: &'static str| move || MissingField(String::from("Head"), String::from(field));
 
         Ok(Self {
             name: item.name,
