@@ -45,6 +45,109 @@ fn warn_weapon_no_category(items: &RawItems) {
     }
 }
 
+#[allow(dead_code)]
+fn warn_weapon_no_materials(items: &RawItems) {
+    for item in items.items.iter() {
+        if item.type_ == "Weapon" && item.materials.is_none() {
+            emit_warning(
+                "weapon_no_materials",
+                item.name.as_str(),
+                "weapon has no materials",
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+fn warn_legs_no_materials(items: &RawItems) {
+    for item in items.items.iter() {
+        if item.type_ == "Legs" && item.materials.is_none() {
+            emit_warning(
+                "legs_no_materials",
+                item.name.as_str(),
+                "legs has no materials",
+            );
+        }
+    }
+}
+
+#[allow(dead_code)]
+fn warn_morri_item_materials(items: &RawItems) {
+    for item in items.items.iter() {
+        if item.type_ == "Legs"
+            || item.type_ == "Off-hand"
+            || item.type_ == "Weapon"
+            || item.type_ == "Armor"
+        {
+            if let Some(dropped_by) = &item.dropped_by {
+                if let Some(mats) = &item.materials {
+                    if dropped_by
+                        .iter()
+                        .any(|dropped_by| dropped_by.name == "Arisen Morrigan")
+                    {
+                        if let [mat1, mat2] = mats.as_slice() {
+                            if (mat1.name != "Cursed Ortanite" && mat2.name != "Cursed Ortanite")
+                                || (mat1.name != "Greater Soul" && mat2.name != "Greater Soul")
+                            {
+                                emit_warning(
+                                    "morri_item_materials",
+                                    item.name.as_str(),
+                                    format!(
+                                        "invalid Arisen Morrigan item materials: {:?}",
+                                        mats.iter()
+                                            .map(|mat| mat.name.as_str())
+                                            .collect::<Vec<_>>()
+                                    )
+                                    .as_str(),
+                                );
+                            }
+                        } else {
+                            emit_warning(
+                                "morri_item_materials",
+                                item.name.as_str(),
+                                format!(
+                                    "missing or extra Arisen Morrigan item materials: {:?}",
+                                    mats.iter().map(|mat| mat.name.as_str()).collect::<Vec<_>>()
+                                )
+                                .as_str(),
+                            );
+                        }
+                    } else if dropped_by
+                        .iter()
+                        .any(|dropped_by| dropped_by.name == "The Morrigan")
+                    {
+                        if let [mat1] = mats.as_slice() {
+                            if mat1.name != "Cursed Ortanite" {
+                                emit_warning(
+                                    "morri_item_materials",
+                                    item.name.as_str(),
+                                    format!(
+                                        "invalid The Morrigan item material: {:?}",
+                                        mats.iter()
+                                            .map(|mat| mat.name.as_str())
+                                            .collect::<Vec<_>>()
+                                    )
+                                    .as_str(),
+                                );
+                            }
+                        } else {
+                            emit_warning(
+                                "morri_item_materials",
+                                item.name.as_str(),
+                                format!(
+                                    "missing or extra The Morrigan item materials: {:?}",
+                                    mats.iter().map(|mat| mat.name.as_str()).collect::<Vec<_>>()
+                                )
+                                .as_str(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 fn read_all_jsons() -> Result<(), Error> {
     let raw_items = RawItems::parse_from_file("jsons/item.json")?;
     println!("Read {} items.", raw_items.items.len());
