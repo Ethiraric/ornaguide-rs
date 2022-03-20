@@ -1,5 +1,9 @@
-use crate::{error::Error, items::raw::RawItem};
+use crate::{
+    error::Error,
+    items::{admin::AdminItem, raw::RawItem},
+};
 
+pub(crate) mod html_parser;
 mod http;
 mod ornaguide;
 
@@ -15,4 +19,12 @@ pub trait Guide {
     fn get_items(&self) -> Option<&[RawItem]>;
 }
 
-pub use ornaguide::OrnaGuide;
+/// A read-write access to the administrator panel of the guide.
+pub trait AdminGuide {
+    /// Retrieve the item with the given id from the guide.
+    fn admin_retrieve_item_by_id(&self, id: u32) -> Result<AdminItem, Error>;
+    /// Save the given item to the guide.
+    fn admin_save_item(&self, item: AdminItem) -> Result<(), Error>;
+}
+
+pub use ornaguide::{OrnaAdminGuide, OrnaGuide};

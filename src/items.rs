@@ -6,8 +6,11 @@
 //! The [`item`] submodule contains utilities to remove some of the `Option`s and categorize the
 //! items into the same categories that are in the in-game inventory.
 //!
+//! The [`admin`] submodule contains classes for the administration view of the guide.
+//!
 //! The Rust items from the [`raw`] and [`item`] modules are publicly used in this module.
 
+pub mod admin;
 pub mod item;
 pub mod raw;
 
