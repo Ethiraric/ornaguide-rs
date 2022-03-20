@@ -1,4 +1,7 @@
-use std::fmt::Display;
+use std::{
+    fmt::{Debug, Display},
+    num::{ParseFloatError, ParseIntError},
+};
 
 /// Generic error type.
 pub enum Error {
@@ -18,6 +21,21 @@ pub enum Error {
     /// The first `String` is the type of the object that was converted, the second one is the name
     /// of the field. The third one is an option of the value of the string.
     InvalidField(String, String, Option<String>),
+    /// There was an error with `reqwest`.
+    Reqwest(reqwest::Error),
+    /// There was an error parsing an integer.
+    ParseIntError(ParseIntError),
+    /// There was an error parsing a float.
+    ParseFloatError(ParseFloatError),
+    /// The request was successfully delivered, but the response indicated there was a failure.
+    ResponseError(
+        /// The status code we received.
+        u16,
+        /// An error message.
+        String,
+    ),
+    /// There was an error in parsing HTML.
+    HTMLParsingError(String),
 }
 
 impl Display for Error {
@@ -43,7 +61,36 @@ impl Display for Error {
                     write!(f, "Failed to convert to {}: invalid field {}", from, field)
                 }
             },
+            Error::Reqwest(err) => write!(f, "{}", err),
+            Error::ParseIntError(err) => write!(f, "{}", err),
+            Error::ParseFloatError(err) => write!(f, "{}", err),
+            Error::ResponseError(status, err) => write!(f, "HTTP {}: {}", status, err),
+            Error::HTMLParsingError(err) => write!(f, "{}", err),
         }
+    }
+}
+
+impl Debug for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        (self as &dyn Display).fmt(f)
+    }
+}
+
+impl From<ParseFloatError> for Error {
+    fn from(err: ParseFloatError) -> Self {
+        Self::ParseFloatError(err)
+    }
+}
+
+impl From<ParseIntError> for Error {
+    fn from(err: ParseIntError) -> Self {
+        Self::ParseIntError(err)
+    }
+}
+
+impl From<reqwest::Error> for Error {
+    fn from(err: reqwest::Error) -> Self {
+        Self::Reqwest(err)
     }
 }
 
