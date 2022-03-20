@@ -3,6 +3,7 @@ use crate::{
     items::{admin::AdminItem, raw::RawItem},
 };
 
+mod cache;
 pub(crate) mod html_parser;
 mod http;
 mod ornaguide;
@@ -27,4 +28,5 @@ pub trait AdminGuide {
     fn admin_save_item(&self, item: AdminItem) -> Result<(), Error>;
 }
 
+pub use cache::CachedGuide;
 pub use ornaguide::{OrnaAdminGuide, OrnaGuide};
