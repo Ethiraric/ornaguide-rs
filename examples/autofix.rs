@@ -5,9 +5,11 @@ use dotenv::dotenv;
 use ornaguide_rs::{
     error::Error,
     guide::{AdminGuide, CachedGuide, Guide, OrnaAdminGuide},
-    items::{ItemMaterial, RawItem},
+    items::RawItem,
 };
 
+/// Set materials of the given item on the guide.
+/// This erases the previous materials list.
 fn set_item_materials_to<G: AdminGuide>(
     guide: &G,
     raw_item: &RawItem,
@@ -29,6 +31,8 @@ fn set_item_materials_to<G: AdminGuide>(
     }
 }
 
+/// Add a material to an item on the guide.
+/// This preserves the previous materials list.
 fn add_item_materials<G: AdminGuide>(
     guide: &G,
     raw_item: &RawItem,
@@ -57,6 +61,38 @@ fn add_item_materials<G: AdminGuide>(
     }
 }
 
+/// Returns true if the item is an equippable that can be upgraded and, as such, as materials
+/// associated to it.
+fn item_is_equippable(item: &RawItem) -> bool {
+    item.type_ == "Legs"
+        || item.type_ == "Off-hand"
+        || item.type_ == "Weapon"
+        || item.type_ == "Armor"
+        || item.type_ == "Head"
+}
+
+/// Returns true if the item is dropped by the given monster.
+fn is_item_dropped_by(item: &RawItem, whom: &str) -> bool {
+    item.dropped_by.is_some()
+        && item
+            .dropped_by
+            .as_ref()
+            .unwrap()
+            .iter()
+            .any(|monster| monster.name == whom)
+}
+
+/// Returns true if the item needs the given material to be upgraded.
+fn item_has_material(item: &RawItem, mat_name: &str) -> bool {
+    item.materials.is_some()
+        && item
+            .materials
+            .as_ref()
+            .unwrap()
+            .iter()
+            .any(|mat| mat.name == mat_name)
+}
+
 /// Walk through most The Morrigan and Arisen Morrigan drops and check that they have the correct
 /// materials. For those we check, it should be Cursed Ortanite for The Morrigan drops, or Cursed
 /// Ortanite + Greater Souls for Arisen Morrigan drops.
@@ -75,14 +111,7 @@ fn fix_morri_item_materials<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Resu
 
     for item in items
         .iter()
-        .filter(|item| {
-            // Filter out items that are not equippable (and not accessories).
-            item.type_ == "Legs"
-                || item.type_ == "Off-hand"
-                || item.type_ == "Weapon"
-                || item.type_ == "Armor"
-                || item.type_ == "Head"
-        })
+        .filter(|item| item_is_equippable(item))
         .filter(|item| {
             // Those items are annoying. Realm Katar requires Realm Ore and Cursed Ortanite (Arisen
             // Realm Katar is still Cursed Ortanite and Greater Soul). Morrigan's Scroll requires
@@ -92,41 +121,22 @@ fn fix_morri_item_materials<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Resu
         })
         .filter(|item| {
             // Filter out items that are not dropped by The Morrigan or Arisen Morrigan.
-            item.dropped_by.is_some()
-                && item.dropped_by.as_ref().unwrap().iter().any(|monster| {
-                    monster.name == "Arisen Morrigan" || monster.name == "The Morrigan"
-                })
+            is_item_dropped_by(item, "Arisen Morrigan") || is_item_dropped_by(item, "The Morrigan")
         })
     {
-        if item
-            .dropped_by
-            .as_ref()
-            .unwrap()
-            .iter()
-            .any(|monster| monster.name == "Arisen Morrigan")
-        {
-            match item.materials.as_deref() {
-                Some([mat1, mat2]) => {
-                    // Must have Greater Soul and Cursed Ortanite
-                    if !((mat1.name == "Greater Soul" && mat2.name == "Cursed Ortanite")
-                        || (mat2.name == "Greater Soul" && mat1.name == "Cursed Ortanite"))
-                    {
-                        set_item_materials_to(guide, item, &[co, gs])?;
-                    }
+        if is_item_dropped_by(item, "Arisen Morrigan") {
+            if item.materials.is_some() && item.materials.as_ref().unwrap().len() == 2 {
+                if !(item_has_material(item, "Cursed Ortanite")
+                    && item_has_material(item, "Greater Soul"))
+                {
+                    set_item_materials_to(guide, item, &[co, gs])?;
                 }
-                _ => set_item_materials_to(guide, item, &[co, gs])?,
+            } else {
+                set_item_materials_to(guide, item, &[co, gs])?;
             }
-        } else if item
-            .dropped_by
-            .as_ref()
-            .unwrap()
-            .iter()
-            .any(|monster| monster.name == "The Morrigan")
-        {
-            match item.materials.as_deref() {
-                // Must have Cursed Ortanite
-                Some([ItemMaterial { id: _, ref name }]) if name == "Cursed Ortanite" => {}
-                _ => set_item_materials_to(guide, item, &[co])?,
+        } else if is_item_dropped_by(item, "The Morrigan") {
+            if !item_has_material(item, "Cursed Ortanite") {
+                set_item_materials_to(guide, item, &[co])?
             }
         } else {
             panic!("Items here should be either a drop from The Morrigan or Arisen Morrigan")
@@ -141,14 +151,7 @@ fn fix_lyonesse_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(),
     let lyonite = items.iter().find(|item| item.name == "Lyonite").unwrap().id;
     for item in items
         .iter()
-        .filter(|item| {
-            // Filter out items that are not equippable (and not accessories).
-            item.type_ == "Legs"
-                || item.type_ == "Off-hand"
-                || item.type_ == "Weapon"
-                || item.type_ == "Armor"
-                || item.type_ == "Head"
-        })
+        .filter(|item| item_is_equippable(item))
         .filter(|item| {
             // Filter out items that are not dropped by a Lyonesse monster.
             item.dropped_by.is_some()
@@ -159,14 +162,7 @@ fn fix_lyonesse_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(),
                 })
         })
     {
-        if item.materials.is_none()
-            || !item
-                .materials
-                .as_ref()
-                .unwrap()
-                .iter()
-                .any(|item| item.name == "Lyonite")
-        {
+        if !item_has_material(item, "Lyonite") {
             add_item_materials(guide, item, &[lyonite])?;
         }
     }
@@ -183,33 +179,10 @@ fn fix_apollyon_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(),
         .id;
     for item in items
         .iter()
-        .filter(|item| {
-            // Filter out items that are not equippable (and not accessories).
-            item.type_ == "Legs"
-                || item.type_ == "Off-hand"
-                || item.type_ == "Weapon"
-                || item.type_ == "Armor"
-                || item.type_ == "Head"
-        })
-        .filter(|item| {
-            // Filter out items that are not dropped by Apollyon.
-            item.dropped_by.is_some()
-                && item
-                    .dropped_by
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .any(|monster| monster.name == "Apollyon")
-        })
+        .filter(|item| item_is_equippable(item))
+        .filter(|item| is_item_dropped_by(item, "Apollyon"))
     {
-        if item.materials.is_none()
-            || !item
-                .materials
-                .as_ref()
-                .unwrap()
-                .iter()
-                .any(|item| item.name == "Realm Ore")
-        {
+        if !item_has_material(item, "Realm Ore") {
             add_item_materials(guide, item, &[ore])?;
         }
     }
@@ -226,33 +199,13 @@ fn fix_mammon_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(), E
         .id;
     for item in items
         .iter()
-        .filter(|item| {
-            // Filter out items that are not equippable (and not accessories).
-            item.type_ == "Legs"
-                || item.type_ == "Off-hand"
-                || item.type_ == "Weapon"
-                || item.type_ == "Armor"
-                || item.type_ == "Head"
-        })
+        .filter(|item| item_is_equippable(item))
         .filter(|item| {
             // Filter out items that are not dropped by a Mammon.
-            item.dropped_by.is_some()
-                && item
-                    .dropped_by
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .any(|monster| monster.name == "Mammon" || monster.name == "Arisen Mammon")
+            is_item_dropped_by(item, "Mammon") || is_item_dropped_by(item, "Arisen Mammon")
         })
     {
-        if item.materials.is_none()
-            || !item
-                .materials
-                .as_ref()
-                .unwrap()
-                .iter()
-                .any(|item| item.name == "Ortanite")
-        {
+        if !item_has_material(item, "Ortanite") {
             add_item_materials(guide, item, &[ortanite])?;
         }
     }
