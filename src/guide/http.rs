@@ -17,8 +17,8 @@ pub(crate) struct Http {
 /// Can be used in `concat!`.
 macro_rules! BASE_PATH {
     () => {
-        "http://localhost:12345"
-        // "https://orna.guide/"
+        // "http://localhost:12345"
+        "https://orna.guide/"
     };
 }
 
