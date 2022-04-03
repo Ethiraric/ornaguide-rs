@@ -110,21 +110,21 @@ impl TryFrom<RawItem> for ArmorItem {
 
         if item.type_ != "Armor" {
             return Err(InvalidField(
-                "Armor".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
         }
 
         if item.category.is_some() {
-            return Err(ExtraField("Armor".to_string(), "category".to_string()));
+            return Err(ExtraField(item.name, "category".to_string()));
         }
 
         let missing_field =
-            |field: &'static str| || MissingField("Armor".to_string(), field.to_string());
+            |field: &'static str| || MissingField(item.name.clone(), field.to_string());
 
         Ok(Self {
-            name: item.name,
+            name: item.name.clone(),
             id: item.id,
             description: item.description,
             tier: item.tier,
@@ -178,17 +178,17 @@ impl TryFrom<RawItem> for WeaponItem {
 
         if item.type_ != "Weapon" {
             return Err(InvalidField(
-                "Weapon".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
         }
 
         let missing_field =
-            |field: &'static str| move || MissingField("Weapon".to_string(), String::from(field));
+            |field: &'static str| || MissingField(item.name.clone(), field.to_string());
 
         Ok(Self {
-            name: item.name,
+            name: item.name.clone(),
             id: item.id,
             description: item.description,
             tier: item.tier,
@@ -242,17 +242,17 @@ impl TryFrom<RawItem> for LegsItem {
 
         if item.type_ != "Legs" {
             return Err(InvalidField(
-                "Legs".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
         }
 
         let missing_field =
-            |field: &'static str| move || MissingField("Legs".to_string(), String::from(field));
+            |field: &'static str| || MissingField(item.name.clone(), field.to_string());
 
         Ok(Self {
-            name: item.name,
+            name: item.name.clone(),
             id: item.id,
             description: item.description,
             tier: item.tier,
@@ -305,17 +305,17 @@ impl TryFrom<RawItem> for HeadItem {
 
         if item.type_ != "Head" {
             return Err(InvalidField(
-                "Head".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
         }
 
         let missing_field =
-            |field: &'static str| move || MissingField("Head".to_string(), String::from(field));
+            |field: &'static str| || MissingField(item.name.clone(), field.to_string());
 
         Ok(Self {
-            name: item.name,
+            name: item.name.clone(),
             id: item.id,
             description: item.description,
             tier: item.tier,
@@ -362,7 +362,7 @@ impl TryFrom<RawItem> for MaterialItem {
 
         if item.type_ != "Material" {
             return Err(InvalidField(
-                "Material".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
@@ -372,7 +372,7 @@ impl TryFrom<RawItem> for MaterialItem {
         if let Some(v) = &item.equipped_by {
             if v.len() != 3 {
                 return Err(InvalidField(
-                    "Material".to_string(),
+                    item.name,
                     "equipped_by[]".to_string(),
                     Some(
                         v.iter()
@@ -385,10 +385,10 @@ impl TryFrom<RawItem> for MaterialItem {
         }
 
         let missing_field =
-            |field: &'static str| move || MissingField("Material".to_string(), String::from(field));
+            |field: &'static str| || MissingField(item.name.clone(), field.to_string());
 
         Ok(Self {
-            name: item.name,
+            name: item.name.clone(),
             id: item.id,
             description: item.description,
             tier: item.tier,
@@ -435,7 +435,7 @@ impl TryFrom<RawItem> for AccessoryItem {
 
         if item.type_ != "Accessory" {
             return Err(InvalidField(
-                "Accessory".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
@@ -445,7 +445,7 @@ impl TryFrom<RawItem> for AccessoryItem {
         if let Some(v) = &item.equipped_by {
             if v.is_empty() {
                 return Err(InvalidField(
-                    "Accessory".to_string(),
+                    item.name,
                     "equipped_by[]".to_string(),
                     Some("[]".to_string()),
                 ));
@@ -505,7 +505,7 @@ impl TryFrom<RawItem> for OffHandItem {
 
         if item.type_ != "Off-hand" {
             return Err(InvalidField(
-                "OffHand".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
@@ -557,7 +557,7 @@ impl TryFrom<RawItem> for ItemItem {
 
         if item.type_ != "Item" {
             return Err(InvalidField(
-                "Item".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
@@ -567,7 +567,7 @@ impl TryFrom<RawItem> for ItemItem {
         if let Some(v) = &item.equipped_by {
             if v.len() != 3 {
                 return Err(InvalidField(
-                    "Item".to_string(),
+                    item.name,
                     "equipped_by[]".to_string(),
                     Some(
                         v.iter()
@@ -580,10 +580,10 @@ impl TryFrom<RawItem> for ItemItem {
         }
 
         let missing_field =
-            |field: &'static str| move || MissingField("Item".to_string(), String::from(field));
+            |field: &'static str| || MissingField(item.name.clone(), field.to_string());
 
         Ok(Self {
-            name: item.name,
+            name: item.name.clone(),
             id: item.id,
             description: item.description,
             tier: item.tier,
@@ -628,7 +628,7 @@ impl TryFrom<RawItem> for AdornmentItem {
 
         if item.type_ != "Adornment" {
             return Err(InvalidField(
-                "Adornment".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
@@ -680,7 +680,7 @@ impl TryFrom<RawItem> for CurativeItem {
 
         if item.type_ != "Curative" {
             return Err(InvalidField(
-                "Curative".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
@@ -690,7 +690,7 @@ impl TryFrom<RawItem> for CurativeItem {
         if let Some(v) = &item.equipped_by {
             if v.len() != 3 {
                 return Err(InvalidField(
-                    "Curative".to_string(),
+                    item.name,
                     "equipped_by[]".to_string(),
                     Some(
                         v.iter()
@@ -703,10 +703,10 @@ impl TryFrom<RawItem> for CurativeItem {
         }
 
         let missing_field =
-            |field: &'static str| move || MissingField("Curative".to_string(), String::from(field));
+            |field: &'static str| || MissingField(item.name.clone(), field.to_string());
 
         Ok(Self {
-            name: item.name,
+            name: item.name.clone(),
             id: item.id,
             description: item.description,
             tier: item.tier,
@@ -744,7 +744,7 @@ impl TryFrom<RawItem> for FishItem {
 
         if item.type_ != "Fish" {
             return Err(InvalidField(
-                "Fish".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
@@ -789,7 +789,7 @@ impl TryFrom<RawItem> for OtherItem {
 
         if item.type_ != "Other" {
             return Err(InvalidField(
-                "Other".to_string(),
+                item.name,
                 "type".to_string(),
                 Some(item.type_),
             ));
@@ -799,7 +799,7 @@ impl TryFrom<RawItem> for OtherItem {
         if let Some(v) = &item.equipped_by {
             if v.len() != 3 {
                 return Err(InvalidField(
-                    "Other".to_string(),
+                    item.name,
                     "equipped_by[]".to_string(),
                     Some(
                         v.iter()
@@ -812,10 +812,10 @@ impl TryFrom<RawItem> for OtherItem {
         }
 
         let missing_field =
-            |field: &'static str| move || MissingField("Other".to_string(), String::from(field));
+            |field: &'static str| || MissingField(item.name.clone(), field.to_string());
 
         Ok(Self {
-            name: item.name,
+            name: item.name.clone(),
             id: item.id,
             description: item.description,
             tier: item.tier,

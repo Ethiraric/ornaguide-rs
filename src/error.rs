@@ -10,15 +10,15 @@ pub enum Error {
     /// There was an error with `std::io`.
     Io(std::io::Error),
     /// A field was missing when converting.
-    /// The first `String` is the type of the object that was converted, the second one is the name
+    /// The first `String` is the name of the object that was converted, the second one is the name
     /// of the field.
     MissingField(String, String),
     /// A field that shouldn't appear was found when converting.
-    /// The first `String` is the type of the object that was converted, the second one is the name
+    /// The first `String` is the name of the object that was converted, the second one is the name
     /// of the field.
     ExtraField(String, String),
     /// A field had an incorrect value when converting,
-    /// The first `String` is the type of the object that was converted, the second one is the name
+    /// The first `String` is the name of the object that was converted, the second one is the name
     /// of the field. The third one is an option of the value of the string.
     InvalidField(String, String, Option<String>),
     /// There was an error with `reqwest`.
@@ -36,6 +36,8 @@ pub enum Error {
     ),
     /// There was an error in parsing HTML.
     HTMLParsingError(String),
+    /// Miscellaneous error.
+    Misc(String),
 }
 
 impl Display for Error {
@@ -66,6 +68,7 @@ impl Display for Error {
             Error::ParseFloatError(err) => write!(f, "{}", err),
             Error::ResponseError(status, err) => write!(f, "HTTP {}: {}", status, err),
             Error::HTMLParsingError(err) => write!(f, "{}", err),
+            Error::Misc(err) => write!(f, "{}", err),
         }
     }
 }
