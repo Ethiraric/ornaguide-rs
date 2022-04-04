@@ -7,6 +7,7 @@ use crate::{
     error::Error,
     guide::html_parser::{parse_item_html, ParsedForm},
     items::RawItem,
+    monsters::RawMonster,
 };
 
 pub(crate) struct Http {
@@ -82,10 +83,20 @@ impl Http {
             http: Client::builder().default_headers(headers).build()?,
         })
     }
+
     pub(crate) fn fetch_items(&self) -> Result<Vec<RawItem>, Error> {
         Ok(self
             .http
             .post(concat!(BASE_PATH!(), "/api/v1/items"))
+            .json("{}")
+            .send()?
+            .json()?)
+    }
+
+    pub(crate) fn fetch_monsters(&self) -> Result<Vec<RawMonster>, Error> {
+        Ok(self
+            .http
+            .post(concat!(BASE_PATH!(), "/api/v1/monster"))
             .json("{}")
             .send()?
             .json()?)

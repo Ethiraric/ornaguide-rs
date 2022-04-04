@@ -1,6 +1,7 @@
 use crate::{
     error::Error,
     items::{admin::AdminItem, raw::RawItem},
+    monsters::raw::RawMonster,
 };
 
 mod cache;
@@ -18,6 +19,14 @@ pub trait Guide {
     /// Return the cache, if already fetched. This method will always return `None` before a call
     /// to `fetch_items`.
     fn get_items(&self) -> Option<&[RawItem]>;
+
+    /// If not already done, query the API of the guide for the list of monsters and store it in a
+    /// cache. If the cache is already fetched, return it. The latter case cannot return an `Err`.
+    fn fetch_monsters(&mut self) -> Result<&[RawMonster], Error>;
+
+    /// Return the cache, if already fetched. This method will always return `None` before a call
+    /// to `fetch_monsters`.
+    fn get_monsters(&self) -> Option<&[RawMonster]>;
 }
 
 /// A read-write access to the administrator panel of the guide.

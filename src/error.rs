@@ -46,21 +46,21 @@ impl Display for Error {
             Error::SerdeJson(err) => write!(f, "{}", err),
             Error::Io(err) => write!(f, "{}", err),
             Error::MissingField(from, field) => {
-                write!(f, "Failed to convert to {}: missing field {}", from, field)
+                write!(f, "Failed to convert {}: missing field {}", from, field)
             }
             Error::ExtraField(from, field) => {
-                write!(f, "Failed to convert to {}: extra field {}", from, field)
+                write!(f, "Failed to convert {}: extra field {}", from, field)
             }
             Error::InvalidField(from, field, value) => match value {
                 Some(s) => {
                     write!(
                         f,
-                        "Failed to convert to {}: invalid field {}={}",
+                        "Failed to convert {}: invalid field {}={}",
                         from, field, s
                     )
                 }
                 None => {
-                    write!(f, "Failed to convert to {}: invalid field {}", from, field)
+                    write!(f, "Failed to convert {}: invalid field {}", from, field)
                 }
             },
             Error::Reqwest(err) => write!(f, "{}", err),

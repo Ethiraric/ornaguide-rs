@@ -2,12 +2,14 @@ use crate::{
     error::Error,
     guide::{html_parser::ParsedForm, http::Http, AdminGuide, Guide},
     items::{admin::AdminItem, raw::RawItem},
+    monsters::RawMonster,
 };
 
 /// The main interface for the guide.
 pub struct OrnaGuide {
     http: Http,
     items: Option<Vec<RawItem>>,
+    monsters: Option<Vec<RawMonster>>,
 }
 
 impl OrnaGuide {
@@ -16,6 +18,7 @@ impl OrnaGuide {
         Self {
             http: Http::new(),
             items: None,
+            monsters: None,
         }
     }
 
@@ -52,6 +55,18 @@ impl Guide for OrnaGuide {
     fn get_items(&self) -> Option<&[RawItem]> {
         self.items.as_ref().map(|items| items.as_ref())
     }
+
+    fn fetch_monsters(&mut self) -> Result<&[crate::monsters::RawMonster], Error> {
+        if self.monsters.is_none() {
+            self.monsters = Some(self.http.fetch_monsters()?);
+        }
+
+        Ok(self.monsters.as_ref().unwrap())
+    }
+
+    fn get_monsters(&self) -> Option<&[crate::monsters::RawMonster]> {
+        self.monsters.as_ref().map(|monster| monster.as_ref())
+    }
 }
 
 pub struct OrnaAdminGuide {
@@ -74,6 +89,14 @@ impl Guide for OrnaAdminGuide {
 
     fn get_items(&self) -> Option<&[RawItem]> {
         self.guide.get_items()
+    }
+
+    fn fetch_monsters(&mut self) -> Result<&[crate::monsters::RawMonster], Error> {
+        self.guide.fetch_monsters()
+    }
+
+    fn get_monsters(&self) -> Option<&[crate::monsters::RawMonster]> {
+        self.guide.get_monsters()
     }
 }
 
