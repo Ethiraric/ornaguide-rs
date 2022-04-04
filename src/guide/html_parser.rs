@@ -17,9 +17,9 @@ pub struct ParsedForm {
 }
 
 /// Find the `form` HTML node for the page.
-fn get_form_node(document: &NodeRef) -> Result<NodeDataRef<ElementData>, Error> {
+fn get_form_node(document: &NodeRef, name: &str) -> Result<NodeDataRef<ElementData>, Error> {
     document
-        .select("#item_form")
+        .select(name)
         .map_err(|()| Error::HTMLParsingError("Failed to find root html node".to_string()))?
         .next()
         .ok_or_else(|| Error::HTMLParsingError("Failed to find root html node".to_string()))
@@ -131,10 +131,14 @@ fn add_field_value(form: &NodeRef, field_name: &str, fields: &mut Vec<(String, S
 }
 
 /// Extract given fields from an HTML page.
-pub fn parse_item_html(contents: &str, field_names: &[&str]) -> Result<ParsedForm, Error> {
+fn parse_html_form(
+    contents: &str,
+    form_root_name: &str,
+    field_names: &[&str],
+) -> Result<ParsedForm, Error> {
     let html = parse_html().one(contents);
 
-    let form = get_form_node(&html)?;
+    let form = get_form_node(&html, form_root_name)?;
     let form = form.as_node();
 
     let mut fields = Vec::new();
@@ -148,4 +152,14 @@ pub fn parse_item_html(contents: &str, field_names: &[&str]) -> Result<ParsedFor
         fields,
         csrfmiddlewaretoken,
     })
+}
+
+/// Extract given fields from an admin item change HTML page.
+pub fn parse_item_html(contents: &str, field_names: &[&str]) -> Result<ParsedForm, Error> {
+    parse_html_form(contents, "#item_form", field_names)
+}
+
+/// Extract given fields from an admin monster change HTML page.
+pub fn parse_monster_html(contents: &str, field_names: &[&str]) -> Result<ParsedForm, Error> {
+    parse_html_form(contents, "#monster_form", field_names)
 }

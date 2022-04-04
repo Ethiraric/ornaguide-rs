@@ -10,12 +10,9 @@
 //!
 //! The Rust monsters from the [`raw`] and [`monster`] modules are publicly used in this module.
 
-// pub mod admin;
+pub mod admin;
 pub mod monster;
 pub mod raw;
 
-// pub use monster::{
-//     AccessoryMonster, AdornmentMonster, ArmorMonster, CurativeMonster, FishMonster, HeadMonster, Monster, MonsterMonster,
-//     LegsMonster, MaterialMonster, OffHandMonster, OtherMonster, WeaponMonster,
-// };
+pub use monster::{BossMonster, Monster, MonsterMonster, RaidMonster};
 pub use raw::{MonsterBuff, MonsterDrop, MonsterQuest, MonsterSkill, RawMonster, RawMonsters};

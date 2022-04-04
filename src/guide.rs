@@ -1,7 +1,7 @@
 use crate::{
     error::Error,
     items::{admin::AdminItem, raw::RawItem},
-    monsters::raw::RawMonster,
+    monsters::{admin::AdminMonster, raw::RawMonster},
 };
 
 mod cache;
@@ -35,6 +35,11 @@ pub trait AdminGuide {
     fn admin_retrieve_item_by_id(&self, id: u32) -> Result<AdminItem, Error>;
     /// Save the given item to the guide.
     fn admin_save_item(&self, item: AdminItem) -> Result<(), Error>;
+
+    /// Retrieve the monster with the given id from the guide.
+    fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<AdminMonster, Error>;
+    /// Save the given monster to the guide.
+    fn admin_save_monster(&self, monster: AdminMonster) -> Result<(), Error>;
 }
 
 pub use cache::CachedGuide;

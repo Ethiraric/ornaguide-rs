@@ -2,7 +2,7 @@ use crate::{
     error::Error,
     guide::{html_parser::ParsedForm, http::Http, AdminGuide, Guide},
     items::{admin::AdminItem, raw::RawItem},
-    monsters::RawMonster,
+    monsters::{admin::AdminMonster, RawMonster},
 };
 
 /// The main interface for the guide.
@@ -111,5 +111,24 @@ impl AdminGuide for OrnaAdminGuide {
         self.guide
             .http()
             .admin_save_item(item.id, ParsedForm::from(item))
+    }
+
+    fn admin_retrieve_monster_by_id(
+        &self,
+        id: u32,
+    ) -> Result<crate::monsters::admin::AdminMonster, Error> {
+        Ok(AdminMonster {
+            id,
+            ..AdminMonster::try_from(self.guide.http().admin_retrieve_monster_by_id(id)?)?
+        })
+    }
+
+    fn admin_save_monster(
+        &self,
+        monster: crate::monsters::admin::AdminMonster,
+    ) -> Result<(), Error> {
+        self.guide
+            .http()
+            .admin_save_monster(monster.id, ParsedForm::from(monster))
     }
 }
