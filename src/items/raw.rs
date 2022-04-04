@@ -128,7 +128,7 @@ pub struct RawItem {
     pub boss: bool,
     pub arena: bool,
     pub image: String,
-    pub view_distance: Option<bool>,
+    pub view_distance: Option<u32>,
     pub stats: Option<ItemStats>,
     pub element: Option<String>,
     pub materials: Option<Vec<ItemMaterial>>,

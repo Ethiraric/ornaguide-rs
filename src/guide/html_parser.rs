@@ -84,6 +84,10 @@ fn find_select_field_value(select: &NodeRef) -> Vec<String> {
     values
 }
 
+fn find_textarea_field_value(select: &NodeRef) -> String {
+    select.text_contents()
+}
+
 /// Find the value of the given field in the form and add it to `fields`.
 ///
 /// All fields have an id that is `#id_{name}` with `name` the name of the field (`tier`,
@@ -113,7 +117,13 @@ fn add_field_value(form: &NodeRef, field_name: &str, fields: &mut Vec<(String, S
                     fields.push((field_name.to_string(), value));
                 }
             }
-            _ => panic!("Unknown node tag for field {}", field_name),
+            "textarea" => {
+                fields.push((
+                    field_name.to_string(),
+                    find_textarea_field_value(field_node),
+                ));
+            }
+            _ => panic!("Unknown node tag for field {}: {}", field_name, tag.deref()),
         };
     } else {
         panic!("Failed to find node with id {}", html_id)

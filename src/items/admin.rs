@@ -10,6 +10,7 @@ pub struct AdminItem {
     pub type_: u32,
     pub image_name: String,
     pub description: String,
+    pub notes: String,
     pub hp: i32,
     pub hp_affected_by_quality: bool,
     pub mana: i32,
@@ -28,7 +29,16 @@ pub struct AdminItem {
     pub ward_affected_by_quality: bool,
     pub crit: i32,
     pub crit_affected_by_quality: bool,
-    pub view_distance: bool,
+    pub foresight: u32,
+    pub view_distance: u32,
+    pub follower_stats: u32,
+    pub follower_act: u32,
+    pub status_infliction: u32,
+    pub status_protection: u32,
+    pub mana_saver: u32,
+    pub has_slots: bool,
+    pub base_adornment_slots: u32,
+    pub rarity: String,
     pub element: Option<u32>,
     pub equipped_by: Vec<u32>,
     pub two_handed: bool,
@@ -59,6 +69,7 @@ impl Default for AdminItem {
             type_: 0,
             image_name: String::new(),
             description: String::new(),
+            notes: String::new(),
             hp: 0,
             hp_affected_by_quality: false,
             mana: 0,
@@ -77,7 +88,16 @@ impl Default for AdminItem {
             ward_affected_by_quality: false,
             crit: 0,
             crit_affected_by_quality: false,
-            view_distance: false,
+            foresight: 0,
+            view_distance: 0,
+            follower_stats: 0,
+            follower_act: 0,
+            status_infliction: 0,
+            status_protection: 0,
+            mana_saver: 0,
+            has_slots: false,
+            base_adornment_slots: 0,
+            rarity: "NO".to_string(),
             element: None,
             equipped_by: Vec::new(),
             two_handed: false,
@@ -116,6 +136,7 @@ impl TryFrom<ParsedForm> for AdminItem {
                 "type" => item.type_ = value.parse()?,
                 "image_name" => item.image_name = value,
                 "description" => item.description = value,
+                "notes" => item.notes = value,
                 "hp" => item.hp = value.parse()?,
                 "hp_affected_by_quality" => item.hp_affected_by_quality = value == "on",
                 "mana" => item.mana = value.parse()?,
@@ -138,7 +159,16 @@ impl TryFrom<ParsedForm> for AdminItem {
                 "ward_affected_by_quality" => item.ward_affected_by_quality = value == "on",
                 "crit" => item.crit = value.parse()?,
                 "crit_affected_by_quality" => item.crit_affected_by_quality = value == "on",
-                "view_distance" => item.view_distance = value == "on",
+                "foresight" => item.foresight = value.parse()?,
+                "view_distance" => item.view_distance = value.parse()?,
+                "follower_stats" => item.follower_stats = value.parse()?,
+                "follower_act" => item.follower_act = value.parse()?,
+                "status_infliction" => item.status_infliction = value.parse()?,
+                "status_protection" => item.status_protection = value.parse()?,
+                "mana_saver" => item.mana_saver = value.parse()?,
+                "has_slots" => item.has_slots = value == "on",
+                "base_adornment_slots" => item.base_adornment_slots = value.parse()?,
+                "rarity" => item.rarity = value,
                 "element" => {
                     item.element = if value.is_empty() {
                         None
@@ -175,7 +205,9 @@ impl TryFrom<ParsedForm> for AdminItem {
                         Some(value.parse()?)
                     }
                 }
-                _ => {}
+                key => {
+                    return Err(Error::ExtraField(key.to_string(), value));
+                }
             }
         }
 
@@ -197,6 +229,7 @@ impl From<AdminItem> for ParsedForm {
         push("type", item.type_.to_string());
         push("image_name", item.image_name);
         push("description", item.description);
+        push("notes", item.notes);
 
         push("hp", item.hp.to_string());
         if item.hp_affected_by_quality {
@@ -235,9 +268,23 @@ impl From<AdminItem> for ParsedForm {
             push("crit_affected_by_quality", "on".to_string());
         }
 
-        if item.view_distance {
-            push("view_distance", "on".to_string());
+        push("foresight", item.foresight.to_string());
+        push("view_distance", item.view_distance.to_string());
+        push("follower_stats", item.follower_stats.to_string());
+        push("follower_act", item.follower_act.to_string());
+        push("status_infliction", item.status_infliction.to_string());
+        push("status_protection", item.status_protection.to_string());
+        push("mana_saver", item.mana_saver.to_string());
+
+        if item.has_slots {
+            push("has_slots", "on".to_string());
         }
+        push(
+            "base_adornment_slots",
+            item.base_adornment_slots.to_string(),
+        );
+        push("rarity", item.rarity.to_string());
+
         if let Some(element) = item.element {
             push("element", element.to_string());
         } else {
