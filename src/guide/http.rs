@@ -5,7 +5,10 @@ use reqwest::{
 
 use crate::{
     error::Error,
-    guide::html_parser::{parse_item_html, parse_monster_html, ParsedForm},
+    guide::{
+        html_form_parser::{parse_item_html, parse_monster_html, ParsedForm},
+        html_list_parser::{parse_list_html, Entry, ParsedTable},
+    },
     items::RawItem,
     monsters::RawMonster,
 };
@@ -18,8 +21,8 @@ pub(crate) struct Http {
 /// Can be used in `concat!`.
 macro_rules! BASE_PATH {
     () => {
-        // "http://localhost:12345"
-        "https://orna.guide/"
+        "http://localhost:12345"
+        // "https://orna.guide/"
     };
 }
 
@@ -125,6 +128,35 @@ fn post_forms_to(http: &Client, url: &str, form: ParsedForm) -> Result<(), Error
     }
 }
 
+/// Cycles through the different pages of the route and reads each table.
+fn query_all_pages(base_url: &str, http: &Client) -> Result<Vec<Entry>, Error> {
+    let ParsedTable {
+        entries,
+        number_entries,
+    } = parse_list_html(&http.get(base_url).send()?.text()?)?;
+
+    if entries.len() >= number_entries {
+        Ok(entries)
+    } else {
+        let mut ret = entries;
+        let mut page_no = 1;
+        while ret.len() < number_entries {
+            let ParsedTable {
+                mut entries,
+                number_entries: _,
+            } = parse_list_html(
+                &http
+                    .get(format!("{}/?p={}", base_url, page_no))
+                    .send()?
+                    .text()?,
+            )?;
+            page_no += 1;
+            ret.append(&mut entries);
+        }
+        Ok(ret)
+    }
+}
+
 impl Http {
     pub(crate) fn new() -> Self {
         Self {
@@ -191,5 +223,15 @@ impl Http {
             ),
             form,
         )
+    }
+
+    pub(crate) fn admin_retrieve_spawns_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/orna/spawn/");
+        query_all_pages(url, &self.http)
+    }
+
+    pub(crate) fn admin_retrieve_skills_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/skills/skill/");
+        query_all_pages(url, &self.http)
     }
 }

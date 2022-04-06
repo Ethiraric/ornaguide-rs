@@ -5,9 +5,22 @@ use crate::{
 };
 
 mod cache;
-pub(crate) mod html_parser;
+pub(crate) mod html_form_parser;
+pub(crate) mod html_list_parser;
 mod http;
 mod ornaguide;
+
+#[derive(Debug)]
+pub struct Spawn {
+    pub id: u32,
+    pub name: String,
+}
+
+#[derive(Debug)]
+pub struct Skill {
+    pub id: u32,
+    pub name: String,
+}
 
 /// A source of information from the game. On the site, this represents the public API.
 /// Note that the info can be fetched locally from a cache.
@@ -40,6 +53,11 @@ pub trait AdminGuide {
     fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<AdminMonster, Error>;
     /// Save the given monster to the guide.
     fn admin_save_monster(&self, monster: AdminMonster) -> Result<(), Error>;
+
+    /// Retrieve the list of spawns from the admin view.
+    fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error>;
+    /// Retrieve the list of skills from the admin view.
+    fn admin_retrieve_skills_list(&self) -> Result<Vec<Skill>, Error>;
 }
 
 pub use cache::CachedGuide;

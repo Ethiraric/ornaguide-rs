@@ -1,4 +1,4 @@
-use crate::{error::Error, guide::html_parser::ParsedForm};
+use crate::{error::Error, guide::html_form_parser::ParsedForm};
 
 /// An item fetched from the admin panel.
 #[derive(Clone, Debug)]

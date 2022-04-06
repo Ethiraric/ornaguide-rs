@@ -1,6 +1,6 @@
 use crate::{
     error::Error,
-    guide::{html_parser::ParsedForm, http::Http, AdminGuide, Guide},
+    guide::{html_form_parser::ParsedForm, http::Http, AdminGuide, Guide, Skill, Spawn},
     items::{admin::AdminItem, raw::RawItem},
     monsters::{admin::AdminMonster, RawMonster},
 };
@@ -130,5 +130,31 @@ impl AdminGuide for OrnaAdminGuide {
         self.guide
             .http()
             .admin_save_monster(monster.id, ParsedForm::from(monster))
+    }
+
+    fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error> {
+        Ok(self
+            .guide
+            .http()
+            .admin_retrieve_spawns_list()?
+            .into_iter()
+            .map(|entry| Spawn {
+                id: entry.id,
+                name: entry.value,
+            })
+            .collect())
+    }
+
+    fn admin_retrieve_skills_list(&self) -> Result<Vec<Skill>, Error> {
+        Ok(self
+            .guide
+            .http()
+            .admin_retrieve_skills_list()?
+            .into_iter()
+            .map(|entry| Skill {
+                id: entry.id,
+                name: entry.value,
+            })
+            .collect())
     }
 }
