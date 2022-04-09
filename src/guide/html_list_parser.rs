@@ -10,7 +10,7 @@ pub struct Entry {
     pub value: String,
 }
 
-/// A parsed table
+/// A parsed table.
 pub struct ParsedTable {
     /// The entries that were parsed.
     pub entries: Vec<Entry>,

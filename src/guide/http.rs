@@ -4,6 +4,7 @@ use reqwest::{
 };
 
 use crate::{
+    codex::html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
     error::Error,
     guide::{
         html_form_parser::{parse_item_html, parse_monster_html, ParsedForm},
@@ -23,6 +24,15 @@ macro_rules! BASE_PATH {
     () => {
         "http://localhost:12345"
         // "https://orna.guide/"
+    };
+}
+
+/// Base path of the API of `playorna.com` (`protocol://host[:port]`).
+/// Can be used in `concat!`.
+macro_rules! PLAYORNA_BASE_PATH {
+    () => {
+        "http://localhost:12345"
+        // "https://playorna.com/"
     };
 }
 
@@ -157,6 +167,36 @@ fn query_all_pages(base_url: &str, http: &Client) -> Result<Vec<Entry>, Error> {
     }
 }
 
+/// Cycles through the different pages of the route and reads each table.
+fn query_all_codex_pages(base_url: &str, http: &Client) -> Result<Vec<CodexListEntry>, Error> {
+    let ParsedList {
+        entries,
+        mut has_next_page,
+    } = parse_html_codex_list(&http.get(base_url).send()?.text()?)?;
+
+    if !has_next_page {
+        Ok(entries)
+    } else {
+        let mut ret = entries;
+        let mut page_no = 2;
+        while has_next_page {
+            let ParsedList {
+                mut entries,
+                has_next_page: not_done,
+            } = parse_html_codex_list(
+                &http
+                    .get(format!("{}/?p={}", base_url, page_no))
+                    .send()?
+                    .text()?,
+            )?;
+            page_no += 1;
+            ret.append(&mut entries);
+            has_next_page = not_done;
+        }
+        Ok(ret)
+    }
+}
+
 impl Http {
     pub(crate) fn new() -> Self {
         Self {
@@ -233,5 +273,10 @@ impl Http {
     pub(crate) fn admin_retrieve_skills_list(&self) -> Result<Vec<Entry>, Error> {
         let url = concat!(BASE_PATH!(), "/admin/skills/skill/");
         query_all_pages(url, &self.http)
+    }
+
+    pub(crate) fn codex_retrieve_skills_list(&self) -> Result<Vec<CodexListEntry>, Error> {
+        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/spells");
+        query_all_codex_pages(url, &self.http)
     }
 }
