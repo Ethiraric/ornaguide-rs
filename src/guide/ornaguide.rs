@@ -4,6 +4,7 @@ use crate::{
     guide::{html_form_parser::ParsedForm, http::Http, AdminGuide, Guide, Skill, Spawn},
     items::{admin::AdminItem, raw::RawItem},
     monsters::{admin::AdminMonster, RawMonster},
+    skills::{admin::AdminSkill, RawSkill},
 };
 
 /// The main interface for the guide.
@@ -11,6 +12,7 @@ pub struct OrnaGuide {
     http: Http,
     items: Option<Vec<RawItem>>,
     monsters: Option<Vec<RawMonster>>,
+    skills: Option<Vec<RawSkill>>,
 }
 
 impl OrnaGuide {
@@ -20,6 +22,7 @@ impl OrnaGuide {
             http: Http::new(),
             items: None,
             monsters: None,
+            skills: None,
         }
     }
 
@@ -68,6 +71,18 @@ impl Guide for OrnaGuide {
     fn get_monsters(&self) -> Option<&[crate::monsters::RawMonster]> {
         self.monsters.as_ref().map(|monster| monster.as_ref())
     }
+
+    fn fetch_skills(&mut self) -> Result<&[RawSkill], Error> {
+        if self.skills.is_none() {
+            self.skills = Some(self.http.fetch_skills()?);
+        }
+
+        Ok(self.skills.as_ref().unwrap())
+    }
+
+    fn get_skills(&self) -> Option<&[RawSkill]> {
+        self.skills.as_ref().map(|skill| skill.as_ref())
+    }
 }
 
 pub struct OrnaAdminGuide {
@@ -98,6 +113,14 @@ impl Guide for OrnaAdminGuide {
 
     fn get_monsters(&self) -> Option<&[crate::monsters::RawMonster]> {
         self.guide.get_monsters()
+    }
+
+    fn fetch_skills(&mut self) -> Result<&[RawSkill], Error> {
+        self.guide.fetch_skills()
+    }
+
+    fn get_skills(&self) -> Option<&[RawSkill]> {
+        self.guide.get_skills()
     }
 }
 
@@ -131,6 +154,19 @@ impl AdminGuide for OrnaAdminGuide {
         self.guide
             .http()
             .admin_save_monster(monster.id, ParsedForm::from(monster))
+    }
+
+    fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<AdminSkill, Error> {
+        Ok(AdminSkill {
+            id,
+            ..AdminSkill::try_from(self.guide.http().admin_retrieve_skill_by_id(id)?)?
+        })
+    }
+
+    fn admin_save_skill(&self, skill: AdminSkill) -> Result<(), Error> {
+        self.guide
+            .http()
+            .admin_save_skill(skill.id, ParsedForm::from(skill))
     }
 
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error> {

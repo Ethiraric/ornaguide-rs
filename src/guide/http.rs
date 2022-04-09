@@ -7,11 +7,12 @@ use crate::{
     codex::html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
     error::Error,
     guide::{
-        html_form_parser::{parse_item_html, parse_monster_html, ParsedForm},
+        html_form_parser::{parse_item_html, parse_monster_html, parse_skill_html, ParsedForm},
         html_list_parser::{parse_list_html, Entry, ParsedTable},
     },
     items::RawItem,
     monsters::RawMonster,
+    skills::RawSkill,
 };
 
 pub(crate) struct Http {
@@ -22,8 +23,8 @@ pub(crate) struct Http {
 /// Can be used in `concat!`.
 macro_rules! BASE_PATH {
     () => {
-        "http://localhost:12345"
-        // "https://orna.guide/"
+        // "http://localhost:12345"
+        "https://orna.guide/"
     };
 }
 
@@ -109,6 +110,29 @@ const MONSTER_FORM_FIELD_NAMES: &[&str] = &[
     "vulnerable_to_status",
     "drops",
     "skills",
+];
+
+/// Names of the fields in the admin skill change page.
+const SKILL_FORM_FIELD_NAMES: &[&str] = &[
+    "name",
+    "tier",
+    "type",
+    "is_magic",
+    "mana_cost",
+    "description",
+    "element",
+    "offhand",
+    "cost",
+    "bought",
+    "skill_power",
+    "strikes",
+    "modifier_min",
+    "modifier_max",
+    "extra",
+    "buffed_by",
+    "causes",
+    "cures",
+    "gives",
 ];
 
 /// Perform a POST request on the URL, serializing the form as an urlencoded body and setting the
@@ -230,6 +254,15 @@ impl Http {
             .json()?)
     }
 
+    pub(crate) fn fetch_skills(&self) -> Result<Vec<RawSkill>, Error> {
+        Ok(self
+            .http
+            .post(concat!(BASE_PATH!(), "/api/v1/skill"))
+            .json("{}")
+            .send()?
+            .json()?)
+    }
+
     pub(crate) fn admin_retrieve_item_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(concat!(BASE_PATH!(), "/admin/items/item/{}/change/"), id);
         parse_item_html(&self.http.get(url).send()?.text()?, ITEM_FORM_FIELD_NAMES)
@@ -261,6 +294,19 @@ impl Http {
                 concat!(BASE_PATH!(), "/admin/monsters/monster/{}/change/"),
                 id
             ),
+            form,
+        )
+    }
+
+    pub(crate) fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
+        let url = format!(concat!(BASE_PATH!(), "/admin/skills/skill/{}/change/"), id);
+        parse_skill_html(&self.http.get(url).send()?.text()?, SKILL_FORM_FIELD_NAMES)
+    }
+
+    pub(crate) fn admin_save_skill(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
+        post_forms_to(
+            &self.http,
+            &format!(concat!(BASE_PATH!(), "/admin/skills/skill/{}/change/"), id),
             form,
         )
     }

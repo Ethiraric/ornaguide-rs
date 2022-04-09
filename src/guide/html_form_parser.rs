@@ -52,7 +52,7 @@ fn find_csrfmiddlewaretoken(form: &NodeRef) -> String {
 fn find_input_field_value(attrs: &Attributes) -> Option<String> {
     let type_ = attrs.get("type").unwrap().to_string();
     match type_.as_str() {
-        "text" | "number" => Some(attrs.get("value").unwrap().to_string()),
+        "text" | "number" => Some(attrs.get("value").unwrap_or_default().to_string()),
         "checkbox" => {
             if attrs.get("checked").is_some() {
                 Some("on".to_string())
@@ -162,4 +162,9 @@ pub fn parse_item_html(contents: &str, field_names: &[&str]) -> Result<ParsedFor
 /// Extract given fields from an admin monster change HTML page.
 pub fn parse_monster_html(contents: &str, field_names: &[&str]) -> Result<ParsedForm, Error> {
     parse_html_form(contents, "#monster_form", field_names)
+}
+
+/// Extract given fields from an admin skill change HTML page.
+pub fn parse_skill_html(contents: &str, field_names: &[&str]) -> Result<ParsedForm, Error> {
+    parse_html_form(contents, "#skill_form", field_names)
 }

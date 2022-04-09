@@ -2,6 +2,7 @@ use crate::{
     error::Error,
     items::{admin::AdminItem, raw::RawItem},
     monsters::{admin::AdminMonster, raw::RawMonster},
+    skills::{admin::AdminSkill, raw::RawSkill},
 };
 
 mod cache;
@@ -40,6 +41,14 @@ pub trait Guide {
     /// Return the cache, if already fetched. This method will always return `None` before a call
     /// to `fetch_monsters`.
     fn get_monsters(&self) -> Option<&[RawMonster]>;
+
+    /// If not already done, query the API of the guide for the list of skills and store it in a
+    /// cache. If the cache is already fetched, return it. The latter case cannot return an `Err`.
+    fn fetch_skills(&mut self) -> Result<&[RawSkill], Error>;
+
+    /// Return the cache, if already fetched. This method will always return `None` before a call
+    /// to `fetch_skills`.
+    fn get_skills(&self) -> Option<&[RawSkill]>;
 }
 
 /// A read-write access to the administrator panel of the guide.
@@ -53,6 +62,11 @@ pub trait AdminGuide {
     fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<AdminMonster, Error>;
     /// Save the given monster to the guide.
     fn admin_save_monster(&self, monster: AdminMonster) -> Result<(), Error>;
+
+    /// Retrieve the skill with the given id from the guide.
+    fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<AdminSkill, Error>;
+    /// Save the given skill to the guide.
+    fn admin_save_skill(&self, skill: AdminSkill) -> Result<(), Error>;
 
     /// Retrieve the list of spawns from the admin view.
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error>;

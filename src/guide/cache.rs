@@ -1,11 +1,12 @@
 use std::{fs::File, io::BufReader, path::Path};
 
-use crate::{error::Error, guide::Guide, items::RawItem, monsters::RawMonster};
+use crate::{error::Error, guide::Guide, items::RawItem, monsters::RawMonster, skills::RawSkill};
 
 /// A cache of the API responses, in a directory of jsons.
 pub struct CachedGuide {
     items: Vec<RawItem>,
     monsters: Vec<RawMonster>,
+    skills: Vec<RawSkill>,
 }
 
 impl CachedGuide {
@@ -14,7 +15,13 @@ impl CachedGuide {
             serde_json::from_reader(BufReader::new(File::open(path.join("item.json"))?))?;
         let monsters: Vec<RawMonster> =
             serde_json::from_reader(BufReader::new(File::open(path.join("monster.json"))?))?;
-        Ok(CachedGuide { items, monsters })
+        let skills: Vec<RawSkill> =
+            serde_json::from_reader(BufReader::new(File::open(path.join("skill.json"))?))?;
+        Ok(CachedGuide {
+            items,
+            monsters,
+            skills,
+        })
     }
 }
 
@@ -33,5 +40,13 @@ impl Guide for CachedGuide {
 
     fn get_monsters(&self) -> Option<&[RawMonster]> {
         Some(&self.monsters)
+    }
+
+    fn fetch_skills(&mut self) -> Result<&[RawSkill], Error> {
+        Ok(&self.skills)
+    }
+
+    fn get_skills(&self) -> Option<&[RawSkill]> {
+        Some(&self.skills)
     }
 }
