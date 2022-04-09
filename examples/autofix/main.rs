@@ -1,65 +1,20 @@
+mod fixes;
+
 use std::path::Path;
 
 use dotenv::dotenv;
 
+use fixes::Fixes;
 use ornaguide_rs::{
     error::Error,
-    guide::{AdminGuide, CachedGuide, Guide, OrnaAdminGuide},
+    guide::{CachedGuide, Guide, OrnaAdminGuide},
     items::RawItem,
+    skills::RawSkill,
 };
 
-/// Set materials of the given item on the guide.
-/// This erases the previous materials list.
-fn set_item_materials_to<G: AdminGuide>(
-    guide: &G,
-    raw_item: &RawItem,
-    materials: &[u32],
-) -> Result<(), Error> {
-    println!(
-        "Setting materials of item #{} {} to {:?}",
-        raw_item.id, raw_item.name, materials
-    );
-    let mut item = guide.admin_retrieve_item_by_id(raw_item.id)?;
-    if item.materials.len() != materials.len()
-        || !materials.iter().all(|mat| item.materials.contains(mat))
-    {
-        item.materials = materials.to_vec();
-        guide.admin_save_item(item)
-    } else {
-        println!("Guide is okay. Please refresh cache.",);
-        Ok(())
-    }
-}
-
-/// Add a material to an item on the guide.
-/// This preserves the previous materials list.
-fn add_item_materials<G: AdminGuide>(
-    guide: &G,
-    raw_item: &RawItem,
-    materials: &[u32],
-) -> Result<(), Error> {
-    println!(
-        "Adding materials {:?} to item #{} {}",
-        materials, raw_item.id, raw_item.name
-    );
-    let mut item = guide.admin_retrieve_item_by_id(raw_item.id)?;
-    let mut edited = false;
-    for mat in materials {
-        if !item.materials.contains(mat) {
-            item.materials.push(*mat);
-            edited = true;
-        }
-    }
-    if edited {
-        guide.admin_save_item(item)
-    } else {
-        println!(
-            "Guide already has materials {:?} for item #{} {}. Please refresh cache.",
-            materials, raw_item.id, raw_item.name
-        );
-        Ok(())
-    }
-}
+/// Whether we do a dry run of the fixes, i.e. not committing the changes to the guide and only
+/// outputting what would change.
+const DRY_RUN: bool = false;
 
 /// Returns true if the item is an equippable that can be upgraded and, as such, as materials
 /// associated to it.
@@ -97,7 +52,7 @@ fn item_has_material(item: &RawItem, mat_name: &str) -> bool {
 /// materials. For those we check, it should be Cursed Ortanite for The Morrigan drops, or Cursed
 /// Ortanite + Greater Souls for Arisen Morrigan drops.
 #[allow(dead_code)]
-fn fix_morri_item_materials<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(), Error> {
+fn fix_morri_item_materials(fixes: &Fixes, items: &[RawItem]) -> Result<(), Error> {
     let co = items
         .iter()
         .find(|item| item.name == "Cursed Ortanite")
@@ -129,14 +84,14 @@ fn fix_morri_item_materials<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Resu
                 if !(item_has_material(item, "Cursed Ortanite")
                     && item_has_material(item, "Greater Soul"))
                 {
-                    set_item_materials_to(guide, item, &[co, gs])?;
+                    fixes.set_item_materials_to(item, &[co, gs])?;
                 }
             } else {
-                set_item_materials_to(guide, item, &[co, gs])?;
+                fixes.set_item_materials_to(item, &[co, gs])?;
             }
         } else if is_item_dropped_by(item, "The Morrigan") {
             if !item_has_material(item, "Cursed Ortanite") {
-                set_item_materials_to(guide, item, &[co])?
+                fixes.set_item_materials_to(item, &[co])?
             }
         } else {
             panic!("Items here should be either a drop from The Morrigan or Arisen Morrigan")
@@ -147,7 +102,7 @@ fn fix_morri_item_materials<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Resu
 }
 
 /// Walk through Lyonesse drops and check that they have Lyonite.
-fn fix_lyonesse_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(), Error> {
+fn fix_lyonesse_items(fixes: &Fixes, items: &[RawItem]) -> Result<(), Error> {
     let lyonite = items.iter().find(|item| item.name == "Lyonite").unwrap().id;
     for item in items
         .iter()
@@ -163,7 +118,7 @@ fn fix_lyonesse_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(),
         })
     {
         if !item_has_material(item, "Lyonite") {
-            add_item_materials(guide, item, &[lyonite])?;
+            fixes.add_item_materials(item, &[lyonite])?;
         }
     }
 
@@ -171,7 +126,7 @@ fn fix_lyonesse_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(),
 }
 
 /// Walk through Apollyon drops and check that they have Realm Ore.
-fn fix_apollyon_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(), Error> {
+fn fix_apollyon_items(fixes: &Fixes, items: &[RawItem]) -> Result<(), Error> {
     let ore = items
         .iter()
         .find(|item| item.name == "Realm Ore")
@@ -183,7 +138,7 @@ fn fix_apollyon_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(),
         .filter(|item| is_item_dropped_by(item, "Apollyon"))
     {
         if !item_has_material(item, "Realm Ore") {
-            add_item_materials(guide, item, &[ore])?;
+            fixes.add_item_materials(item, &[ore])?;
         }
     }
 
@@ -191,7 +146,7 @@ fn fix_apollyon_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(),
 }
 
 /// Walk through Mammon and Arisen Mammon drops and check that they have Ortanite.
-fn fix_mammon_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(), Error> {
+fn fix_mammon_items(fixes: &Fixes, items: &[RawItem]) -> Result<(), Error> {
     let ortanite = items
         .iter()
         .find(|item| item.name == "Ortanite")
@@ -206,10 +161,34 @@ fn fix_mammon_items<G: AdminGuide>(guide: &G, items: &[RawItem]) -> Result<(), E
         })
     {
         if !item_has_material(item, "Ortanite") {
-            add_item_materials(guide, item, &[ortanite])?;
+            fixes.add_item_materials(item, &[ortanite])?;
         }
     }
 
+    Ok(())
+}
+
+/// Set all `is_magic` for buff spells to true.
+fn fix_buffs_is_magic(fixes: &Fixes, skills: &[RawSkill]) -> Result<(), Error> {
+    for skill in skills
+        .iter()
+        .filter(|skill| skill.type_ == "Buff")
+        .filter(|skill| !skill.is_magic)
+    {
+        fixes.set_skill_is_magic(skill, true)?;
+    }
+    Ok(())
+}
+
+/// Set all `is_magic` for passive spells to true.
+fn fix_passives_is_magic(fixes: &Fixes, skills: &[RawSkill]) -> Result<(), Error> {
+    for skill in skills
+        .iter()
+        .filter(|skill| skill.type_ == "Passive")
+        .filter(|skill| !skill.is_magic)
+    {
+        fixes.set_skill_is_magic(skill, true)?;
+    }
     Ok(())
 }
 
@@ -218,12 +197,20 @@ fn autofix() -> Result<(), Error> {
     let cookie = dotenv::var("ORNAGUIDE_COOKIE").unwrap();
     let mut cache = CachedGuide::from_directory(Path::new("./jsons/"))?;
     let guide = OrnaAdminGuide::new(&cookie)?;
-    let raw_items = cache.fetch_items()?;
+    cache.fetch_items()?;
+    cache.fetch_skills()?;
+    let raw_items = cache.get_items().unwrap();
+    let raw_skills = cache.get_skills().unwrap();
+    let fixes = Fixes::new(DRY_RUN, guide);
 
-    fix_morri_item_materials(&guide, raw_items)?;
-    fix_lyonesse_items(&guide, raw_items)?;
-    fix_apollyon_items(&guide, raw_items)?;
-    fix_mammon_items(&guide, raw_items)?;
+    fix_morri_item_materials(&fixes, raw_items)?;
+    fix_lyonesse_items(&fixes, raw_items)?;
+    fix_apollyon_items(&fixes, raw_items)?;
+    fix_mammon_items(&fixes, raw_items)?;
+
+    fix_buffs_is_magic(&fixes, raw_skills)?;
+    fix_passives_is_magic(&fixes, raw_skills)?;
+
     Ok(())
 }
 
