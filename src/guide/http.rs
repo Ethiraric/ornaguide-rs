@@ -1,6 +1,12 @@
+use std::{
+    fs::File,
+    io::{BufWriter, Write},
+};
+
 use reqwest::{
     blocking::Client,
     header::{HeaderMap, HeaderValue},
+    Url,
 };
 
 use crate::{
@@ -23,8 +29,8 @@ pub(crate) struct Http {
 /// Can be used in `concat!`.
 macro_rules! BASE_PATH {
     () => {
-        // "http://localhost:12345"
-        "https://orna.guide/"
+        "http://localhost:12345"
+        // "https://orna.guide/"
     };
 }
 
@@ -33,7 +39,7 @@ macro_rules! BASE_PATH {
 macro_rules! PLAYORNA_BASE_PATH {
     () => {
         "http://localhost:12345"
-        // "https://playorna.com/"
+        // "https://playorna.com"
     };
 }
 
@@ -162,12 +168,28 @@ fn post_forms_to(http: &Client, url: &str, form: ParsedForm) -> Result<(), Error
     }
 }
 
+/// Execute a GET HTTP request and save the output.
+fn get_and_save(http: &Client, url: &str) -> Result<String, Error> {
+    let response = http.get(url).send()?.text()?;
+    let url = Url::parse(url).unwrap();
+    let path = url.path().replace('/', "_");
+    let param = if let Some(x) = url.query() {
+        format!("?{}", x)
+    } else {
+        String::new()
+    };
+    let filename = format!("htmls/{}{}{}.html", url.host_str().unwrap(), path, param);
+    let mut writer = BufWriter::new(File::create(filename)?);
+    write!(writer, "{}", response)?;
+    Ok(response)
+}
+
 /// Cycles through the different pages of the route and reads each table.
 fn query_all_pages(base_url: &str, http: &Client) -> Result<Vec<Entry>, Error> {
     let ParsedTable {
         entries,
         number_entries,
-    } = parse_list_html(&http.get(base_url).send()?.text()?)?;
+    } = parse_list_html(&get_and_save(http, base_url)?)?;
 
     if entries.len() >= number_entries {
         Ok(entries)
@@ -178,12 +200,10 @@ fn query_all_pages(base_url: &str, http: &Client) -> Result<Vec<Entry>, Error> {
             let ParsedTable {
                 mut entries,
                 number_entries: _,
-            } = parse_list_html(
-                &http
-                    .get(format!("{}/?p={}", base_url, page_no))
-                    .send()?
-                    .text()?,
-            )?;
+            } = parse_list_html(&get_and_save(
+                http,
+                &format!("{}/?p={}", base_url, page_no),
+            )?)?;
             page_no += 1;
             ret.append(&mut entries);
         }
@@ -196,7 +216,7 @@ fn query_all_codex_pages(base_url: &str, http: &Client) -> Result<Vec<CodexListE
     let ParsedList {
         entries,
         mut has_next_page,
-    } = parse_html_codex_list(&http.get(base_url).send()?.text()?)?;
+    } = parse_html_codex_list(&get_and_save(http, base_url)?)?;
 
     if !has_next_page {
         Ok(entries)
@@ -207,12 +227,10 @@ fn query_all_codex_pages(base_url: &str, http: &Client) -> Result<Vec<CodexListE
             let ParsedList {
                 mut entries,
                 has_next_page: not_done,
-            } = parse_html_codex_list(
-                &http
-                    .get(format!("{}/?p={}", base_url, page_no))
-                    .send()?
-                    .text()?,
-            )?;
+            } = parse_html_codex_list(&get_and_save(
+                http,
+                &format!("{}/?p={}", base_url, page_no),
+            )?)?;
             page_no += 1;
             ret.append(&mut entries);
             has_next_page = not_done;
