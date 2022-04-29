@@ -10,16 +10,18 @@ pub(crate) mod html_form_parser;
 pub(crate) mod html_list_parser;
 mod http;
 mod ornaguide;
+mod r#static;
 
-#[derive(Debug)]
-pub struct Spawn {
-    pub id: u32,
-    pub name: String,
-}
+pub use r#static::{
+    Element, EquippedBy, ItemCategory, ItemType, MonsterFamily, Spawn, Static, StatusEffect,
+};
 
+/// A skill "row" when listing the skills from the admin guide. It does not contain much details.
 #[derive(Debug)]
-pub struct Skill {
+pub struct SkillRow {
+    /// Id of the skill.
     pub id: u32,
+    /// Name of the skill.
     pub name: String,
 }
 
@@ -67,11 +69,35 @@ pub trait AdminGuide {
     fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<AdminSkill, Error>;
     /// Save the given skill to the guide.
     fn admin_save_skill(&self, skill: AdminSkill) -> Result<(), Error>;
+    /// Retrieve the list of skills from the admin view.
+    fn admin_retrieve_skills_list(&self) -> Result<Vec<SkillRow>, Error>;
 
     /// Retrieve the list of spawns from the admin view.
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error>;
-    /// Retrieve the list of skills from the admin view.
-    fn admin_retrieve_skills_list(&self) -> Result<Vec<Skill>, Error>;
+    /// Retrieve the list of item categories from the admin view.
+    fn admin_retrieve_item_categories_list(&self) -> Result<Vec<ItemCategory>, Error>;
+    /// Retrieve the list of item types from the admin view.
+    fn admin_retrieve_item_types_list(&self) -> Result<Vec<ItemType>, Error>;
+    /// Retrieve the list of monster families from the admin view.
+    fn admin_retrieve_monster_families_list(&self) -> Result<Vec<MonsterFamily>, Error>;
+    /// Retrieve the list of status effects from the admin view.
+    fn admin_retrieve_status_effects_list(&self) -> Result<Vec<StatusEffect>, Error>;
+    /// Retrieve the list of elements.
+    fn admin_retrieve_elements_list(&self) -> Vec<Element>;
+    /// Retrieve the list of `equipped_by`s.
+    fn admin_retrieve_equipped_bys_list(&self) -> Vec<EquippedBy>;
+    /// Retrieve all static resources from the admin view.
+    fn admin_retrieve_static_resources(&self) -> Result<Static, Error> {
+        Ok(Static {
+            spawns: self.admin_retrieve_spawns_list()?,
+            item_categories: self.admin_retrieve_item_categories_list()?,
+            item_types: self.admin_retrieve_item_types_list()?,
+            monster_families: self.admin_retrieve_monster_families_list()?,
+            status_effects: self.admin_retrieve_status_effects_list()?,
+            elements: self.admin_retrieve_elements_list(),
+            equipped_bys: self.admin_retrieve_equipped_bys_list(),
+        })
+    }
 }
 
 pub use cache::CachedGuide;

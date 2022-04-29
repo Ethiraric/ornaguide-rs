@@ -311,13 +311,33 @@ impl Http {
         )
     }
 
+    pub(crate) fn admin_retrieve_skills_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/skills/skill/");
+        query_all_pages(url, &self.http)
+    }
+
     pub(crate) fn admin_retrieve_spawns_list(&self) -> Result<Vec<Entry>, Error> {
         let url = concat!(BASE_PATH!(), "/admin/orna/spawn/");
         query_all_pages(url, &self.http)
     }
 
-    pub(crate) fn admin_retrieve_skills_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/skills/skill/");
+    pub(crate) fn admin_retrieve_item_categories_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/items/category/");
+        query_all_pages(url, &self.http)
+    }
+
+    pub(crate) fn admin_retrieve_item_types_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/items/type/");
+        query_all_pages(url, &self.http)
+    }
+
+    pub(crate) fn admin_retrieve_monster_families_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/monsters/family/");
+        query_all_pages(url, &self.http)
+    }
+
+    pub(crate) fn admin_retrieve_status_effects_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/orna/statuseffect/");
         query_all_pages(url, &self.http)
     }
 

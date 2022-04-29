@@ -1,7 +1,10 @@
 use crate::{
     codex::{Codex, Skill as CodexSkill},
     error::Error,
-    guide::{html_form_parser::ParsedForm, http::Http, AdminGuide, Guide, Skill, Spawn},
+    guide::{
+        html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, Guide,
+        ItemCategory, ItemType, MonsterFamily, SkillRow, Spawn, StatusEffect,
+    },
     items::{admin::AdminItem, raw::RawItem},
     monsters::{admin::AdminMonster, RawMonster},
     skills::{admin::AdminSkill, RawSkill},
@@ -169,6 +172,19 @@ impl AdminGuide for OrnaAdminGuide {
             .admin_save_skill(skill.id, ParsedForm::from(skill))
     }
 
+    fn admin_retrieve_skills_list(&self) -> Result<Vec<SkillRow>, Error> {
+        Ok(self
+            .guide
+            .http()
+            .admin_retrieve_skills_list()?
+            .into_iter()
+            .map(|entry| SkillRow {
+                id: entry.id,
+                name: entry.value,
+            })
+            .collect())
+    }
+
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error> {
         Ok(self
             .guide
@@ -182,17 +198,114 @@ impl AdminGuide for OrnaAdminGuide {
             .collect())
     }
 
-    fn admin_retrieve_skills_list(&self) -> Result<Vec<Skill>, Error> {
+    fn admin_retrieve_item_categories_list(&self) -> Result<Vec<ItemCategory>, Error> {
         Ok(self
             .guide
             .http()
-            .admin_retrieve_skills_list()?
+            .admin_retrieve_item_categories_list()?
             .into_iter()
-            .map(|entry| Skill {
+            .map(|entry| ItemCategory {
                 id: entry.id,
                 name: entry.value,
             })
             .collect())
+    }
+
+    fn admin_retrieve_item_types_list(&self) -> Result<Vec<ItemType>, Error> {
+        Ok(self
+            .guide
+            .http()
+            .admin_retrieve_item_types_list()?
+            .into_iter()
+            .map(|entry| ItemType {
+                id: entry.id,
+                name: entry.value,
+            })
+            .collect())
+    }
+
+    fn admin_retrieve_monster_families_list(&self) -> Result<Vec<MonsterFamily>, Error> {
+        Ok(self
+            .guide
+            .http()
+            .admin_retrieve_monster_families_list()?
+            .into_iter()
+            .map(|entry| MonsterFamily {
+                id: entry.id,
+                name: entry.value,
+            })
+            .collect())
+    }
+
+    fn admin_retrieve_status_effects_list(&self) -> Result<Vec<StatusEffect>, Error> {
+        Ok(self
+            .guide
+            .http()
+            .admin_retrieve_status_effects_list()?
+            .into_iter()
+            .map(|entry| StatusEffect {
+                id: entry.id,
+                name: entry.value,
+            })
+            .collect())
+    }
+
+    fn admin_retrieve_elements_list(&self) -> Vec<Element> {
+        vec![
+            Element {
+                id: 1,
+                name: "Fire".to_string(),
+            },
+            Element {
+                id: 2,
+                name: "Water".to_string(),
+            },
+            Element {
+                id: 3,
+                name: "Lightning".to_string(),
+            },
+            Element {
+                id: 4,
+                name: "Earthen".to_string(),
+            },
+            Element {
+                id: 5,
+                name: "Holy".to_string(),
+            },
+            Element {
+                id: 6,
+                name: "Dark".to_string(),
+            },
+            Element {
+                id: 7,
+                name: "Dragon".to_string(),
+            },
+            Element {
+                id: 9,
+                name: "Physical".to_string(),
+            },
+            Element {
+                id: 11,
+                name: "Arcane".to_string(),
+            },
+        ]
+    }
+
+    fn admin_retrieve_equipped_bys_list(&self) -> Vec<EquippedBy> {
+        vec![
+            EquippedBy {
+                id: 1,
+                name: "Warrior".to_string(),
+            },
+            EquippedBy {
+                id: 2,
+                name: "Mage".to_string(),
+            },
+            EquippedBy {
+                id: 3,
+                name: "Thief".to_string(),
+            },
+        ]
     }
 }
 
