@@ -176,15 +176,17 @@ fn post_forms_to(http: &Client, url: &str, form: ParsedForm) -> Result<(), Error
 fn get_and_save(http: &Client, url: &str) -> Result<String, Error> {
     let response = http.get(url).send()?.text()?;
     let url = Url::parse(url).unwrap();
-    let path = url.path().replace('/', "_");
-    let param = if let Some(x) = url.query() {
-        format!("?{}", x)
-    } else {
-        String::new()
-    };
-    let filename = format!("htmls/{}{}{}.html", url.host_str().unwrap(), path, param);
-    let mut writer = BufWriter::new(File::create(filename)?);
-    write!(writer, "{}", response)?;
+    if url.host_str().unwrap() != "localhost" {
+        let path = url.path().replace('/', "_");
+        let param = if let Some(x) = url.query() {
+            format!("?{}", x)
+        } else {
+            String::new()
+        };
+        let filename = format!("htmls/{}{}{}.html", url.host_str().unwrap(), path, param);
+        let mut writer = BufWriter::new(File::create(filename)?);
+        write!(writer, "{}", response)?;
+    }
     Ok(response)
 }
 
