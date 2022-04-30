@@ -10,7 +10,11 @@ use reqwest::{
 };
 
 use crate::{
-    codex::html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
+    codex::{
+        html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
+        html_skill_parser::parse_html_codex_skill,
+        CodexSkill,
+    },
     error::Error,
     guide::{
         html_form_parser::{parse_item_html, parse_monster_html, parse_skill_html, ParsedForm},
@@ -362,5 +366,13 @@ impl Http {
     pub(crate) fn codex_retrieve_skills_list(&self) -> Result<Vec<CodexListEntry>, Error> {
         let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/spells");
         query_all_codex_pages(url, &self.http)
+    }
+
+    pub(crate) fn codex_retrieve_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
+        let url = format!(
+            concat!(PLAYORNA_BASE_PATH!(), "/codex/spells/{}"),
+            skill_name
+        );
+        parse_html_codex_skill(&self.http.get(url).send()?.text()?)
     }
 }

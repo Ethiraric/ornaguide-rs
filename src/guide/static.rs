@@ -68,7 +68,7 @@ pub struct EquippedBy {
 }
 
 /// Static resources that are used by the guide.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Static {
     /// List of monster spawns.
     pub spawns: Vec<Spawn>,

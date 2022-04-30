@@ -27,7 +27,7 @@ pub struct ParsedList {
     pub has_next_page: bool,
 }
 
-/// Select the node that matches the selecor and that is a descendant of `node`. `from_name` is a
+/// Select the node that matches the selector and that is a descendant of `node`. `from_name` is a
 /// name to be displayed on the error message.
 fn descend_iter(
     node: &NodeRef,
@@ -39,7 +39,7 @@ fn descend_iter(
     })
 }
 
-/// Select the node that matches the selecor and that is a descendant of `node`. `from_name` is a
+/// Select the node that matches the selector and that is a descendant of `node`. `from_name` is a
 /// name to be displayed on the error message.
 fn descend_to(
     node: &NodeRef,

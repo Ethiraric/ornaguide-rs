@@ -1,5 +1,5 @@
 use crate::{
-    codex::{Codex, Skill as CodexSkill},
+    codex::{Codex, CodexSkill, Skill as CodexSkillEntry},
     error::Error,
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, Guide,
@@ -310,17 +310,21 @@ impl AdminGuide for OrnaAdminGuide {
 }
 
 impl Codex for OrnaAdminGuide {
-    fn codex_fetch_skill_list(&self) -> Result<Vec<CodexSkill>, Error> {
+    fn codex_fetch_skill_list(&self) -> Result<Vec<CodexSkillEntry>, Error> {
         Ok(self
             .guide
             .http()
             .codex_retrieve_skills_list()?
             .into_iter()
-            .map(|entry| CodexSkill {
+            .map(|entry| CodexSkillEntry {
                 name: entry.value,
                 tier: entry.tier,
                 uri: entry.uri,
             })
             .collect())
+    }
+
+    fn codex_fetch_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
+        self.guide.http().codex_retrieve_skill(skill_name)
     }
 }
