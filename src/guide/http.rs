@@ -375,6 +375,6 @@ impl Http {
             concat!(PLAYORNA_BASE_PATH!(), "/codex/spells/{}"),
             skill_name
         );
-        parse_html_codex_skill(&self.http.get(url).send()?.text()?)
+        parse_html_codex_skill(&get_and_save(&self.http, &url)?)
     }
 }

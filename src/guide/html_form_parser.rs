@@ -1,10 +1,8 @@
 use std::ops::Deref;
 
-use kuchiki::{
-    parse_html, traits::TendrilSink, Attributes, ElementData, NodeData, NodeDataRef, NodeRef,
-};
+use kuchiki::{parse_html, traits::TendrilSink, Attributes, ElementData, NodeData, NodeRef};
 
-use crate::error::Error;
+use crate::{error::Error, utils::html::descend_to};
 
 /// Parsed form, csrf token included.
 #[derive(Debug, Default)]
@@ -16,22 +14,9 @@ pub struct ParsedForm {
     pub csrfmiddlewaretoken: String,
 }
 
-/// Find the `form` HTML node for the page.
-fn get_form_node(document: &NodeRef, name: &str) -> Result<NodeDataRef<ElementData>, Error> {
-    document
-        .select(name)
-        .map_err(|()| Error::HTMLParsingError("Failed to find root html node".to_string()))?
-        .next()
-        .ok_or_else(|| Error::HTMLParsingError("Failed to find root html node".to_string()))
-}
-
 /// Find the csrfmiddlewaretoken in the form.
 fn find_csrfmiddlewaretoken(form: &NodeRef) -> String {
-    let node = form
-        .select("[name=\"csrfmiddlewaretoken\"]")
-        .unwrap()
-        .next()
-        .unwrap();
+    let node = descend_to(form, "[name=\"csrfmiddlewaretoken\"]", "form").unwrap();
     let node = node.as_node();
 
     if let NodeData::Element(ElementData {
@@ -138,7 +123,7 @@ fn parse_html_form(
 ) -> Result<ParsedForm, Error> {
     let html = parse_html().one(contents);
 
-    let form = get_form_node(&html, form_root_name)?;
+    let form = descend_to(&html, form_root_name, "html")?;
     let form = form.as_node();
 
     let mut fields = Vec::new();

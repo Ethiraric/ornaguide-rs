@@ -1,14 +1,12 @@
 use std::ops::Deref;
 
-use kuchiki::{
-    iter::{Descendants, Elements, Select},
-    parse_html,
-    traits::TendrilSink,
-    ElementData, NodeData, NodeDataRef, NodeRef,
-};
+use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
 use reqwest::Url;
 
-use crate::error::Error;
+use crate::{
+    error::Error,
+    utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text},
+};
 
 /// A status effect caused or given from a skill.
 #[derive(Debug)]
@@ -36,55 +34,6 @@ pub struct CodexSkill {
     pub gives: Vec<StatusEffect>,
 }
 
-/// Select the node that matches the selector and that is a descendant of `node`. `from_name` is a
-/// name to be displayed on the error message.
-fn descend_iter(
-    node: &NodeRef,
-    selector: &str,
-    from_name: &str,
-) -> Result<Select<Elements<Descendants>>, Error> {
-    node.select(selector).map_err(|()| {
-        Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
-    })
-}
-
-/// Select the node that matches the selector and that is a descendant of `node`. `from_name` is a
-/// name to be displayed on the error message.
-fn descend_to(
-    node: &NodeRef,
-    selector: &str,
-    from_name: &str,
-) -> Result<NodeDataRef<ElementData>, Error> {
-    descend_iter(node, selector, from_name)?
-        .next()
-        .ok_or_else(|| {
-            Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
-        })
-}
-
-/// Retrieve an attribute from an HTML node.
-fn get_attribute_from_node(node: &NodeRef, attr: &str, node_name: &str) -> Result<String, Error> {
-    if let NodeData::Element(ElementData {
-        name: _,
-        attributes,
-        template_contents: _,
-    }) = node.data()
-    {
-        let attributes = attributes.borrow();
-        attributes
-            .get(attr)
-            .ok_or_else(|| {
-                Error::HTMLParsingError(format!("Failed to find {} in {}", attr, node_name))
-            })
-            .map(|s| s.to_string())
-    } else {
-        Err(Error::HTMLParsingError(format!(
-            "Failed to get attributes from {}",
-            node_name
-        )))
-    }
-}
-
 /// Parse the icon of the skill.
 /// Returns an URL path, without the host.
 fn parse_icon(node: &NodeRef) -> Result<String, Error> {
@@ -96,11 +45,6 @@ fn parse_icon(node: &NodeRef) -> Result<String, Error> {
     .unwrap()
     .path()
     .to_string())
-}
-
-/// Get the text contained in the node.
-fn node_to_text(node: &NodeRef) -> String {
-    node.text_contents().trim().to_string()
 }
 
 /// Parse the tier of the skill.
@@ -158,7 +102,12 @@ fn parse_status_effects(iter_node: &NodeRef) -> Result<Vec<StatusEffect>, Error>
                         )));
                     }
                 }
-                _ => panic!("Unknown node tag for status effect: {}", tag.deref()),
+                _ => {
+                    return Err(Error::HTMLParsingError(format!(
+                        "Unknown node tag for status effect: {}",
+                        tag.deref()
+                    )))
+                }
             };
         }
         iter_node = node;

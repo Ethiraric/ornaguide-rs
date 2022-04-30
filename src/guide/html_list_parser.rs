@@ -1,6 +1,6 @@
-use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRef, NodeRef};
+use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
 
-use crate::error::Error;
+use crate::{error::Error, utils::html::descend_to};
 
 /// An entry on the list.
 pub struct Entry {
@@ -16,23 +16,6 @@ pub struct ParsedTable {
     pub entries: Vec<Entry>,
     /// The number of entries that are total, including all pages, according to the paginator.
     pub number_entries: usize,
-}
-
-/// Select the node that matches the selecor and that is a descendant of `node`. `from_name` is a
-/// name to be displayed on the error message.
-fn descend_to(
-    node: &NodeRef,
-    selector: &str,
-    from_name: &str,
-) -> Result<NodeDataRef<ElementData>, Error> {
-    node.select(selector)
-        .map_err(|()| {
-            Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
-        })?
-        .next()
-        .ok_or_else(|| {
-            Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
-        })
 }
 
 fn tr_to_entry(tr: &NodeRef) -> Result<Entry, Error> {

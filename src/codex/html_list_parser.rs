@@ -1,11 +1,9 @@
-use kuchiki::{
-    iter::{Descendants, Elements, Select},
-    parse_html,
-    traits::TendrilSink,
-    ElementData, NodeData, NodeDataRef, NodeRef,
-};
+use kuchiki::{parse_html, traits::TendrilSink, NodeRef};
 
-use crate::error::Error;
+use crate::{
+    error::Error,
+    utils::html::{descend_iter, descend_to, get_attribute_from_node},
+};
 
 /// An entry on the list.
 #[derive(Debug)]
@@ -27,60 +25,11 @@ pub struct ParsedList {
     pub has_next_page: bool,
 }
 
-/// Select the node that matches the selector and that is a descendant of `node`. `from_name` is a
-/// name to be displayed on the error message.
-fn descend_iter(
-    node: &NodeRef,
-    selector: &str,
-    from_name: &str,
-) -> Result<Select<Elements<Descendants>>, Error> {
-    node.select(selector).map_err(|()| {
-        Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
-    })
-}
-
-/// Select the node that matches the selector and that is a descendant of `node`. `from_name` is a
-/// name to be displayed on the error message.
-fn descend_to(
-    node: &NodeRef,
-    selector: &str,
-    from_name: &str,
-) -> Result<NodeDataRef<ElementData>, Error> {
-    descend_iter(node, selector, from_name)?
-        .next()
-        .ok_or_else(|| {
-            Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
-        })
-}
-
-/// Retrieve the URI from an HTML `<a>` node.
-fn get_href_from_a_node(a: &NodeRef, node_name: &str) -> Result<String, Error> {
-    if let NodeData::Element(ElementData {
-        name: _,
-        attributes,
-        template_contents: _,
-    }) = a.data()
-    {
-        let attributes = attributes.borrow();
-        attributes
-            .get("href")
-            .ok_or_else(|| {
-                Error::HTMLParsingError(format!("Failed to find href in a node {}", node_name))
-            })
-            .map(|s| s.to_string())
-    } else {
-        Err(Error::HTMLParsingError(format!(
-            "Failed to get attributes from a node {}",
-            node_name
-        )))
-    }
-}
-
 /// Create an entry from an HTML node.
 fn node_to_entry(node: &NodeRef) -> Result<Entry, Error> {
     let contents = node.text_contents();
     let contents = contents.trim();
-    let uri = get_href_from_a_node(descend_to(node, "a", "entry")?.as_node(), "a")?;
+    let uri = get_attribute_from_node(descend_to(node, "a", "entry")?.as_node(), "href", "a")?;
     if let Some(pos) = contents.find('\n') {
         let (name, tier_str) = contents.split_at(pos);
         let mut it = tier_str.trim().chars();
