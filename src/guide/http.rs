@@ -289,7 +289,7 @@ impl Http {
 
     pub(crate) fn admin_retrieve_item_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(concat!(BASE_PATH!(), "/admin/items/item/{}/change/"), id);
-        parse_item_html(&self.http.get(url).send()?.text()?, ITEM_FORM_FIELD_NAMES)
+        parse_item_html(&get_and_save(&self.http, &url)?, ITEM_FORM_FIELD_NAMES)
     }
 
     pub(crate) fn admin_save_item(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
@@ -305,10 +305,7 @@ impl Http {
             concat!(BASE_PATH!(), "/admin/monsters/monster/{}/change/"),
             id
         );
-        parse_monster_html(
-            &self.http.get(url).send()?.text()?,
-            MONSTER_FORM_FIELD_NAMES,
-        )
+        parse_monster_html(&get_and_save(&self.http, &url)?, MONSTER_FORM_FIELD_NAMES)
     }
 
     pub(crate) fn admin_save_monster(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
@@ -324,7 +321,7 @@ impl Http {
 
     pub(crate) fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(concat!(BASE_PATH!(), "/admin/skills/skill/{}/change/"), id);
-        parse_skill_html(&self.http.get(url).send()?.text()?, SKILL_FORM_FIELD_NAMES)
+        parse_skill_html(&get_and_save(&self.http, &url)?, SKILL_FORM_FIELD_NAMES)
     }
 
     pub(crate) fn admin_save_skill(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
