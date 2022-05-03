@@ -2,14 +2,16 @@ use kuchiki::{parse_html, traits::TendrilSink, NodeRef};
 
 use crate::{
     error::Error,
-    utils::html::{descend_iter, descend_to, get_attribute_from_node},
+    utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text},
 };
 
 /// An entry on the list.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Entry {
     /// Value of the element (the text).
     pub value: String,
+    /// Meta information about the entry.
+    pub meta: Option<String>,
     /// Tier of the element.
     pub tier: u32,
     /// Uri to the element.
@@ -27,25 +29,65 @@ pub struct ParsedList {
 
 /// Create an entry from an HTML node.
 fn node_to_entry(node: &NodeRef) -> Result<Entry, Error> {
-    let contents = node.text_contents();
-    let contents = contents.trim();
-    let uri = get_attribute_from_node(descend_to(node, "a", "entry")?.as_node(), "href", "a")?;
-    if let Some(pos) = contents.find('\n') {
-        let (name, tier_str) = contents.split_at(pos);
-        let mut it = tier_str.trim().chars();
-        it.next();
-        let tier_str = it.as_str();
-        Ok(Entry {
-            value: name.to_string(),
-            tier: tier_str.parse()?,
-            uri,
-        })
+    let all_contents = node.text_contents();
+    let all_contents = all_contents.trim();
+    let mut entry = Entry::default();
+
+    let it = node
+        .children()
+        .into_iter()
+        .filter(|n| n.as_element().is_some())
+        .skip(1); // Skip over image.
+    let mut it = it.peekable();
+
+    if let Some(name_node) = it.next() {
+        entry.value = node_to_text(&name_node);
     } else {
         return Err(Error::HTMLParsingError(format!(
-            "Failed to find '\\n' in codex skill: {:#?}",
-            contents
+            "Failed to find name in codex entry: {:#?}",
+            all_contents
         )));
     }
+
+    if let Some(meta_node) = it.peek() {
+        if let Ok(klass) = get_attribute_from_node(meta_node, "class", "") {
+            if klass == "codex-entries-entry-meta" {
+                entry.meta = Some(node_to_text(meta_node).trim().to_string());
+                it.next();
+            }
+        }
+    }
+
+    if let Some(tier_node) = it.next() {
+        let tier_str = node_to_text(&tier_node);
+        let tier_str = tier_str.trim();
+        if let Some(c) = tier_str.chars().next() {
+            if c == '★' {
+                let mut chars = tier_str.chars();
+                chars.next();
+                entry.tier = chars.as_str().trim().parse()?;
+            } else {
+                return Err(Error::HTMLParsingError(format!(
+                    "Failed to find the star in tier in codex entry field: {:#?}",
+                    tier_str
+                )));
+            }
+        } else {
+            return Err(Error::HTMLParsingError(format!(
+                "The tier string is empty in: {:#?}",
+                node_to_text(&tier_node)
+            )));
+        }
+    } else {
+        return Err(Error::HTMLParsingError(format!(
+            "Failed to find tier in codex entry: {:#?}",
+            all_contents
+        )));
+    }
+
+    entry.uri = get_attribute_from_node(descend_to(node, "a", "entry")?.as_node(), "href", "a")?;
+
+    Ok(entry)
 }
 
 /// Parses a page from `playorna.com` and returns the list of entries that were found and their

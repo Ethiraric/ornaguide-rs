@@ -1,5 +1,5 @@
 use crate::{
-    codex::{Codex, CodexSkill, Skill as CodexSkillEntry},
+    codex::{Codex, CodexSkill, Monster as CodexMonsterEntry, Skill as CodexSkillEntry},
     error::Error,
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, Guide,
@@ -326,5 +326,25 @@ impl Codex for OrnaAdminGuide {
 
     fn codex_fetch_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
         self.guide.http().codex_retrieve_skill(skill_name)
+    }
+
+    fn codex_fetch_monster_list(&self) -> Result<Vec<CodexMonsterEntry>, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_monsters_list()?
+            .into_iter()
+            .map(|entry| {
+                Ok(CodexMonsterEntry {
+                    name: entry.value,
+                    family: entry.meta.ok_or_else(|| {
+                        Error::HTMLParsingError(
+                            "Failed to retrieve meta field of monster".to_string(),
+                        )
+                    })?,
+                    tier: entry.tier,
+                    uri: entry.uri,
+                })
+            })
+            .collect()
     }
 }

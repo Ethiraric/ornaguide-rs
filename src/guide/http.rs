@@ -367,6 +367,11 @@ impl Http {
         query_all_codex_pages(url, &self.http)
     }
 
+    pub(crate) fn codex_retrieve_monsters_list(&self) -> Result<Vec<CodexListEntry>, Error> {
+        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/monsters");
+        query_all_codex_pages(url, &self.http)
+    }
+
     pub(crate) fn codex_retrieve_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
         let url = format!(
             concat!(PLAYORNA_BASE_PATH!(), "/codex/spells/{}"),
