@@ -1,5 +1,5 @@
 use crate::{
-    codex::{Codex, CodexSkill, Monster as CodexMonsterEntry, Skill as CodexSkillEntry},
+    codex::{Codex, CodexSkill, MonsterEntry as CodexMonsterEntry, SkillEntry as CodexSkillEntry},
     error::Error,
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, Guide,
