@@ -12,8 +12,9 @@ use reqwest::{
 use crate::{
     codex::{
         html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
+        html_monster_parser::parse_html_codex_monster,
         html_skill_parser::parse_html_codex_skill,
-        CodexSkill,
+        CodexMonster, CodexSkill,
     },
     error::Error,
     guide::{
@@ -378,5 +379,13 @@ impl Http {
             skill_name
         );
         parse_html_codex_skill(&get_and_save(&self.http, &url)?)
+    }
+
+    pub(crate) fn codex_retrieve_monster(&self, monster_name: &str) -> Result<CodexMonster, Error> {
+        let url = format!(
+            concat!(PLAYORNA_BASE_PATH!(), "/codex/monsters/{}"),
+            monster_name
+        );
+        parse_html_codex_monster(&get_and_save(&self.http, &url)?)
     }
 }

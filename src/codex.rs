@@ -1,8 +1,10 @@
 use crate::error::Error;
 
 pub(crate) mod html_list_parser;
+pub(crate) mod html_monster_parser;
 pub(crate) mod html_skill_parser;
 
+pub use html_monster_parser::{Ability as MonsterAbility, CodexMonster, Drop as MonsterDrop};
 pub use html_skill_parser::{CodexSkill, StatusEffect};
 
 #[derive(Debug)]
@@ -29,4 +31,6 @@ pub trait Codex {
 
     /// Retrieve the list of monsters from the orna codex.
     fn codex_fetch_monster_list(&self) -> Result<Vec<MonsterEntry>, Error>;
+    /// Retrieve the list of monsters from the orna codex.
+    fn codex_fetch_monster(&self, monster_name: &str) -> Result<CodexMonster, Error>;
 }

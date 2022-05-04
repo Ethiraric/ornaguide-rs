@@ -347,4 +347,8 @@ impl Codex for OrnaAdminGuide {
             })
             .collect()
     }
+
+    fn codex_fetch_monster(&self, monster_name: &str) -> Result<crate::codex::CodexMonster, Error> {
+        self.guide.http().codex_retrieve_monster(monster_name)
+    }
 }
