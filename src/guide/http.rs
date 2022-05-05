@@ -11,10 +11,11 @@ use reqwest::{
 
 use crate::{
     codex::{
+        html_item_parser::parse_html_codex_item,
         html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
         html_monster_parser::parse_html_codex_monster,
         html_skill_parser::parse_html_codex_skill,
-        CodexMonster, CodexSkill,
+        CodexItem, CodexMonster, CodexSkill,
     },
     error::Error,
     guide::{
@@ -368,11 +369,6 @@ impl Http {
         query_all_codex_pages(url, &self.http)
     }
 
-    pub(crate) fn codex_retrieve_monsters_list(&self) -> Result<Vec<CodexListEntry>, Error> {
-        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/monsters");
-        query_all_codex_pages(url, &self.http)
-    }
-
     pub(crate) fn codex_retrieve_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
         let url = format!(
             concat!(PLAYORNA_BASE_PATH!(), "/codex/spells/{}"),
@@ -381,11 +377,26 @@ impl Http {
         parse_html_codex_skill(&get_and_save(&self.http, &url)?)
     }
 
+    pub(crate) fn codex_retrieve_monsters_list(&self) -> Result<Vec<CodexListEntry>, Error> {
+        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/monsters");
+        query_all_codex_pages(url, &self.http)
+    }
+
     pub(crate) fn codex_retrieve_monster(&self, monster_name: &str) -> Result<CodexMonster, Error> {
         let url = format!(
             concat!(PLAYORNA_BASE_PATH!(), "/codex/monsters/{}"),
             monster_name
         );
         parse_html_codex_monster(&get_and_save(&self.http, &url)?)
+    }
+
+    pub(crate) fn codex_retrieve_items_list(&self) -> Result<Vec<CodexListEntry>, Error> {
+        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/items");
+        query_all_codex_pages(url, &self.http)
+    }
+
+    pub(crate) fn codex_retrieve_item(&self, item_name: &str) -> Result<CodexItem, Error> {
+        let url = format!(concat!(PLAYORNA_BASE_PATH!(), "/codex/items/{}"), item_name);
+        parse_html_codex_item(&get_and_save(&self.http, &url)?)
     }
 }

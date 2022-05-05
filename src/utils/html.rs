@@ -24,11 +24,19 @@ pub fn descend_to(
     selector: &str,
     from_name: &str,
 ) -> Result<NodeDataRef<ElementData>, Error> {
-    descend_iter(node, selector, from_name)?
-        .next()
-        .ok_or_else(|| {
-            Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
-        })
+    try_descend_to(node, selector, from_name)?.ok_or_else(|| {
+        Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
+    })
+}
+
+/// Try to select the node that matches the selector and that is a descendant of `node`.
+/// `from_name` is a name to be displayed on the error message.
+pub fn try_descend_to(
+    node: &NodeRef,
+    selector: &str,
+    from_name: &str,
+) -> Result<Option<NodeDataRef<ElementData>>, Error> {
+    Ok(descend_iter(node, selector, from_name)?.next())
 }
 
 /// Retrieve an attribute from an HTML node.

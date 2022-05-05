@@ -1,5 +1,8 @@
 use crate::{
-    codex::{Codex, CodexSkill, MonsterEntry as CodexMonsterEntry, SkillEntry as CodexSkillEntry},
+    codex::{
+        Codex, CodexSkill, ItemEntry as CodexItemEntry, MonsterEntry as CodexMonsterEntry,
+        SkillEntry as CodexSkillEntry,
+    },
     error::Error,
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, Guide,
@@ -350,5 +353,24 @@ impl Codex for OrnaAdminGuide {
 
     fn codex_fetch_monster(&self, monster_name: &str) -> Result<crate::codex::CodexMonster, Error> {
         self.guide.http().codex_retrieve_monster(monster_name)
+    }
+
+    fn codex_fetch_item_list(&self) -> Result<Vec<CodexItemEntry>, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_items_list()?
+            .into_iter()
+            .map(|entry| {
+                Ok(CodexItemEntry {
+                    name: entry.value,
+                    tier: entry.tier,
+                    uri: entry.uri,
+                })
+            })
+            .collect()
+    }
+
+    fn codex_fetch_item(&self, item_name: &str) -> Result<crate::codex::CodexItem, Error> {
+        self.guide.http().codex_retrieve_item(item_name)
     }
 }
