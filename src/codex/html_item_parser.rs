@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
+use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRef, NodeRef};
 use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
@@ -23,6 +23,13 @@ pub enum Element {
     Arcane,
     Dragon,
     Physical,
+}
+
+/// A tag attached to an item.
+#[derive(Debug, Serialize, Deserialize)]
+pub enum Tag {
+    FoundInChests,
+    FoundInShops,
 }
 
 /// Stats of an item.
@@ -133,7 +140,9 @@ pub struct Item {
     /// The description of the item.
     pub description: String,
     /// The tier of the item.
-    pub tier: i8,
+    pub tier: u8,
+    /// Tags attached to the item.
+    pub tags: Vec<Tag>,
     /// The stats of the item.
     pub stats: Option<Stats>,
     /// The ability of the item.
@@ -166,7 +175,7 @@ fn parse_icon(node: &NodeRef) -> Result<String, Error> {
 }
 
 /// Parse the tier of the skill.
-fn parse_tier(node: &NodeRef) -> Result<i8, Error> {
+fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
     let text = node_to_text(node);
     let text = text.trim();
     if let Some(pos) = text.find(':') {
@@ -262,6 +271,22 @@ fn parse_name_icon_list(
         })
 }
 
+/// Parse the tags of the item.
+fn parse_tags<T>(iter: impl Iterator<Item = NodeDataRef<T>>) -> Result<Vec<Tag>, Error> {
+    let mut tags = vec![];
+
+    for node in iter {
+        match node_to_text(node.as_node()).as_str() {
+            "✓ Found in chests" => tags.push(Tag::FoundInChests),
+            "✓ Found in shops" => tags.push(Tag::FoundInShops),
+            x => return Err(Error::HTMLParsingError(format!("Unknown tag: {}", x))),
+        }
+    }
+
+    Ok(tags)
+}
+
+/// Parse the stats of the item.
 fn parse_stats(node: Option<&NodeRef>) -> Result<Option<Stats>, Error> {
     if let Some(node) = node {
         let mut stats = Stats::default();
@@ -433,6 +458,8 @@ pub fn parse_html_codex_item(contents: &str) -> Result<Item, Error> {
     let mut dropped_by = vec![];
     let mut upgrade_materials = vec![];
 
+    let tags = parse_tags(descend_iter(page.as_node(), ".codex-page-tag", "page")?)?;
+
     let description = if let Some(description) = description_it.next() {
         node_to_text(description.as_node())
     } else {
@@ -478,5 +505,6 @@ pub fn parse_html_codex_item(contents: &str) -> Result<Item, Error> {
         immunities,
         dropped_by,
         upgrade_materials,
+        tags,
     })
 }

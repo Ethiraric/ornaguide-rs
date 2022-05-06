@@ -1,12 +1,14 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{error::Error, guide::html_form_parser::ParsedForm};
 
 /// An item fetched from the admin panel.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdminItem {
     pub(crate) csrfmiddlewaretoken: String,
     pub id: u32,
     pub name: String,
-    pub tier: u32,
+    pub tier: u8,
     pub type_: u32,
     pub image_name: String,
     pub description: String,
