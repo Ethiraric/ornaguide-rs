@@ -1,11 +1,10 @@
 use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRef, NodeRef};
-use reqwest::Url;
 
 use crate::{
     error::Error,
-    utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text},
+    utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text, parse_icon},
 };
 
 /// An ability for a monster
@@ -49,19 +48,6 @@ pub struct CodexMonster {
     pub abilities: Vec<Ability>,
     /// The items the monster drops.
     pub drops: Vec<Drop>,
-}
-
-/// Parse the icon of the skill.
-/// Returns an URL path, without the host.
-fn parse_icon(node: &NodeRef) -> Result<String, Error> {
-    Ok(Url::parse(&get_attribute_from_node(
-        descend_to(node, "img", "icon-node")?.as_node(),
-        "src",
-        "img icon node",
-    )?)
-    .unwrap()
-    .path()
-    .to_string())
 }
 
 /// Parse the text contents from a description node containing family or rarity.

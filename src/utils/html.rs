@@ -2,6 +2,7 @@ use kuchiki::{
     iter::{Descendants, Elements, Select},
     ElementData, NodeData, NodeDataRef, NodeRef,
 };
+use reqwest::Url;
 
 use crate::error::Error;
 
@@ -69,4 +70,27 @@ pub fn get_attribute_from_node(
 /// Get the text contained in the node.
 pub fn node_to_text(node: &NodeRef) -> String {
     node.text_contents().trim().to_string()
+}
+
+/// Strip the host and `/static/img` from the given URL.
+pub fn icon_url_to_path(url: &str) -> String {
+    let url = Url::parse(url).unwrap();
+    let mut path = url.path();
+    if path.starts_with("/static/img") {
+        path = &path[11..];
+    }
+    if path.starts_with('/') {
+        path = &path[1..];
+    }
+    path.to_string()
+}
+
+/// Parse the icon of an item.
+/// Returns an URL path, without the host and the "/static".
+pub fn parse_icon(node: &NodeRef) -> Result<String, Error> {
+    Ok(icon_url_to_path(&get_attribute_from_node(
+        descend_to(node, "img", "icon-node")?.as_node(),
+        "src",
+        "img icon node",
+    )?))
 }

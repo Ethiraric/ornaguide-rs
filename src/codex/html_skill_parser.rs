@@ -1,11 +1,10 @@
 use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
-use reqwest::Url;
 
 use crate::{
     error::Error,
-    utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text},
+    utils::html::{descend_iter, descend_to, node_to_text, parse_icon},
 };
 
 /// A status effect caused or given from a skill.
@@ -32,19 +31,6 @@ pub struct CodexSkill {
     pub causes: Vec<StatusEffect>,
     /// The effects the skill gives to the caster.
     pub gives: Vec<StatusEffect>,
-}
-
-/// Parse the icon of the skill.
-/// Returns an URL path, without the host.
-fn parse_icon(node: &NodeRef) -> Result<String, Error> {
-    Ok(Url::parse(&get_attribute_from_node(
-        descend_to(node, "img", "icon-node")?.as_node(),
-        "src",
-        "img icon node",
-    )?)
-    .unwrap()
-    .path()
-    .to_string())
 }
 
 /// Parse the tier of the skill.

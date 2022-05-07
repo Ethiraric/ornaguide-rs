@@ -1,18 +1,18 @@
 use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRef, NodeRef};
-use reqwest::Url;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Error,
     utils::html::{
-        descend_iter, descend_to, get_attribute_from_node, node_to_text, try_descend_to,
+        descend_iter, descend_to, get_attribute_from_node, icon_url_to_path, node_to_text,
+        parse_icon, try_descend_to,
     },
 };
 
 /// An element (fire, water, arcane, ...).
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Element {
     Fire,
     Water,
@@ -161,19 +161,6 @@ pub struct Item {
     pub upgrade_materials: Vec<UpgradeMaterial>,
 }
 
-/// Parse the icon of the item.
-/// Returns an URL path, without the host.
-fn parse_icon(node: &NodeRef) -> Result<String, Error> {
-    Ok(Url::parse(&get_attribute_from_node(
-        descend_to(node, "img", "icon-node")?.as_node(),
-        "src",
-        "img icon node",
-    )?)
-    .unwrap()
-    .path()
-    .to_string())
-}
-
 /// Parse the tier of the skill.
 fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
     let text = node_to_text(node);
@@ -195,7 +182,11 @@ fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
 fn a_to_name_uri_icon(a: &NodeRef) -> Result<(String, String, String), Error> {
     let uri = get_attribute_from_node(a, "href", "monster <a>")?;
     let img = descend_to(a, "img", "monster <a>")?;
-    let icon = get_attribute_from_node(img.as_node(), "src", "monster <a> img")?;
+    let icon = icon_url_to_path(&get_attribute_from_node(
+        img.as_node(),
+        "src",
+        "monster <a> img",
+    )?);
     let name = node_to_text(a);
     Ok((name, uri, icon))
 }
@@ -203,7 +194,11 @@ fn a_to_name_uri_icon(a: &NodeRef) -> Result<(String, String, String), Error> {
 /// Parse a `<div>` node to a `name`, `icon` tuple.
 fn div_to_name_icon(div: &NodeRef) -> Result<(String, String), Error> {
     let img = descend_to(div, "img", "monster <a>")?;
-    let icon = get_attribute_from_node(img.as_node(), "src", "item <div> img")?;
+    let icon = icon_url_to_path(&get_attribute_from_node(
+        img.as_node(),
+        "src",
+        "item <div> img",
+    )?);
     let name = node_to_text(div);
     Ok((name, icon))
 }

@@ -124,7 +124,7 @@ pub struct RawItem {
     pub description: String,
     #[serde(rename = "type")]
     pub type_: String,
-    pub tier: u32,
+    pub tier: u8,
     pub boss: bool,
     pub arena: bool,
     pub image: String,
