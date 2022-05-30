@@ -10,7 +10,7 @@ pub use html_item_parser::{
     UpgradeMaterial as ItemUpgradeMaterial,
 };
 pub use html_monster_parser::{
-    Ability as MonsterAbility, CodexBoss, CodexMonster, Drop as MonsterDrop,
+    Ability as MonsterAbility, CodexBoss, CodexMonster, CodexRaid, Drop as MonsterDrop,
 };
 pub use html_skill_parser::{CodexSkill, StatusEffect};
 
@@ -38,6 +38,13 @@ pub struct BossEntry {
 }
 
 #[derive(Debug)]
+pub struct RaidEntry {
+    pub name: String,
+    pub tier: u32,
+    pub uri: String,
+}
+
+#[derive(Debug)]
 pub struct ItemEntry {
     pub name: String,
     pub tier: u32,
@@ -60,6 +67,11 @@ pub trait Codex {
     fn codex_fetch_boss_list(&self) -> Result<Vec<BossEntry>, Error>;
     /// Retrieve the details about a boss from the orna codex.
     fn codex_fetch_boss(&self, boss_name: &str) -> Result<CodexBoss, Error>;
+
+    /// Retrieve the list of raids from the orna codex.
+    fn codex_fetch_raid_list(&self) -> Result<Vec<RaidEntry>, Error>;
+    /// Retrieve the details about a raid from the orna codex.
+    fn codex_fetch_raid(&self, raid_name: &str) -> Result<CodexRaid, Error>;
 
     /// Retrieve the list of items from the orna codex.
     fn codex_fetch_item_list(&self) -> Result<Vec<ItemEntry>, Error>;

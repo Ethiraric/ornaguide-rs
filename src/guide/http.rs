@@ -13,7 +13,9 @@ use crate::{
     codex::{
         html_item_parser::parse_html_codex_item,
         html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
-        html_monster_parser::{parse_html_codex_boss, parse_html_codex_monster},
+        html_monster_parser::{
+            parse_html_codex_boss, parse_html_codex_monster, parse_html_codex_raid, CodexRaid,
+        },
         html_skill_parser::parse_html_codex_skill,
         CodexBoss, CodexItem, CodexMonster, CodexSkill,
     },
@@ -406,6 +408,16 @@ impl Http {
             boss_name
         );
         parse_html_codex_boss(&get_and_save(&self.http, &url)?)
+    }
+
+    pub(crate) fn codex_retrieve_raids_list(&self) -> Result<Vec<CodexListEntry>, Error> {
+        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/raids");
+        query_all_codex_pages(url, &self.http)
+    }
+
+    pub(crate) fn codex_retrieve_raid(&self, raid_name: &str) -> Result<CodexRaid, Error> {
+        let url = format!(concat!(PLAYORNA_BASE_PATH!(), "/codex/raids/{}"), raid_name);
+        parse_html_codex_raid(&get_and_save(&self.http, &url)?)
     }
 
     pub(crate) fn codex_retrieve_items_list(&self) -> Result<Vec<CodexListEntry>, Error> {

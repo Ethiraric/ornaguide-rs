@@ -1,7 +1,8 @@
 use crate::{
     codex::{
         BossEntry as CodexBossEntry, Codex, CodexSkill, ItemEntry as CodexItemEntry,
-        MonsterEntry as CodexMonsterEntry, SkillEntry as CodexSkillEntry,
+        MonsterEntry as CodexMonsterEntry, RaidEntry as CodexRaidEntry,
+        SkillEntry as CodexSkillEntry,
     },
     error::Error,
     guide::{
@@ -364,8 +365,8 @@ impl Codex for OrnaAdminGuide {
             .collect()
     }
 
-    fn codex_fetch_boss(&self, boss_name: &str) -> Result<crate::codex::CodexBoss, Error> {
-        self.guide.http().codex_retrieve_boss(boss_name)
+    fn codex_fetch_monster(&self, monster_name: &str) -> Result<crate::codex::CodexMonster, Error> {
+        self.guide.http().codex_retrieve_monster(monster_name)
     }
 
     fn codex_fetch_boss_list(&self) -> Result<Vec<CodexBossEntry>, Error> {
@@ -386,8 +387,27 @@ impl Codex for OrnaAdminGuide {
             .collect()
     }
 
-    fn codex_fetch_monster(&self, monster_name: &str) -> Result<crate::codex::CodexMonster, Error> {
-        self.guide.http().codex_retrieve_monster(monster_name)
+    fn codex_fetch_boss(&self, boss_name: &str) -> Result<crate::codex::CodexBoss, Error> {
+        self.guide.http().codex_retrieve_boss(boss_name)
+    }
+
+    fn codex_fetch_raid_list(&self) -> Result<Vec<CodexRaidEntry>, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_raids_list()?
+            .into_iter()
+            .map(|entry| {
+                Ok(CodexRaidEntry {
+                    name: entry.value,
+                    tier: entry.tier,
+                    uri: entry.uri,
+                })
+            })
+            .collect()
+    }
+
+    fn codex_fetch_raid(&self, raid_name: &str) -> Result<crate::codex::CodexRaid, Error> {
+        self.guide.http().codex_retrieve_raid(raid_name)
     }
 
     fn codex_fetch_item_list(&self) -> Result<Vec<CodexItemEntry>, Error> {

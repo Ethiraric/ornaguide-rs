@@ -77,20 +77,53 @@ pub struct CodexBoss {
 pub struct CodexRaid {
     /// The name of the raid.
     pub name: String,
+    /// The description of the raid.
+    pub description: String,
     /// The icon of the raid.
     pub icon: String,
     /// The event in which the raid appears.
     pub event: Option<String>,
-    /// The family to which the raid belongs.
-    pub family: String,
-    /// The rarity of the raid.
-    pub rarity: String,
     /// The tier of the raid.
     pub tier: i8,
     /// The abilities of the raid.
     pub abilities: Vec<Ability>,
     /// The items the raid drops.
     pub drops: Vec<Drop>,
+}
+
+/// Information extracted from the monster page.
+/// This may be that of a regular monster, boss, or raid.
+struct ExtractedInfo {
+    /// The name of the monster.
+    pub name: String,
+    /// The description of the monster.
+    pub description: Option<String>,
+    /// The icon of the monster.
+    pub icon: String,
+    /// The event in which the monster appears.
+    pub event: Option<String>,
+    /// The family to which the monster belongs.
+    pub family: Option<String>,
+    /// The rarity of the monster.
+    pub rarity: Option<String>,
+    /// The tier of the monster.
+    pub tier: i8,
+    /// The abilities of the monster.
+    pub abilities: Vec<Ability>,
+    /// The items the monster drops.
+    pub drops: Vec<Drop>,
+}
+
+/// The contents of the `codex-page-description` node.
+struct DescriptionNode {
+    /// The description of the monster (Raids-only).
+    pub description: Option<String>,
+    /// The event in which the monster appears.
+    pub event: Option<String>,
+    /// The family to which the monster belongs (non-Raids-only).
+    pub family: Option<String>,
+    /// The rarity of the monster (non-Raids-only).
+    pub rarity: Option<String>,
 }
 
 /// Parse the text contents from a description node containing family or rarity.
@@ -114,11 +147,22 @@ fn parse_family_rarity_text<'a>(txt: &'a str, expected_left: &str) -> Result<&'a
 }
 
 /// Parse the event, family and rarity of the monster.
-fn parse_event_family_rarity<T>(
+fn parse_description_nodes<T>(
     iter: impl Iterator<Item = NodeDataRef<T>>,
-) -> Result<(Option<String>, String, String), Error> {
+) -> Result<DescriptionNode, Error> {
     let mut iter = iter.peekable();
+    let mut description = None;
     let mut event = None;
+
+    if let Some(event_node) = iter.peek() {
+        let txt = node_to_text(event_node.as_node());
+        if !txt.starts_with("Event:") && !txt.starts_with("Family:") && !txt.starts_with("Rarity:")
+        {
+            description = Some(txt);
+            iter.next();
+        }
+    }
+
     if let Some(event_node) = iter.peek() {
         if let Ok(ev) = parse_family_rarity_text(&node_to_text(event_node.as_node()), "Event:") {
             event = Some(ev.to_string());
@@ -126,15 +170,25 @@ fn parse_event_family_rarity<T>(
         }
     }
     if let (Some(family_node), Some(rarity_node), None) = (iter.next(), iter.next(), iter.next()) {
-        Ok((
+        Ok(DescriptionNode {
+            description,
             event,
-            parse_family_rarity_text(&node_to_text(family_node.as_node()), "Family:")?.to_string(),
-            parse_family_rarity_text(&node_to_text(rarity_node.as_node()), "Rarity:")?.to_string(),
-        ))
+            family: Some(
+                parse_family_rarity_text(&node_to_text(family_node.as_node()), "Family:")?
+                    .to_string(),
+            ),
+            rarity: Some(
+                parse_family_rarity_text(&node_to_text(rarity_node.as_node()), "Rarity:")?
+                    .to_string(),
+            ),
+        })
     } else {
-        Err(Error::HTMLParsingError(
-            "Failed to retrieve family and rarity from iterator".to_string(),
-        ))
+        Ok(DescriptionNode {
+            description,
+            event,
+            family: None,
+            rarity: None,
+        })
     }
 }
 
@@ -212,18 +266,23 @@ fn parse_drops(iter_node: &NodeRef) -> Result<Vec<Drop>, Error> {
 }
 
 /// Parses a monster page from `playorna.com` and returns the details about the given monster.
-pub fn parse_html_codex_monster(contents: &str) -> Result<CodexMonster, Error> {
+fn parse_html_page(contents: &str) -> Result<ExtractedInfo, Error> {
     let html = parse_html().one(contents);
 
     let name = descend_to(&html, ".herotext", "html")?;
     let page = descend_to(&html, ".codex-page", "html")?;
     let icon = descend_to(page.as_node(), ".codex-page-icon", "page")?;
-    let family_rarity_it = descend_iter(page.as_node(), ".codex-page-description", "page")?;
+    let descriptions_it = descend_iter(page.as_node(), ".codex-page-description", "page")?;
     let tier = descend_to(page.as_node(), ".codex-page-meta", "page")?;
     let mut abilities = vec![];
     let mut drops = vec![];
 
-    let (event, family, rarity) = parse_event_family_rarity(family_rarity_it)?;
+    let DescriptionNode {
+        description,
+        event,
+        family,
+        rarity,
+    } = parse_description_nodes(descriptions_it)?;
 
     for h4 in descend_iter(page.as_node(), "h4", "page")? {
         match h4.text_contents().trim() {
@@ -237,8 +296,9 @@ pub fn parse_html_codex_monster(contents: &str) -> Result<CodexMonster, Error> {
         }
     }
 
-    Ok(CodexMonster {
+    Ok(ExtractedInfo {
         name: node_to_text(name.as_node()),
+        description,
         icon: parse_icon(icon.as_node())?,
         event,
         family,
@@ -249,30 +309,59 @@ pub fn parse_html_codex_monster(contents: &str) -> Result<CodexMonster, Error> {
     })
 }
 
-/// Parses a boss page from `playorna.com` and returns the details about the given boss.
-pub fn parse_html_codex_boss(contents: &str) -> Result<CodexBoss, Error> {
-    parse_html_codex_monster(contents).map(|monster| CodexBoss {
-        name: monster.name,
-        icon: monster.icon,
-        event: monster.event,
-        family: monster.family,
-        rarity: monster.rarity,
-        tier: monster.tier,
-        abilities: monster.abilities,
-        drops: monster.drops,
+/// Parses a monster page from `playorna.com` and returns the details about the given monster.
+pub fn parse_html_codex_monster(contents: &str) -> Result<CodexMonster, Error> {
+    parse_html_page(contents).and_then(|info| {
+        Ok(CodexMonster {
+            name: info.name,
+            icon: info.icon,
+            event: info.event,
+            family: info.family.ok_or_else(|| {
+                Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
+            })?,
+            rarity: info.rarity.ok_or_else(|| {
+                Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
+            })?,
+            tier: info.tier,
+            abilities: info.abilities,
+            drops: info.drops,
+        })
     })
 }
 
-/// Parses a raid page from `playorna.com` and returns the details about the given monster.
+/// Parses a boss page from `playorna.com` and returns the details about the given boss.
 pub fn parse_html_codex_boss(contents: &str) -> Result<CodexBoss, Error> {
-    parse_html_codex_monster(contents).map(|monster| CodexBoss {
-        name: monster.name,
-        icon: monster.icon,
-        event: monster.event,
-        family: monster.family,
-        rarity: monster.rarity,
-        tier: monster.tier,
-        abilities: monster.abilities,
-        drops: monster.drops,
+    parse_html_page(contents).and_then(|info| {
+        Ok(CodexBoss {
+            name: info.name,
+            icon: info.icon,
+            event: info.event,
+            family: info.family.ok_or_else(|| {
+                Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
+            })?,
+            rarity: info.rarity.ok_or_else(|| {
+                Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
+            })?,
+            tier: info.tier,
+            abilities: info.abilities,
+            drops: info.drops,
+        })
+    })
+}
+
+/// Parses a raid page from `playorna.com` and returns the details about the given raid.
+pub fn parse_html_codex_raid(contents: &str) -> Result<CodexRaid, Error> {
+    parse_html_page(contents).and_then(|info| {
+        Ok(CodexRaid {
+            name: info.name,
+            description: info.description.ok_or_else(|| {
+                Error::HTMLParsingError("Failed to retrieve description from raid".to_string())
+            })?,
+            icon: info.icon,
+            event: info.event,
+            tier: info.tier,
+            abilities: info.abilities,
+            drops: info.drops,
+        })
     })
 }
