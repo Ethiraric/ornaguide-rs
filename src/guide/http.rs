@@ -302,6 +302,11 @@ impl Http {
         )
     }
 
+    pub(crate) fn admin_retrieve_items_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/items/item/");
+        query_all_pages(url, &self.http)
+    }
+
     pub(crate) fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(
             concat!(BASE_PATH!(), "/admin/monsters/monster/{}/change/"),

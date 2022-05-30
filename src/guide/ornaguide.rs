@@ -6,7 +6,7 @@ use crate::{
     error::Error,
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, Guide,
-        ItemCategory, ItemType, MonsterFamily, SkillRow, Spawn, StatusEffect,
+        ItemCategory, ItemRow, ItemType, MonsterFamily, SkillRow, Spawn, StatusEffect,
     },
     items::{admin::AdminItem, raw::RawItem},
     monsters::{admin::AdminMonster, RawMonster},
@@ -141,6 +141,19 @@ impl AdminGuide for OrnaAdminGuide {
         self.guide
             .http()
             .admin_save_item(item.id, ParsedForm::from(item))
+    }
+
+    fn admin_retrieve_items_list(&self) -> Result<Vec<ItemRow>, Error> {
+        Ok(self
+            .guide
+            .http()
+            .admin_retrieve_items_list()?
+            .into_iter()
+            .map(|entry| ItemRow {
+                id: entry.id,
+                name: entry.value,
+            })
+            .collect())
     }
 
     fn admin_retrieve_monster_by_id(

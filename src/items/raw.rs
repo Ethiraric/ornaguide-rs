@@ -1,6 +1,6 @@
 use std::{fs::File, io::BufReader};
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::error::Error;
 
@@ -121,6 +121,7 @@ pub struct ItemEquippedBy {
 pub struct RawItem {
     pub name: String,
     pub id: u32,
+    #[serde(deserialize_with = "parse_nullable_string")]
     pub description: String,
     #[serde(rename = "type")]
     pub type_: String,
@@ -162,4 +163,11 @@ impl RawItems {
             items: serde_json::from_reader(file)?,
         })
     }
+}
+
+fn parse_nullable_string<'de, D>(d: D) -> Result<String, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    Deserialize::deserialize(d).map(|x: Option<_>| x.unwrap_or_default())
 }

@@ -25,6 +25,15 @@ pub struct SkillRow {
     pub name: String,
 }
 
+/// An item "row" when listing the items from the admin guide. It does not contain much details.
+#[derive(Debug)]
+pub struct ItemRow {
+    /// Id of the item.
+    pub id: u32,
+    /// Name of the item.
+    pub name: String,
+}
+
 /// A source of information from the game. On the site, this represents the public API.
 /// Note that the info can be fetched locally from a cache.
 pub trait Guide {
@@ -59,6 +68,8 @@ pub trait AdminGuide {
     fn admin_retrieve_item_by_id(&self, id: u32) -> Result<AdminItem, Error>;
     /// Save the given item to the guide.
     fn admin_save_item(&self, item: AdminItem) -> Result<(), Error>;
+    /// Retrieve the list of items from the admin view.
+    fn admin_retrieve_items_list(&self) -> Result<Vec<ItemRow>, Error>;
 
     /// Retrieve the monster with the given id from the guide.
     fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<AdminMonster, Error>;

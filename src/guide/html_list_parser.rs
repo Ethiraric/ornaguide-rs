@@ -79,7 +79,7 @@ pub fn parse_list_html(contents: &str) -> Result<ParsedTable, Error> {
     let paginator_text = paginator.as_node().text_contents();
     let number_entries = paginator_text
         .split_whitespace()
-        .map_while(|s| s.parse().ok())
+        .map_while(|s| if s == "..." { Some(0) } else { s.parse().ok() })
         .last()
         .ok_or_else(|| {
             Error::HTMLParsingError(format!("Failed to get parsing from: {}", paginator_text))
