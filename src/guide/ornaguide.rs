@@ -1,7 +1,7 @@
 use crate::{
     codex::{
-        Codex, CodexSkill, ItemEntry as CodexItemEntry, MonsterEntry as CodexMonsterEntry,
-        SkillEntry as CodexSkillEntry,
+        BossEntry as CodexBossEntry, Codex, CodexSkill, ItemEntry as CodexItemEntry,
+        MonsterEntry as CodexMonsterEntry, SkillEntry as CodexSkillEntry,
     },
     error::Error,
     guide::{
@@ -356,6 +356,28 @@ impl Codex for OrnaAdminGuide {
                         Error::HTMLParsingError(
                             "Failed to retrieve meta field of monster".to_string(),
                         )
+                    })?,
+                    tier: entry.tier,
+                    uri: entry.uri,
+                })
+            })
+            .collect()
+    }
+
+    fn codex_fetch_boss(&self, boss_name: &str) -> Result<crate::codex::CodexBoss, Error> {
+        self.guide.http().codex_retrieve_boss(boss_name)
+    }
+
+    fn codex_fetch_boss_list(&self) -> Result<Vec<CodexBossEntry>, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_bosses_list()?
+            .into_iter()
+            .map(|entry| {
+                Ok(CodexBossEntry {
+                    name: entry.value,
+                    family: entry.meta.ok_or_else(|| {
+                        Error::HTMLParsingError("Failed to retrieve meta field of boss".to_string())
                     })?,
                     tier: entry.tier,
                     uri: entry.uri,

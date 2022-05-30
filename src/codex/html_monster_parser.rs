@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRef, NodeRef};
+use serde::Serialize;
 
 use crate::{
     error::Error,
@@ -8,7 +9,7 @@ use crate::{
 };
 
 /// An ability for a monster
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Ability {
     /// The name of the ability.
     pub name: String,
@@ -19,7 +20,7 @@ pub struct Ability {
 }
 
 /// A drop for a monster
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Drop {
     /// The name of the item.
     pub name: String,
@@ -30,7 +31,7 @@ pub struct Drop {
 }
 
 /// A monster on the codex.
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct CodexMonster {
     /// The name of the monster.
     pub name: String,
@@ -47,6 +48,48 @@ pub struct CodexMonster {
     /// The abilities of the monster.
     pub abilities: Vec<Ability>,
     /// The items the monster drops.
+    pub drops: Vec<Drop>,
+}
+
+/// A boss on the codex.
+#[derive(Debug, Serialize)]
+pub struct CodexBoss {
+    /// The name of the boss.
+    pub name: String,
+    /// The icon of the boss.
+    pub icon: String,
+    /// The event in which the boss appears.
+    pub event: Option<String>,
+    /// The family to which the boss belongs.
+    pub family: String,
+    /// The rarity of the boss.
+    pub rarity: String,
+    /// The tier of the boss.
+    pub tier: i8,
+    /// The abilities of the boss.
+    pub abilities: Vec<Ability>,
+    /// The items the boss drops.
+    pub drops: Vec<Drop>,
+}
+
+/// A raid on the codex.
+#[derive(Debug, Serialize)]
+pub struct CodexRaid {
+    /// The name of the raid.
+    pub name: String,
+    /// The icon of the raid.
+    pub icon: String,
+    /// The event in which the raid appears.
+    pub event: Option<String>,
+    /// The family to which the raid belongs.
+    pub family: String,
+    /// The rarity of the raid.
+    pub rarity: String,
+    /// The tier of the raid.
+    pub tier: i8,
+    /// The abilities of the raid.
+    pub abilities: Vec<Ability>,
+    /// The items the raid drops.
     pub drops: Vec<Drop>,
 }
 
@@ -203,5 +246,33 @@ pub fn parse_html_codex_monster(contents: &str) -> Result<CodexMonster, Error> {
         tier: parse_tier(tier.as_node())?,
         abilities,
         drops,
+    })
+}
+
+/// Parses a boss page from `playorna.com` and returns the details about the given boss.
+pub fn parse_html_codex_boss(contents: &str) -> Result<CodexBoss, Error> {
+    parse_html_codex_monster(contents).map(|monster| CodexBoss {
+        name: monster.name,
+        icon: monster.icon,
+        event: monster.event,
+        family: monster.family,
+        rarity: monster.rarity,
+        tier: monster.tier,
+        abilities: monster.abilities,
+        drops: monster.drops,
+    })
+}
+
+/// Parses a raid page from `playorna.com` and returns the details about the given monster.
+pub fn parse_html_codex_boss(contents: &str) -> Result<CodexBoss, Error> {
+    parse_html_codex_monster(contents).map(|monster| CodexBoss {
+        name: monster.name,
+        icon: monster.icon,
+        event: monster.event,
+        family: monster.family,
+        rarity: monster.rarity,
+        tier: monster.tier,
+        abilities: monster.abilities,
+        drops: monster.drops,
     })
 }
