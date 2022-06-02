@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRef, NodeRef};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Error,
@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// An ability for a monster
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Ability {
     /// The name of the ability.
     pub name: String,
@@ -20,7 +20,7 @@ pub struct Ability {
 }
 
 /// A drop for a monster
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Drop {
     /// The name of the item.
     pub name: String,
@@ -31,7 +31,7 @@ pub struct Drop {
 }
 
 /// A monster on the codex.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CodexMonster {
     /// The name of the monster.
     pub name: String,
@@ -52,7 +52,7 @@ pub struct CodexMonster {
 }
 
 /// A boss on the codex.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CodexBoss {
     /// The name of the boss.
     pub name: String,
@@ -73,7 +73,7 @@ pub struct CodexBoss {
 }
 
 /// A raid on the codex.
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CodexRaid {
     /// The name of the raid.
     pub name: String,

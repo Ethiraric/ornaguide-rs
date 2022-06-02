@@ -14,3 +14,4 @@ serde_json = "1.0.59"
 
 [dev_dependencies]
 itertools = "0.10.3"
+indicatif = "0.16.2"
