@@ -45,5 +45,42 @@ pub fn generate_output_jsons(guide: &OrnaAdminGuide) -> Result<(), Error> {
         &monsters,
     )?;
 
+    let skills = crate::guide::fetch::skills(guide)?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_skills.json")?),
+        &skills,
+    )?;
+
+    let rsc = guide.admin_retrieve_static_resources()?;
+
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_spawns.json")?),
+        &rsc.spawns,
+    )?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_elements.json")?),
+        &rsc.elements,
+    )?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_item_types.json")?),
+        &rsc.item_types,
+    )?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_equipped_bys.json")?),
+        &rsc.equipped_bys,
+    )?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_status_effects.json")?),
+        &rsc.status_effects,
+    )?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_item_categories.json")?),
+        &rsc.item_categories,
+    )?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_monster_families.json")?),
+        &rsc.monster_families,
+    )?;
+
     Ok(())
 }

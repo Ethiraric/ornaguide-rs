@@ -1,7 +1,9 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{error::Error, guide::html_form_parser::ParsedForm};
 
 /// A skill fetched from the admin panel.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdminSkill {
     pub(crate) csrfmiddlewaretoken: String,
     pub id: u32,
