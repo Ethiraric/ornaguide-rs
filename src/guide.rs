@@ -34,6 +34,15 @@ pub struct ItemRow {
     pub name: String,
 }
 
+/// A monster "row" when listing the monsters from the admin guide. It does not contain much details.
+#[derive(Debug)]
+pub struct MonsterRow {
+    /// Id of the monster.
+    pub id: u32,
+    /// Name of the monster.
+    pub name: String,
+}
+
 /// A source of information from the game. On the site, this represents the public API.
 /// Note that the info can be fetched locally from a cache.
 pub trait Guide {
@@ -75,6 +84,8 @@ pub trait AdminGuide {
     fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<AdminMonster, Error>;
     /// Save the given monster to the guide.
     fn admin_save_monster(&self, monster: AdminMonster) -> Result<(), Error>;
+    /// Retrieve the list of monsters from the admin view.
+    fn admin_retrieve_monsters_list(&self) -> Result<Vec<MonsterRow>, Error>;
 
     /// Retrieve the skill with the given id from the guide.
     fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<AdminSkill, Error>;

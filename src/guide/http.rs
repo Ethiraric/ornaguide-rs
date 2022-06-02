@@ -328,6 +328,11 @@ impl Http {
         )
     }
 
+    pub(crate) fn admin_retrieve_monsters_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/monsters/monster/");
+        query_all_pages(url, &self.http)
+    }
+
     pub(crate) fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(concat!(BASE_PATH!(), "/admin/skills/skill/{}/change/"), id);
         parse_skill_html(&get_and_save(&self.http, &url)?, SKILL_FORM_FIELD_NAMES)
