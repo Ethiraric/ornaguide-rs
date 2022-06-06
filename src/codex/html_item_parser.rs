@@ -12,7 +12,7 @@ use crate::{
 };
 
 /// An element (fire, water, arcane, ...).
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub enum Element {
     Fire,
     Water,
@@ -133,6 +133,8 @@ pub struct Immunity {
 /// An item on the codex.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Item {
+    /// The slug of the item (`https://playorna.com/codex/items/{slug}`).
+    pub slug: String,
     /// The name of the item.
     pub name: String,
     /// The icon of the item.
@@ -159,6 +161,22 @@ pub struct Item {
     pub dropped_by: Vec<DroppedBy>,
     /// The materials needed to upgrade the item.
     pub upgrade_materials: Vec<UpgradeMaterial>,
+}
+
+impl ToString for Element {
+    fn to_string(&self) -> String {
+        match self {
+            Element::Fire => "Fire".to_string(),
+            Element::Water => "Water".to_string(),
+            Element::Earthen => "Earthen".to_string(),
+            Element::Lightning => "Lightning".to_string(),
+            Element::Holy => "Holy".to_string(),
+            Element::Dark => "Dark".to_string(),
+            Element::Arcane => "Arcane".to_string(),
+            Element::Dragon => "Dragon".to_string(),
+            Element::Physical => "Physical".to_string(),
+        }
+    }
 }
 
 /// Parse the tier of the skill.
@@ -436,7 +454,7 @@ fn parse_ability(node: Option<&NodeRef>) -> Result<Option<Ability>, Error> {
 }
 
 /// Parses an item page from `playorna.com` and returns the details about the given item.
-pub fn parse_html_codex_item(contents: &str) -> Result<Item, Error> {
+pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error> {
     let html = parse_html().one(contents);
 
     let name = descend_to(&html, ".herotext", "html")?;
@@ -488,6 +506,7 @@ pub fn parse_html_codex_item(contents: &str) -> Result<Item, Error> {
     }
 
     Ok(Item {
+        slug,
         name: node_to_text(name.as_node()),
         icon: parse_icon(icon.as_node())?,
         description,

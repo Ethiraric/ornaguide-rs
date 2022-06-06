@@ -4,9 +4,8 @@ use std::{
 };
 
 use ornaguide_rs::{
-    codex::Codex,
     error::Error,
-    guide::{AdminGuide, CachedGuide, OrnaAdminGuide, Static},
+    guide::{AdminGuide, OrnaAdminGuide, Static},
 };
 
 use crate::{
@@ -14,7 +13,7 @@ use crate::{
     guide::fetch::{AdminItems, AdminMonsters, AdminSkills},
 };
 
-pub fn generate_output_jsons(guide: &OrnaAdminGuide) -> Result<(), Error> {
+pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
     // Codex jsons
     let items = crate::codex::fetch::items(guide)?;
     serde_json::to_writer_pretty(
@@ -38,6 +37,12 @@ pub fn generate_output_jsons(guide: &OrnaAdminGuide) -> Result<(), Error> {
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/codex_bosses.json")?),
         &bosses,
+    )?;
+
+    let skills = crate::codex::fetch::skills(guide)?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/codex_skills.json")?),
+        &skills,
     )?;
 
     // Guide jsons

@@ -1,95 +1,12 @@
 use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRef, NodeRef};
-use serde::{Deserialize, Serialize};
 
 use crate::{
+    codex::{CodexBoss, CodexMonster, CodexRaid, MonsterAbility, MonsterDrop},
     error::Error,
     utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text, parse_icon},
 };
-
-/// An ability for a monster
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Ability {
-    /// The name of the ability.
-    pub name: String,
-    /// The uri to the ability.
-    pub uri: String,
-    /// The icon of the ability.
-    pub icon: String,
-}
-
-/// A drop for a monster
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Drop {
-    /// The name of the item.
-    pub name: String,
-    /// The uri to the item.
-    pub uri: String,
-    /// The icon of the item.
-    pub icon: String,
-}
-
-/// A monster on the codex.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CodexMonster {
-    /// The name of the monster.
-    pub name: String,
-    /// The icon of the monster.
-    pub icon: String,
-    /// The event in which the monster appears.
-    pub event: Option<String>,
-    /// The family to which the monster belongs.
-    pub family: String,
-    /// The rarity of the monster.
-    pub rarity: String,
-    /// The tier of the monster.
-    pub tier: i8,
-    /// The abilities of the monster.
-    pub abilities: Vec<Ability>,
-    /// The items the monster drops.
-    pub drops: Vec<Drop>,
-}
-
-/// A boss on the codex.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CodexBoss {
-    /// The name of the boss.
-    pub name: String,
-    /// The icon of the boss.
-    pub icon: String,
-    /// The event in which the boss appears.
-    pub event: Option<String>,
-    /// The family to which the boss belongs.
-    pub family: String,
-    /// The rarity of the boss.
-    pub rarity: String,
-    /// The tier of the boss.
-    pub tier: i8,
-    /// The abilities of the boss.
-    pub abilities: Vec<Ability>,
-    /// The items the boss drops.
-    pub drops: Vec<Drop>,
-}
-
-/// A raid on the codex.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CodexRaid {
-    /// The name of the raid.
-    pub name: String,
-    /// The description of the raid.
-    pub description: String,
-    /// The icon of the raid.
-    pub icon: String,
-    /// The event in which the raid appears.
-    pub event: Option<String>,
-    /// The tier of the raid.
-    pub tier: i8,
-    /// The abilities of the raid.
-    pub abilities: Vec<Ability>,
-    /// The items the raid drops.
-    pub drops: Vec<Drop>,
-}
 
 /// Information extracted from the monster page.
 /// This may be that of a regular monster, boss, or raid.
@@ -109,9 +26,9 @@ struct ExtractedInfo {
     /// The tier of the monster.
     pub tier: i8,
     /// The abilities of the monster.
-    pub abilities: Vec<Ability>,
+    pub abilities: Vec<MonsterAbility>,
     /// The items the monster drops.
-    pub drops: Vec<Drop>,
+    pub drops: Vec<MonsterDrop>,
 }
 
 /// The contents of the `codex-page-description` node.
@@ -252,16 +169,16 @@ fn parse_name_uri_icon_list(
 }
 
 /// Parse abilities from the `h4` abilities node.
-fn parse_abilities(iter_node: &NodeRef) -> Result<Vec<Ability>, Error> {
+fn parse_abilities(iter_node: &NodeRef) -> Result<Vec<MonsterAbility>, Error> {
     parse_name_uri_icon_list(iter_node)
-        .map(|tupleresult| tupleresult.map(|(name, uri, icon)| Ability { name, uri, icon }))
+        .map(|tupleresult| tupleresult.map(|(name, uri, icon)| MonsterAbility { name, uri, icon }))
         .collect()
 }
 
 /// Parse drops the `h4` drops node.
-fn parse_drops(iter_node: &NodeRef) -> Result<Vec<Drop>, Error> {
+fn parse_drops(iter_node: &NodeRef) -> Result<Vec<MonsterDrop>, Error> {
     parse_name_uri_icon_list(iter_node)
-        .map(|tupleresult| tupleresult.map(|(name, uri, icon)| Drop { name, uri, icon }))
+        .map(|tupleresult| tupleresult.map(|(name, uri, icon)| MonsterDrop { name, uri, icon }))
         .collect()
 }
 
@@ -310,9 +227,10 @@ fn parse_html_page(contents: &str) -> Result<ExtractedInfo, Error> {
 }
 
 /// Parses a monster page from `playorna.com` and returns the details about the given monster.
-pub fn parse_html_codex_monster(contents: &str) -> Result<CodexMonster, Error> {
+pub fn parse_html_codex_monster(contents: &str, slug: String) -> Result<CodexMonster, Error> {
     parse_html_page(contents).and_then(|info| {
         Ok(CodexMonster {
+            slug,
             name: info.name,
             icon: info.icon,
             event: info.event,
@@ -330,9 +248,10 @@ pub fn parse_html_codex_monster(contents: &str) -> Result<CodexMonster, Error> {
 }
 
 /// Parses a boss page from `playorna.com` and returns the details about the given boss.
-pub fn parse_html_codex_boss(contents: &str) -> Result<CodexBoss, Error> {
+pub fn parse_html_codex_boss(contents: &str, slug: String) -> Result<CodexBoss, Error> {
     parse_html_page(contents).and_then(|info| {
         Ok(CodexBoss {
+            slug,
             name: info.name,
             icon: info.icon,
             event: info.event,
@@ -350,9 +269,10 @@ pub fn parse_html_codex_boss(contents: &str) -> Result<CodexBoss, Error> {
 }
 
 /// Parses a raid page from `playorna.com` and returns the details about the given raid.
-pub fn parse_html_codex_raid(contents: &str) -> Result<CodexRaid, Error> {
+pub fn parse_html_codex_raid(contents: &str, slug: String) -> Result<CodexRaid, Error> {
     parse_html_page(contents).and_then(|info| {
         Ok(CodexRaid {
+            slug,
             name: info.name,
             description: info.description.ok_or_else(|| {
                 Error::HTMLParsingError("Failed to retrieve description from raid".to_string())

@@ -1,53 +1,47 @@
-#![allow(unused_imports, dead_code, unused_variables)]
-use std::fmt::{Debug, Display};
-use std::fs::File;
-use std::io::{BufRead, BufReader, BufWriter};
-use std::path::Path;
-use std::time::{Instant, SystemTime};
+use std::time::Instant;
 
 use dotenv::dotenv;
-use itertools::Itertools;
 
-use ornaguide_rs::guide::Static;
+#[allow(unused_imports)]
 use ornaguide_rs::{
     codex::{Codex, CodexItem},
     error::Error,
-    guide::{AdminGuide, CachedGuide, Guide, OrnaAdminGuide},
-    items::{admin::AdminItem, RawItem},
-    monsters::{MonsterDrop, RawMonster},
-    skills::{RawSkill, Skill},
+    guide::{AdminGuide, Guide, OrnaAdminGuide},
 };
-use output::{generate_output_jsons, OrnaData};
-
-use crate::codex::fetch::CodexItems;
-use crate::guide::fetch::AdminItems;
+use output::{refresh, OrnaData};
 
 mod codex;
 mod guide;
+mod guide_match;
 mod misc;
 mod output;
 
 #[allow(unused_variables)]
-#[allow(unused_mut)]
-fn ethi() -> Result<(), Error> {
+/// Danger zone. Where I test my code.
+fn ethi(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
+    guide_match::items::perform(data, false, guide)?;
+    Ok(())
+}
+
+fn main2() -> Result<(), Error> {
     let _ = dotenv();
     let cookie = dotenv::var("ORNAGUIDE_COOKIE").unwrap();
     let guide = OrnaAdminGuide::new(&cookie)?;
-    let data = OrnaData::load_from("output")?;
+    let data = || OrnaData::load_from("output");
 
-    // codex::fetch::items(&guide)?;
-    // codex::fetch::bosses(&guide)?;
-    // codex::fetch::raids(&guide)?;
-    // guide::fetch::items(&guide)?;
-    // adorn_slots(&guide)?;
-    // generate_output_jsons(&guide)?;
-
-    Ok(())
+    let args = std::env::args().collect::<Vec<_>>();
+    match args.iter().map(|s| s.as_str()).collect::<Vec<_>>()[..] {
+        [_, "json", "refresh"] => refresh(&guide),
+        [_, "match", "items"] => guide_match::items::perform(&data()?, false, &guide),
+        [_, "match", "items", "--fix"] => guide_match::items::perform(&data()?, true, &guide),
+        [_] => ethi(&guide, &data()?),
+        _ => Err(Error::Misc("Invalid CLI arguments".to_string())),
+    }
 }
 
 fn main() {
     let begin = Instant::now();
-    match ethi() {
+    match main2() {
         Ok(_) => println!("OK"),
         Err(err) => eprintln!("Error: {}", err),
     }

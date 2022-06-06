@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Error,
@@ -8,7 +9,7 @@ use crate::{
 };
 
 /// A status effect caused or given from a skill.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct StatusEffect {
     /// The name of the effect.
     pub effect: String,
@@ -17,7 +18,7 @@ pub struct StatusEffect {
 }
 
 /// A skill on the codex.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CodexSkill {
     /// The name of the skill.
     pub name: String,

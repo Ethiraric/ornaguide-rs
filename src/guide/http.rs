@@ -14,10 +14,10 @@ use crate::{
         html_item_parser::parse_html_codex_item,
         html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
         html_monster_parser::{
-            parse_html_codex_boss, parse_html_codex_monster, parse_html_codex_raid, CodexRaid,
+            parse_html_codex_boss, parse_html_codex_monster, parse_html_codex_raid,
         },
         html_skill_parser::parse_html_codex_skill,
-        CodexBoss, CodexItem, CodexMonster, CodexSkill,
+        CodexBoss, CodexItem, CodexMonster, CodexRaid, CodexSkill,
     },
     error::Error,
     guide::{
@@ -399,7 +399,7 @@ impl Http {
             concat!(PLAYORNA_BASE_PATH!(), "/codex/monsters/{}"),
             monster_name
         );
-        parse_html_codex_monster(&get_and_save(&self.http, &url)?)
+        parse_html_codex_monster(&get_and_save(&self.http, &url)?, monster_name.to_string())
     }
 
     pub(crate) fn codex_retrieve_bosses_list(&self) -> Result<Vec<CodexListEntry>, Error> {
@@ -412,7 +412,7 @@ impl Http {
             concat!(PLAYORNA_BASE_PATH!(), "/codex/bosses/{}"),
             boss_name
         );
-        parse_html_codex_boss(&get_and_save(&self.http, &url)?)
+        parse_html_codex_boss(&get_and_save(&self.http, &url)?, boss_name.to_string())
     }
 
     pub(crate) fn codex_retrieve_raids_list(&self) -> Result<Vec<CodexListEntry>, Error> {
@@ -422,7 +422,7 @@ impl Http {
 
     pub(crate) fn codex_retrieve_raid(&self, raid_name: &str) -> Result<CodexRaid, Error> {
         let url = format!(concat!(PLAYORNA_BASE_PATH!(), "/codex/raids/{}"), raid_name);
-        parse_html_codex_raid(&get_and_save(&self.http, &url)?)
+        parse_html_codex_raid(&get_and_save(&self.http, &url)?, raid_name.to_string())
     }
 
     pub(crate) fn codex_retrieve_items_list(&self) -> Result<Vec<CodexListEntry>, Error> {
@@ -432,6 +432,6 @@ impl Http {
 
     pub(crate) fn codex_retrieve_item(&self, item_name: &str) -> Result<CodexItem, Error> {
         let url = format!(concat!(PLAYORNA_BASE_PATH!(), "/codex/items/{}"), item_name);
-        parse_html_codex_item(&get_and_save(&self.http, &url)?)
+        parse_html_codex_item(&get_and_save(&self.http, &url)?, item_name.to_string())
     }
 }

@@ -1,5 +1,6 @@
+#![allow(dead_code)]
 use ornaguide_rs::{
-    codex::{Codex, CodexBoss, CodexItem, CodexMonster, CodexRaid},
+    codex::{Codex, CodexBoss, CodexItem, CodexMonster, CodexRaid, CodexSkill},
     error::Error,
     guide::OrnaAdminGuide,
     items::admin::AdminItem,
@@ -34,6 +35,13 @@ pub struct CodexBosses {
 pub struct CodexRaids {
     /// Raids from the codex.
     pub raids: Vec<CodexRaid>,
+}
+
+/// Collection of skills from the codex.
+#[derive(Serialize, Deserialize)]
+pub struct CodexSkills {
+    /// Skills from the codex.
+    pub raids: Vec<CodexSkill>,
 }
 
 impl<'a> CodexItems {
@@ -135,4 +143,23 @@ pub fn raids(guide: &OrnaAdminGuide) -> Result<CodexRaids, Error> {
     }
     bar.finish_with_message("CRaids fetched");
     Ok(CodexRaids { raids: ret })
+}
+
+pub fn skills(guide: &OrnaAdminGuide) -> Result<CodexSkills, Error> {
+    let skills = guide.codex_fetch_skill_list()?;
+    let mut ret = Vec::new();
+    let bar = bar(skills.len() as u64);
+    for skill in skills.iter() {
+        let slug = skill
+            .uri
+            .strip_suffix('/')
+            .unwrap()
+            .strip_prefix("/codex/spells/")
+            .unwrap();
+        bar.set_message(slug.to_string());
+        ret.push(guide.codex_fetch_skill(slug)?);
+        bar.inc(1);
+    }
+    bar.finish_with_message("CSkills fetched");
+    Ok(CodexSkills { raids: ret })
 }
