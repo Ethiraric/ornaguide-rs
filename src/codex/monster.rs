@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::guide::html_utils::Tag;
+
 /// An ability for a monster
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Ability {
@@ -38,7 +40,9 @@ pub struct CodexMonster {
     /// The rarity of the monster.
     pub rarity: String,
     /// The tier of the monster.
-    pub tier: i8,
+    pub tier: u8,
+    /// Tags attached to the item.
+    pub tags: Vec<Tag>,
     /// The abilities of the monster.
     pub abilities: Vec<Ability>,
     /// The items the monster drops.
@@ -61,7 +65,9 @@ pub struct CodexBoss {
     /// The rarity of the boss.
     pub rarity: String,
     /// The tier of the boss.
-    pub tier: i8,
+    pub tier: u8,
+    /// Tags attached to the item.
+    pub tags: Vec<Tag>,
     /// The abilities of the boss.
     pub abilities: Vec<Ability>,
     /// The items the boss drops.
@@ -82,7 +88,9 @@ pub struct CodexRaid {
     /// The event in which the raid appears.
     pub event: Option<String>,
     /// The tier of the raid.
-    pub tier: i8,
+    pub tier: u8,
+    /// Tags attached to the item.
+    pub tags: Vec<Tag>,
     /// The abilities of the raid.
     pub abilities: Vec<Ability>,
     /// The items the raid drops.

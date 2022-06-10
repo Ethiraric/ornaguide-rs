@@ -32,6 +32,8 @@ pub struct AdminSkills {
 }
 
 impl<'a> AdminItems {
+    /// Find the codex item associated with the given admin monster.
+    /// If there is no or multiple match, return an `Err`.
     pub fn find_match_for_codex_item(&'a self, needle: &CodexItem) -> Result<&'a AdminItem, Error> {
         let mut matches = self.items.iter().filter(|item| {
             sanitize_guide_name(&item.name) == needle.name

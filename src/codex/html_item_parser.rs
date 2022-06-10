@@ -1,10 +1,11 @@
 use std::ops::Deref;
 
-use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRef, NodeRef};
+use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Error,
+    guide::html_utils::{parse_tags, Tag},
     utils::html::{
         descend_iter, descend_to, get_attribute_from_node, icon_url_to_path, node_to_text,
         parse_icon, try_descend_to,
@@ -23,13 +24,6 @@ pub enum Element {
     Arcane,
     Dragon,
     Physical,
-}
-
-/// A tag attached to an item.
-#[derive(Debug, Serialize, Deserialize)]
-pub enum Tag {
-    FoundInChests,
-    FoundInShops,
 }
 
 /// Stats of an item.
@@ -282,21 +276,6 @@ fn parse_name_icon_list(
                 panic!("Cannot happen due to previous filter");
             }
         })
-}
-
-/// Parse the tags of the item.
-fn parse_tags<T>(iter: impl Iterator<Item = NodeDataRef<T>>) -> Result<Vec<Tag>, Error> {
-    let mut tags = vec![];
-
-    for node in iter {
-        match node_to_text(node.as_node()).as_str() {
-            "✓ Found in chests" => tags.push(Tag::FoundInChests),
-            "✓ Found in shops" => tags.push(Tag::FoundInShops),
-            x => return Err(Error::HTMLParsingError(format!("Unknown tag: {}", x))),
-        }
-    }
-
-    Ok(tags)
 }
 
 /// Parse the stats of the item.

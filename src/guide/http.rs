@@ -109,12 +109,14 @@ const ITEM_FORM_FIELD_NAMES: &[&str] = &[
 
 /// Names of the fields in the admin monster change page.
 const MONSTER_FORM_FIELD_NAMES: &[&str] = &[
+    "codex",
     "name",
     "tier",
     "family",
     "image_name",
     "boss",
     "level",
+    "hp",
     "notes",
     "spawns",
     "weak_to",

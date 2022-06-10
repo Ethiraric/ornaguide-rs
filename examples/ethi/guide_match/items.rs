@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use itertools::Itertools;
 use ornaguide_rs::{
-    codex::CodexElement,
+    codex::{CodexElement, CodexItem},
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
     items::admin::AdminItem,
@@ -104,7 +104,7 @@ where
 {
     if admin_stat != codex_stat {
         println!(
-            "{:30}:{:11}: codex= {:<20} guide= {:<20}",
+            "\x1B[0;34m{:30}:{:11}:\x1B[0m codex= {:<20} guide= {:<20}",
             admin_item.name, stat_name, codex_stat, admin_stat
         );
         if fix {
@@ -125,8 +125,8 @@ where
 fn check_stat_debug<AS, CS, Fixer>(
     stat_name: &str,
     admin_item: &AdminItem,
-    admin_stat: AS,
-    codex_stat: CS,
+    admin_stat: &AS,
+    codex_stat: &CS,
     fix: bool,
     fixer: Fixer,
     guide: &OrnaAdminGuide,
@@ -138,12 +138,12 @@ where
 {
     if admin_stat != codex_stat {
         println!(
-            "{:30}:{:11}:\ncodex= {:<80?}\nguide= {:?}",
+            "\x1B[0;34m{:30}:{:11}:\x1B[0m\ncodex= {:<80?}\nguide= {:?}",
             admin_item.name, stat_name, codex_stat, admin_stat
         );
         if fix {
             let mut item = guide.admin_retrieve_item_by_id(admin_item.id)?;
-            fixer(&mut item, &codex_stat);
+            fixer(&mut item, codex_stat);
             guide.admin_save_item(item)?;
             guide.admin_retrieve_item_by_id(admin_item.id)?;
         }
@@ -151,6 +151,137 @@ where
     } else {
         Ok(true)
     }
+}
+
+fn check_item_dropped_by(
+    data: &OrnaData,
+    fix: bool,
+    guide: &OrnaAdminGuide,
+    codex_item: &CodexItem,
+    guide_item: &AdminItem,
+) -> Result<(), Error> {
+    // TODO*ethiraric, 10/06/2022): Refactor this mess.
+
+    // List monster names that drop the item.
+    let guide_slugs = data
+        .guide
+        .monsters
+        .monsters
+        .iter()
+        .filter_map(|monster| {
+            monster
+                .drops
+                .iter()
+                .find(|id| **id == guide_item.id)
+                .map(|_| monster)
+        })
+        // Filter out Vulcan, and The Fools entries.
+        .filter(|monster| ![276, 300, 362, 430].contains(&monster.id))
+        // Map them to their codex entry.
+        .filter_map(|monster| {
+            data.find_generic_codex_monster_from_admin_monster(monster)
+                .map_err(|err| println!("{}", err))
+                .ok()
+                .map(|codex_monster| codex_monster.uri())
+        })
+        .sorted()
+        .collect::<Vec<_>>();
+    let codex_uris = codex_item
+        .dropped_by
+        .iter()
+        .map(|drop_by| drop_by.uri.clone())
+        .sorted()
+        .collect::<Vec<_>>();
+    let ok = check_stat_debug(
+        "dropped_by",
+        guide_item,
+        &guide_slugs,
+        &codex_uris,
+        false,
+        |_, _| {},
+        guide,
+    )?;
+
+    if ok {
+        return Ok(());
+    }
+
+    // List the codex uris of monsters we should edit.
+    let addenda = codex_uris
+        .iter()
+        .filter(|dropped_by| !guide_slugs.contains(dropped_by))
+        .collect::<Vec<_>>();
+    let to_remove = guide_slugs
+        .iter()
+        .filter(|dropped_by| !codex_uris.contains(dropped_by))
+        .collect::<Vec<_>>();
+    if addenda.is_empty() && to_remove.is_empty() {
+        return Ok(());
+    }
+    if !addenda.is_empty() {
+        println!("\x1b[0;32mSuggest adding: {:?}\x1b[0m", addenda);
+    }
+    if !to_remove.is_empty() {
+        println!("\x1b[0;31mSuggest removing: {:?}\x1b[0m", to_remove);
+    }
+
+    if fix && !addenda.is_empty() && !to_remove.is_empty() {
+        // Edit all monsters we should add the drop to.
+        for monster_id in addenda
+            .iter()
+            .filter_map(|uri| data.codex.find_generic_monster_from_uri(uri))
+            .filter_map(|codex_monster| {
+                data.guide
+                    .find_match_for_codex_generic_monster(codex_monster)
+                    .map_err(|err| println!("{}", err))
+                    .ok()
+                    .map(|monster| monster.id)
+            })
+        {
+            let mut monster = guide.admin_retrieve_monster_by_id(monster_id)?;
+            println!(
+                "Adding drop {} (#{}) to monster {} (#{})",
+                guide_item.name, guide_item.id, monster.name, monster.id
+            );
+            // Guard editing a monster we might already have added the item to, but not refreshed
+            // the jsons yet.
+            if monster.drops.contains(&guide_item.id) {
+                continue;
+            }
+            monster.drops.push(guide_item.id);
+            guide.admin_save_monster(monster)?;
+            guide.admin_retrieve_monster_by_id(monster_id)?;
+        }
+
+        // Edit all monsters we should remove the drop from.
+        for monster_id in to_remove
+            .iter()
+            .filter_map(|uri| data.codex.find_generic_monster_from_uri(uri))
+            .filter_map(|codex_monster| {
+                data.guide
+                    .find_match_for_codex_generic_monster(codex_monster)
+                    .map_err(|err| println!("{}", err))
+                    .ok()
+                    .map(|monster| monster.id)
+            })
+        {
+            let mut monster = guide.admin_retrieve_monster_by_id(monster_id)?;
+            println!(
+                "Removing drop {} (#{}) from monster {} (#{})",
+                guide_item.name, guide_item.id, monster.name, monster.id
+            );
+            if let Some(pos) = monster
+                .drops
+                .iter()
+                .position(|item_id| *item_id == guide_item.id)
+            {
+                monster.drops.remove(pos);
+                guide.admin_save_monster(monster)?;
+                guide.admin_retrieve_monster_by_id(monster_id)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 /// Check for mismatches in the stats.
@@ -454,7 +585,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             check_stat_debug(
                 "causes",
                 guide_item,
-                guide_item
+                &guide_item
                     .causes
                     .iter()
                     .map(|cause_id| {
@@ -469,7 +600,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                     })
                     .sorted()
                     .collect::<Vec<_>>(),
-                codex_item
+                &codex_item
                     .causes
                     .iter()
                     .map(|cause| cause.name.clone())
@@ -508,7 +639,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             check_stat_debug(
                 "cures",
                 guide_item,
-                guide_item
+                &guide_item
                     .cures
                     .iter()
                     .map(|cure_id| {
@@ -523,7 +654,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                     })
                     .sorted()
                     .collect::<Vec<_>>(),
-                codex_item
+                &codex_item
                     .cures
                     .iter()
                     .map(|cure| cure.name.clone())
@@ -549,7 +680,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             check_stat_debug(
                 "gives",
                 guide_item,
-                guide_item
+                &guide_item
                     .gives
                     .iter()
                     .map(|give_id| {
@@ -564,7 +695,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                     })
                     .sorted()
                     .collect::<Vec<_>>(),
-                codex_item
+                &codex_item
                     .gives
                     .iter()
                     .map(|give| give.name.clone())
@@ -590,7 +721,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             check_stat_debug(
                 "immunities",
                 guide_item,
-                guide_item
+                &guide_item
                     .prevents
                     .iter()
                     .map(|immunity_id| {
@@ -607,7 +738,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                     })
                     .sorted()
                     .collect::<Vec<_>>(),
-                codex_item
+                &codex_item
                     .immunities
                     .iter()
                     .map(|immunity| immunity.name.clone())
@@ -630,34 +761,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 guide,
             )?;
             // Dropped by
-            check_stat_debug(
-                "dropped_by",
-                guide_item,
-                // List monster names that drop the item.
-                data.guide
-                    .monsters
-                    .monsters
-                    .iter()
-                    .filter_map(|monster| {
-                        monster
-                            .drops
-                            .iter()
-                            .find(|id| **id == guide_item.id)
-                            .map(|_| monster.name.clone())
-                    })
-                    .sorted()
-                    .collect::<Vec<_>>(),
-                codex_item
-                    .dropped_by
-                    .iter()
-                    // Strip `/codex/` from the uri.
-                    .map(|drop_by| drop_by.uri[7..].trim_end_matches('/').to_string())
-                    .sorted()
-                    .collect::<Vec<_>>(),
-                false,
-                |item, dropped_bys| {},
-                guide,
-            )?;
+            check_item_dropped_by(data, fix, guide, codex_item, guide_item)?;
         }
     }
     Ok(())

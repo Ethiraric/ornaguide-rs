@@ -8,6 +8,7 @@ use crate::{
 mod cache;
 pub(crate) mod html_form_parser;
 pub(crate) mod html_list_parser;
+pub(crate) mod html_utils;
 mod http;
 mod ornaguide;
 mod r#static;

@@ -3,96 +3,159 @@ use std::{
     io::{BufReader, BufWriter},
 };
 
+use itertools::Itertools;
 use ornaguide_rs::{
+    codex::{Codex, CodexBoss, CodexMonster, CodexRaid},
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide, Static},
+    monsters::admin::AdminMonster,
 };
 
 use crate::{
-    codex::fetch::{CodexBosses, CodexItems, CodexMonsters, CodexRaids},
+    codex::fetch::{CodexBosses, CodexItems, CodexMonsters, CodexRaids, CodexSkills},
     guide::fetch::{AdminItems, AdminMonsters, AdminSkills},
+    misc::bar,
 };
 
+/// Add unlisted monsters / bosses / raids to the data.
+/// Walks through item drops and lists monsters in those drops we couldn't find.
+/// Modifies `data` in-place.
+pub fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<(), Error> {
+    let uris = data
+        .codex
+        .items
+        .items
+        .iter()
+        .flat_map(|item| item.dropped_by.iter())
+        .filter(|dropped_by| {
+            data.codex
+                .find_generic_monster_from_uri(&dropped_by.uri)
+                .is_none()
+        })
+        .map(|dropped_by| &dropped_by.uri)
+        .sorted()
+        .dedup()
+        .collect::<Vec<_>>();
+
+    if uris.is_empty() {
+        return Ok(());
+    }
+
+    let bar = bar(uris.len() as u64);
+    for uri in uris {
+        // Strip `/codex/` and trailing slash from the uri.
+        let uri = uri[7..].trim_end_matches('/');
+        bar.set_message(uri.to_string());
+        if let Some(pos) = uri.find('/') {
+            let kind = &uri[0..pos];
+            let slug = &uri[pos + 1..];
+            match kind {
+                "monsters" => {
+                    data.codex
+                        .monsters
+                        .monsters
+                        .push(guide.codex_fetch_monster(slug)?);
+                }
+                "bosses" => {
+                    data.codex.bosses.bosses.push(guide.codex_fetch_boss(slug)?);
+                }
+                "raids" => {
+                    data.codex.raids.raids.push(guide.codex_fetch_raid(slug)?);
+                }
+                _ => {
+                    println!("Unknown monster kind for URI {}", uri);
+                }
+            }
+            bar.inc(1);
+        } else {
+            println!("Failed to parse monster for URI {}", uri);
+        }
+    }
+    bar.finish_with_message("CUnlist fetched");
+    Ok(())
+}
+
 pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
+    let mut data = OrnaData {
+        codex: CodexData {
+            items: crate::codex::fetch::items(guide)?,
+            raids: crate::codex::fetch::raids(guide)?,
+            monsters: crate::codex::fetch::monsters(guide)?,
+            bosses: crate::codex::fetch::bosses(guide)?,
+            skills: crate::codex::fetch::skills(guide)?,
+        },
+        guide: GuideData {
+            items: crate::guide::fetch::items(guide)?,
+            monsters: crate::guide::fetch::monsters(guide)?,
+            skills: crate::guide::fetch::skills(guide)?,
+            static_: guide.admin_retrieve_static_resources()?,
+        },
+    };
+    add_unlisted_monsters(guide, &mut data)?;
+
     // Codex jsons
-    let items = crate::codex::fetch::items(guide)?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/codex_items.json")?),
-        &items,
+        &data.codex.items,
     )?;
-
-    let raids = crate::codex::fetch::raids(guide)?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/codex_raids.json")?),
-        &raids,
+        &data.codex.raids,
     )?;
-
-    let monsters = crate::codex::fetch::monsters(guide)?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/codex_monsters.json")?),
-        &monsters,
+        &data.codex.monsters,
     )?;
-
-    let bosses = crate::codex::fetch::bosses(guide)?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/codex_bosses.json")?),
-        &bosses,
+        &data.codex.bosses,
     )?;
-
-    let skills = crate::codex::fetch::skills(guide)?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/codex_skills.json")?),
-        &skills,
+        &data.codex.skills,
     )?;
 
     // Guide jsons
-    let items = crate::guide::fetch::items(guide)?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_items.json")?),
-        &items,
+        &data.guide.items,
     )?;
-
-    let monsters = crate::guide::fetch::monsters(guide)?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_monsters.json")?),
-        &monsters,
+        &data.guide.monsters,
     )?;
-
-    let skills = crate::guide::fetch::skills(guide)?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_skills.json")?),
-        &skills,
+        &data.guide.skills,
     )?;
-
-    let rsc = guide.admin_retrieve_static_resources()?;
 
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_spawns.json")?),
-        &rsc.spawns,
+        &data.guide.static_.spawns,
     )?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_elements.json")?),
-        &rsc.elements,
+        &data.guide.static_.elements,
     )?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_item_types.json")?),
-        &rsc.item_types,
+        &data.guide.static_.item_types,
     )?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_equipped_bys.json")?),
-        &rsc.equipped_bys,
+        &data.guide.static_.equipped_bys,
     )?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_status_effects.json")?),
-        &rsc.status_effects,
+        &data.guide.static_.status_effects,
     )?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_item_categories.json")?),
-        &rsc.item_categories,
+        &data.guide.static_.item_categories,
     )?;
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_monster_families.json")?),
-        &rsc.monster_families,
+        &data.guide.static_.monster_families,
     )?;
 
     Ok(())
@@ -103,6 +166,18 @@ pub struct CodexData {
     pub raids: CodexRaids,
     pub monsters: CodexMonsters,
     pub bosses: CodexBosses,
+    pub skills: CodexSkills,
+}
+
+/// A monster from the codex, which may be a regular monster, a boss or a raid.
+#[derive(Debug, Clone)]
+pub enum CodexGenericMonster<'a> {
+    /// A regular monster.
+    Monster(&'a CodexMonster),
+    /// A boss.
+    Boss(&'a CodexBoss),
+    /// A raid.
+    Raid(&'a CodexRaid),
 }
 
 pub struct GuideData {
@@ -115,6 +190,117 @@ pub struct GuideData {
 pub struct OrnaData {
     pub codex: CodexData,
     pub guide: GuideData,
+}
+
+impl<'a> CodexData {
+    /// Find which monster/boss/raid corresponds to the given URI.
+    /// The URI must be of the form `/codex/{kind}/{slug}/`.
+    pub fn find_generic_monster_from_uri(&'a self, uri: &str) -> Option<CodexGenericMonster<'a>> {
+        // Strip `/codex/` and trailing slash from the uri.
+        let uri = uri[7..].trim_end_matches('/');
+        if let Some(pos) = uri.find('/') {
+            let kind = &uri[0..pos];
+            let slug = &uri[pos + 1..];
+            match kind {
+                "monsters" => self
+                    .monsters
+                    .monsters
+                    .iter()
+                    .find(|monster| monster.slug == slug)
+                    .map(CodexGenericMonster::Monster),
+                "bosses" => self
+                    .bosses
+                    .bosses
+                    .iter()
+                    .find(|boss| boss.slug == slug)
+                    .map(CodexGenericMonster::Boss),
+                "raids" => self
+                    .raids
+                    .raids
+                    .iter()
+                    .find(|raid| raid.slug == slug)
+                    .map(CodexGenericMonster::Raid),
+                _ => {
+                    println!("Unknown kind for generic monster {}", uri);
+                    None
+                }
+            }
+        } else {
+            println!("Failed to find generic monster for {}", uri);
+            None
+        }
+    }
+}
+
+impl CodexGenericMonster<'_> {
+    // Returns the URI of the monster.
+    // URI matches `/codex/{kind}/{slug}/`.
+    pub fn uri(&self) -> String {
+        match self {
+            CodexGenericMonster::Monster(x) => format!("/codex/monsters/{}/", x.slug),
+            CodexGenericMonster::Boss(x) => format!("/codex/bosses/{}/", x.slug),
+            CodexGenericMonster::Raid(x) => format!("/codex/raids/{}/", x.slug),
+        }
+    }
+}
+
+impl GuideData {
+    /// Find the admin item associated with the given codex monster.
+    /// If there is no or multiple match, return an `Err`.
+    pub fn find_match_for_codex_generic_monster<'a>(
+        &'a self,
+        needle: CodexGenericMonster,
+    ) -> Result<&'a AdminMonster, Error> {
+        let matches = match needle {
+            CodexGenericMonster::Monster(codex) => self
+                .monsters
+                .monsters
+                .iter()
+                .filter(|admin| {
+                    admin.is_regular_monster()
+                        && admin.tier == codex.tier
+                        && admin.image_name == codex.icon
+                        && admin.codex_name() == codex.name
+                })
+                .collect::<Vec<_>>(),
+            CodexGenericMonster::Boss(codex) => self
+                .monsters
+                .monsters
+                .iter()
+                .filter(|admin| {
+                    admin.is_boss(&self.static_.spawns)
+                        && admin.tier == codex.tier
+                        && admin.image_name == codex.icon
+                        && admin.codex_name() == codex.name
+                })
+                .collect::<Vec<_>>(),
+            CodexGenericMonster::Raid(codex) => self
+                .monsters
+                .monsters
+                .iter()
+                .filter(|admin| {
+                    admin.is_raid(&self.static_.spawns)
+                        && admin.tier == codex.tier
+                        && admin.image_name == codex.icon
+                        && admin.codex_name() == codex.name
+                })
+                .collect::<Vec<_>>(),
+        };
+
+        if matches.is_empty() {
+            Err(Error::Misc(format!(
+                "No match for codex item '{}'",
+                needle.uri()
+            )))
+        } else if matches.len() > 1 {
+            Err(Error::Misc(format!(
+                "Multiple matches for codex item '{}'",
+                needle.uri()
+            )))
+        } else {
+            Ok(matches[0])
+        }
+    }
 }
 
 impl OrnaData {
@@ -135,6 +321,10 @@ impl OrnaData {
                 ))?))?,
                 bosses: serde_json::from_reader(BufReader::new(File::open(format!(
                     "{}/codex_bosses.json",
+                    directory
+                ))?))?,
+                skills: serde_json::from_reader(BufReader::new(File::open(format!(
+                    "{}/codex_skills.json",
                     directory
                 ))?))?,
             },
@@ -181,5 +371,81 @@ impl OrnaData {
                 },
             },
         })
+    }
+
+    /// Find which monster/boss/raid in the codex corresponds to the given admin monster.
+    pub fn find_generic_codex_monster_from_admin_monster<'a>(
+        &'a self,
+        admin_monster: &AdminMonster,
+    ) -> Result<CodexGenericMonster<'a>, Error> {
+        let monster_name = admin_monster.codex_name();
+        // TODO(fsabourin, 06/06/2022): Factorize.
+        if admin_monster.is_regular_monster() {
+            // Monster
+            let mut matches = self.codex.monsters.monsters.iter().filter(|codex_monster| {
+                admin_monster.tier == codex_monster.tier
+                    && admin_monster.image_name == codex_monster.icon
+                    && monster_name == codex_monster.name
+            });
+            if let Some(matched) = matches.next() {
+                if matches.next().is_some() {
+                    Err(Error::Misc(format!(
+                        "Multiple codex monster matches for admin monster {} (#{}, {})",
+                        admin_monster.name, admin_monster.id, monster_name
+                    )))
+                } else {
+                    Ok(CodexGenericMonster::Monster(matched))
+                }
+            } else {
+                Err(Error::Misc(format!(
+                    "No codex monster match for admin monster {} (#{}, {})",
+                    admin_monster.name, admin_monster.id, monster_name
+                )))
+            }
+        } else if admin_monster.is_boss(&self.guide.static_.spawns) {
+            // Boss
+            let mut matches = self.codex.bosses.bosses.iter().filter(|codex_boss| {
+                admin_monster.tier == codex_boss.tier
+                    && admin_monster.image_name == codex_boss.icon
+                    && monster_name == codex_boss.name
+            });
+            if let Some(matched) = matches.next() {
+                if matches.next().is_some() {
+                    Err(Error::Misc(format!(
+                        "Multiple codex monster matches for admin boss {} (#{}, {})",
+                        admin_monster.name, admin_monster.id, monster_name
+                    )))
+                } else {
+                    Ok(CodexGenericMonster::Boss(matched))
+                }
+            } else {
+                Err(Error::Misc(format!(
+                    "No codex monster match for admin boss {} (#{}, {})",
+                    admin_monster.name, admin_monster.id, monster_name
+                )))
+            }
+        } else {
+            // Raid
+            let mut matches = self.codex.raids.raids.iter().filter(|codex_raid| {
+                admin_monster.tier == codex_raid.tier
+                    && admin_monster.image_name == codex_raid.icon
+                    && monster_name == codex_raid.name
+            });
+            if let Some(matched) = matches.next() {
+                if matches.next().is_some() {
+                    Err(Error::Misc(format!(
+                        "Multiple codex monster matches for admin raid {} (#{}, {})",
+                        admin_monster.name, admin_monster.id, monster_name
+                    )))
+                } else {
+                    Ok(CodexGenericMonster::Raid(matched))
+                }
+            } else {
+                Err(Error::Misc(format!(
+                    "No codex monster match for admin raid {} (#{}, {})",
+                    admin_monster.name, admin_monster.id, monster_name
+                )))
+            }
+        }
     }
 }

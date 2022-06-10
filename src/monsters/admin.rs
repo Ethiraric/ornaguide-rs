@@ -1,17 +1,22 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, guide::html_form_parser::ParsedForm};
-
+use crate::{
+    error::Error,
+    guide::{html_form_parser::ParsedForm, Spawn},
+    misc::sanitize_guide_name,
+};
 /// An item fetched from the admin panel.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AdminMonster {
     pub(crate) csrfmiddlewaretoken: String,
     pub id: u32,
+    pub codex_uri: String,
     pub name: String,
-    pub tier: u32,
+    pub tier: u8,
     pub family: Option<u32>,
     pub image_name: String,
     pub boss: bool,
+    pub hp: u32,
     pub level: u32,
     pub notes: String,
     pub spawns: Vec<u32>,
@@ -35,6 +40,7 @@ impl TryFrom<ParsedForm> for AdminMonster {
 
         for (key, value) in form.fields.into_iter() {
             match key.as_str() {
+                "codex" => item.codex_uri = value,
                 "name" => item.name = value,
                 "tier" => item.tier = value.parse()?,
                 "family" => {
@@ -47,6 +53,7 @@ impl TryFrom<ParsedForm> for AdminMonster {
                 "image_name" => item.image_name = value,
                 "boss" => item.boss = value == "on",
                 "level" => item.level = value.parse()?,
+                "hp" => item.hp = value.parse()?,
                 "notes" => item.notes = value,
                 "spawns" => item.spawns.push(value.parse()?),
                 "weak_to" => item.weak_to.push(value.parse()?),
@@ -76,6 +83,7 @@ impl From<AdminMonster> for ParsedForm {
         let mut push = |key: &str, value: String| form.fields.push((key.to_string(), value));
 
         push("name", item.name);
+        push("codex", item.codex_uri);
         push("tier", item.tier.to_string());
         push(
             "family",
@@ -88,6 +96,7 @@ impl From<AdminMonster> for ParsedForm {
             push("boss", "on".to_string());
         }
         push("level", item.level.to_string());
+        push("hp", item.hp.to_string());
         push("notes", item.notes);
 
         for x in item.spawns.iter() {
@@ -116,5 +125,72 @@ impl From<AdminMonster> for ParsedForm {
         }
 
         form
+    }
+}
+
+fn slugify_name(name: &str) -> String {
+    sanitize_guide_name(name).to_lowercase().replace(' ', "-")
+}
+
+impl AdminMonster {
+    /// Returns true if the monster is a regular one (not a boss, nor a raid).
+    pub fn is_regular_monster(&self) -> bool {
+        !self.boss
+    }
+
+    /// Returns true if the monster is a boss (not a regular monster, nor a raid).
+    pub fn is_boss(&self, guide_spawns: &[Spawn]) -> bool {
+        self.boss
+            && !self
+                .spawns
+                .iter()
+                .filter_map(|spawn_id| guide_spawns.iter().find(|spawn| spawn.id == *spawn_id))
+                .any(|spawn| {
+                    spawn.name == "Kingdom Raid"
+                        || spawn.name == "World Raid"
+                        || spawn.name == "World Raid year-round"
+                })
+    }
+
+    /// Returns true if the monster is a raid (not a regular monster, nor a boss).
+    pub fn is_raid(&self, guide_spawns: &[Spawn]) -> bool {
+        self.boss
+            && self
+                .spawns
+                .iter()
+                .filter_map(|spawn_id| guide_spawns.iter().find(|spawn| spawn.id == *spawn_id))
+                .any(|spawn| {
+                    spawn.name == "Kingdom Raid"
+                        || spawn.name == "World Raid"
+                        || spawn.name == "World Raid year-round"
+                })
+    }
+
+    /// Try to guess what the codex URI for the monster is.
+    /// Returns something like `/codex/monsters/ghost/`.
+    pub fn codex_uri(&self, guide_spawns: &[Spawn]) -> String {
+        let slug = slugify_name(&self.name);
+        if self.is_regular_monster() {
+            format!("/codex/monsters/{}/", slug)
+        } else if self.is_boss(guide_spawns) {
+            format!("/codex/bosses/{}/", slug)
+        } else {
+            format!("/codex/raids/{}/", slug)
+        }
+    }
+
+    /// Try to guess what the codex name for the monster is.
+    pub fn codex_name(&self) -> String {
+        let monster_name = if self.is_regular_monster() {
+            self.name
+                .strip_prefix("Arisen ")
+                .map(|stripped| format!("{} (Arisen)", stripped))
+                .unwrap_or_else(|| self.name.clone())
+        } else if self.name == "Arisen Kin of Kerberos" {
+            "Kin of Kerberos (Arisen)".to_string()
+        } else {
+            self.name.clone()
+        };
+        sanitize_guide_name(&monster_name).to_string()
     }
 }

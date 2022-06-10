@@ -16,10 +16,16 @@ mod guide_match;
 mod misc;
 mod output;
 
-#[allow(unused_variables)]
+#[allow(unused_variables, unused_mut)]
 /// Danger zone. Where I test my code.
-fn ethi(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
-    guide_match::items::perform(data, false, guide)?;
+fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
+    guide_match::items::perform(&data, true, guide)?;
+    // let monster_id = 254;
+    // let mut monster = guide.admin_retrieve_monster_by_id(monster_id)?;
+    // assert_eq!(monster.name, "Arisen Lizarr Lord");
+    // monster.image_name = "bosses/lizarr_king.png".to_string();
+    // guide.admin_save_monster(monster)?;
+    // guide.admin_retrieve_monster_by_id(monster_id)?;
     Ok(())
 }
 
@@ -34,7 +40,7 @@ fn main2() -> Result<(), Error> {
         [_, "json", "refresh"] => refresh(&guide),
         [_, "match", "items"] => guide_match::items::perform(&data()?, false, &guide),
         [_, "match", "items", "--fix"] => guide_match::items::perform(&data()?, true, &guide),
-        [_] => ethi(&guide, &data()?),
+        [_] => ethi(&guide, data()?),
         _ => Err(Error::Misc("Invalid CLI arguments".to_string())),
     }
 }

@@ -5,6 +5,7 @@ use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRe
 use crate::{
     codex::{CodexBoss, CodexMonster, CodexRaid, MonsterAbility, MonsterDrop},
     error::Error,
+    guide::html_utils::{parse_tags, Tag},
     utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text, parse_icon},
 };
 
@@ -24,7 +25,9 @@ struct ExtractedInfo {
     /// The rarity of the monster.
     pub rarity: Option<String>,
     /// The tier of the monster.
-    pub tier: i8,
+    pub tier: u8,
+    /// Tags attached to the item.
+    pub tags: Vec<Tag>,
     /// The abilities of the monster.
     pub abilities: Vec<MonsterAbility>,
     /// The items the monster drops.
@@ -110,7 +113,7 @@ fn parse_description_nodes<T>(
 }
 
 /// Parse the tier of the skill.
-fn parse_tier(node: &NodeRef) -> Result<i8, Error> {
+fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
     let text = node_to_text(node);
     let text = text.trim();
     if let Some(pos) = text.find(':') {
@@ -191,6 +194,7 @@ fn parse_html_page(contents: &str) -> Result<ExtractedInfo, Error> {
     let icon = descend_to(page.as_node(), ".codex-page-icon", "page")?;
     let descriptions_it = descend_iter(page.as_node(), ".codex-page-description", "page")?;
     let tier = descend_to(page.as_node(), ".codex-page-meta", "page")?;
+    let tags = parse_tags(descend_iter(page.as_node(), ".codex-page-tag", "page")?)?;
     let mut abilities = vec![];
     let mut drops = vec![];
 
@@ -221,6 +225,7 @@ fn parse_html_page(contents: &str) -> Result<ExtractedInfo, Error> {
         family,
         rarity,
         tier: parse_tier(tier.as_node())?,
+        tags,
         abilities,
         drops,
     })
@@ -241,6 +246,7 @@ pub fn parse_html_codex_monster(contents: &str, slug: String) -> Result<CodexMon
                 Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
             })?,
             tier: info.tier,
+            tags: info.tags,
             abilities: info.abilities,
             drops: info.drops,
         })
@@ -262,6 +268,7 @@ pub fn parse_html_codex_boss(contents: &str, slug: String) -> Result<CodexBoss, 
                 Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
             })?,
             tier: info.tier,
+            tags: info.tags,
             abilities: info.abilities,
             drops: info.drops,
         })
@@ -280,6 +287,7 @@ pub fn parse_html_codex_raid(contents: &str, slug: String) -> Result<CodexRaid, 
             icon: info.icon,
             event: info.event,
             tier: info.tier,
+            tags: info.tags,
             abilities: info.abilities,
             drops: info.drops,
         })
