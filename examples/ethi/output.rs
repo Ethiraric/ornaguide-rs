@@ -21,25 +21,34 @@ use crate::{
 /// Walks through item drops and lists monsters in those drops we couldn't find.
 /// Modifies `data` in-place.
 pub fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<(), Error> {
+    // Monsters that are not necessarily listed (i.e.: belong to an event) and that have no drops.
+    // These won't show up when listing through item drops.
+    let unlisted_without_drops = &["/codex/monsters/elite-balor-flame/".to_string()];
+
     let uris = data
         .codex
         .items
         .items
         .iter()
+        // List all drops from all items.
         .flat_map(|item| item.dropped_by.iter())
+        // Keep only the URI of those those we can't find a codex monster for.
         .filter(|dropped_by| {
             data.codex
                 .find_generic_monster_from_uri(&dropped_by.uri)
                 .is_none()
         })
         .map(|dropped_by| &dropped_by.uri)
+        // Add event monsters we don't have that do not drop any item.
+        .chain(
+            unlisted_without_drops
+                .iter()
+                .filter(|uri| data.codex.find_generic_monster_from_uri(uri).is_none()),
+        )
+        // Remove duplicates.
         .sorted()
         .dedup()
         .collect::<Vec<_>>();
-
-    if uris.is_empty() {
-        return Ok(());
-    }
 
     let bar = bar(uris.len() as u64);
     for uri in uris {
