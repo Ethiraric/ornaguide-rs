@@ -179,7 +179,7 @@ pub struct CodexData {
 }
 
 /// A monster from the codex, which may be a regular monster, a boss or a raid.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum CodexGenericMonster<'a> {
     /// A regular monster.
     Monster(&'a CodexMonster),
@@ -239,9 +239,23 @@ impl<'a> CodexData {
             None
         }
     }
+
+    /// Returns an iterator over all monsters / bosses / raids, wrapped in the
+    /// `CodexGenericMonster` enum.
+    pub fn iter_all_monsters(&'a self) -> impl Iterator<Item = CodexGenericMonster<'a>> {
+        self.monsters
+            .monsters
+            .iter()
+            // List monsters, wrap them in a generic type.
+            .map(CodexGenericMonster::Monster)
+            // List bosses, wrap them in the same generic type and chain the iterators.
+            .chain(self.bosses.bosses.iter().map(CodexGenericMonster::Boss))
+            // List raids, wrap them in the same generic type and chain the iterators.
+            .chain(self.raids.raids.iter().map(CodexGenericMonster::Raid))
+    }
 }
 
-impl CodexGenericMonster<'_> {
+impl<'a> CodexGenericMonster<'a> {
     // Returns the URI of the monster.
     // URI matches `/codex/{kind}/{slug}/`.
     pub fn uri(&self) -> String {
@@ -251,60 +265,123 @@ impl CodexGenericMonster<'_> {
             CodexGenericMonster::Raid(x) => format!("/codex/raids/{}/", x.slug),
         }
     }
+
+    /// Returns the event to which the monster belongs, if any.
+    pub fn event(&self) -> Option<&'a String> {
+        match self {
+            CodexGenericMonster::Monster(x) => x.event.as_ref(),
+            CodexGenericMonster::Boss(x) => x.event.as_ref(),
+            CodexGenericMonster::Raid(x) => x.event.as_ref(),
+        }
+    }
 }
 
 impl GuideData {
-    /// Find the admin item associated with the given codex monster.
+    /// Find the admin monster associated with the given codex monster.
     /// If there is no or multiple match, return an `Err`.
     pub fn find_match_for_codex_generic_monster<'a>(
         &'a self,
         needle: CodexGenericMonster,
     ) -> Result<&'a AdminMonster, Error> {
-        let matches = match needle {
-            CodexGenericMonster::Monster(codex) => self
-                .monsters
-                .monsters
-                .iter()
-                .filter(|admin| {
-                    admin.is_regular_monster()
-                        && admin.tier == codex.tier
-                        && admin.image_name == codex.icon
-                        && admin.codex_name() == codex.name
-                })
-                .collect::<Vec<_>>(),
-            CodexGenericMonster::Boss(codex) => self
-                .monsters
-                .monsters
-                .iter()
-                .filter(|admin| {
-                    admin.is_boss(&self.static_.spawns)
-                        && admin.tier == codex.tier
-                        && admin.image_name == codex.icon
-                        && admin.codex_name() == codex.name
-                })
-                .collect::<Vec<_>>(),
-            CodexGenericMonster::Raid(codex) => self
-                .monsters
-                .monsters
-                .iter()
-                .filter(|admin| {
-                    admin.is_raid(&self.static_.spawns)
-                        && admin.tier == codex.tier
-                        && admin.image_name == codex.icon
-                        && admin.codex_name() == codex.name
-                })
-                .collect::<Vec<_>>(),
-        };
+        match needle {
+            CodexGenericMonster::Monster(monster) => {
+                self.find_match_for_codex_regular_monster(monster)
+            }
+            CodexGenericMonster::Boss(boss) => self.find_match_for_codex_boss(boss),
+            CodexGenericMonster::Raid(raid) => self.find_match_for_codex_raid(raid),
+        }
+    }
 
+    /// Find the admin monster associated with the given codex monster.
+    /// If there is no or multiple match, return an `Err`.
+    pub fn find_match_for_codex_regular_monster<'a>(
+        &'a self,
+        needle: &CodexMonster,
+    ) -> Result<&'a AdminMonster, Error> {
+        let matches = self
+            .monsters
+            .monsters
+            .iter()
+            .filter(|admin| {
+                admin.is_regular_monster()
+                    && admin.tier == needle.tier
+                    && admin.image_name == needle.icon
+                    && admin.codex_name() == needle.name
+            })
+            .collect::<Vec<_>>();
         if matches.is_empty() {
             Err(Error::Misc(format!(
-                "No match for codex item '{}'",
-                needle.uri()
+                "No match for codex regular monster '{}'",
+                needle.slug
             )))
         } else if matches.len() > 1 {
             Err(Error::Misc(format!(
-                "Multiple matches for codex item '{}'",
-                needle.uri()
+                "Multiple matches for codex regular monster '{}'",
+                needle.slug
+            )))
+        } else {
+            Ok(matches[0])
+        }
+    }
+
+    /// Find the admin monster associated with the given codex boss.
+    /// If there is no or multiple match, return an `Err`.
+    pub fn find_match_for_codex_boss<'a>(
+        &'a self,
+        needle: &CodexBoss,
+    ) -> Result<&'a AdminMonster, Error> {
+        let matches = self
+            .monsters
+            .monsters
+            .iter()
+            .filter(|admin| {
+                admin.is_boss(&self.static_.spawns)
+                    && admin.tier == needle.tier
+                    && admin.image_name == needle.icon
+                    && admin.codex_name() == needle.name
+            })
+            .collect::<Vec<_>>();
+        if matches.is_empty() {
+            Err(Error::Misc(format!(
+                "No match for codex boss '{}'",
+                needle.slug
+            )))
+        } else if matches.len() > 1 {
+            Err(Error::Misc(format!(
+                "Multiple matches for codex boss '{}'",
+                needle.slug
+            )))
+        } else {
+            Ok(matches[0])
+        }
+    }
+
+    /// Find the admin monster associated with the given codex raid.
+    /// If there is no or multiple match, return an `Err`.
+    pub fn find_match_for_codex_raid<'a>(
+        &'a self,
+        needle: &CodexRaid,
+    ) -> Result<&'a AdminMonster, Error> {
+        let matches = self
+            .monsters
+            .monsters
+            .iter()
+            .filter(|admin| {
+                admin.is_raid(&self.static_.spawns)
+                    && admin.tier == needle.tier
+                    && admin.image_name == needle.icon
+                    && admin.codex_name() == needle.name
+            })
+            .collect::<Vec<_>>();
+        if matches.is_empty() {
+            Err(Error::Misc(format!(
+                "No match for codex raid '{}'",
+                needle.slug
+            )))
+        } else if matches.len() > 1 {
+            Err(Error::Misc(format!(
+                "Multiple matches for codex raid '{}'",
+                needle.slug
             )))
         } else {
             Ok(matches[0])
