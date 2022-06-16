@@ -12,7 +12,7 @@ pub use html_item_parser::{
 };
 pub use html_skill_parser::{CodexSkill, StatusEffect};
 pub use monster::{
-    Ability as MonsterAbility, CodexBoss, CodexMonster, CodexRaid, Drop as MonsterDrop,
+    Ability as MonsterAbility, CodexBoss, CodexMonster, CodexRaid, Drop as MonsterDrop, Tag,
 };
 
 #[derive(Debug)]

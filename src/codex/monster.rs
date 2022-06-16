@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::guide::html_utils::Tag;
+pub use crate::guide::html_utils::Tag;
 
 /// An ability for a monster
 #[derive(Debug, Serialize, Deserialize)]
@@ -33,8 +33,8 @@ pub struct CodexMonster {
     pub name: String,
     /// The icon of the monster.
     pub icon: String,
-    /// The event in which the monster appears.
-    pub event: Option<String>,
+    /// The events in which the monster appears.
+    pub events: Vec<String>,
     /// The family to which the monster belongs.
     pub family: String,
     /// The rarity of the monster.
@@ -59,7 +59,7 @@ pub struct CodexBoss {
     /// The icon of the boss.
     pub icon: String,
     /// The event in which the boss appears.
-    pub event: Option<String>,
+    pub events: Vec<String>,
     /// The family to which the boss belongs.
     pub family: String,
     /// The rarity of the boss.
@@ -86,7 +86,7 @@ pub struct CodexRaid {
     /// The icon of the raid.
     pub icon: String,
     /// The event in which the raid appears.
-    pub event: Option<String>,
+    pub events: Vec<String>,
     /// The tier of the raid.
     pub tier: u8,
     /// Tags attached to the item.

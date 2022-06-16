@@ -85,3 +85,26 @@ pub struct Static {
     /// List of `equipped_by`s.
     pub equipped_bys: Vec<EquippedBy>,
 }
+
+impl Spawn {
+    /// Return the name of the event (without `Event:` or `Past Event:` prepended).
+    /// Returns an empty string if the spawn isn't an event.
+    pub fn event_name(&self) -> &str {
+        if self.name.starts_with("Event:") {
+            &self.name[7..]
+        } else if self.name.starts_with("Past Event:") {
+            &self.name[12..]
+        } else {
+            ""
+        }
+    }
+}
+
+impl Static {
+    /// Return an iterator over all event spawns in the guide.
+    pub fn iter_events(&self) -> impl Iterator<Item = &Spawn> {
+        self.spawns.iter().filter(|spawn| {
+            spawn.name.starts_with("Event:") || spawn.name.starts_with("Past Event:")
+        })
+    }
+}

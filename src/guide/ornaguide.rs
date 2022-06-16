@@ -337,6 +337,10 @@ impl AdminGuide for OrnaAdminGuide {
             },
         ]
     }
+
+    fn admin_add_spawn(&self, spawn_name: &str) -> Result<(), Error> {
+        self.guide.http().admin_add_spawn(spawn_name)
+    }
 }
 
 impl Codex for OrnaAdminGuide {

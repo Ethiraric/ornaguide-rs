@@ -5,7 +5,7 @@ use std::{
 
 use itertools::Itertools;
 use ornaguide_rs::{
-    codex::{Codex, CodexBoss, CodexMonster, CodexRaid},
+    codex::{Codex, CodexBoss, CodexMonster, CodexRaid, MonsterAbility, MonsterDrop, Tag},
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide, Static},
     monsters::admin::AdminMonster,
@@ -240,7 +240,7 @@ impl<'a> CodexData {
         }
     }
 
-    /// Returns an iterator over all monsters / bosses / raids, wrapped in the
+    /// Return an iterator over all monsters / bosses / raids, wrapped in the
     /// `CodexGenericMonster` enum.
     pub fn iter_all_monsters(&'a self) -> impl Iterator<Item = CodexGenericMonster<'a>> {
         self.monsters
@@ -255,8 +255,9 @@ impl<'a> CodexData {
     }
 }
 
+#[allow(dead_code)]
 impl<'a> CodexGenericMonster<'a> {
-    // Returns the URI of the monster.
+    // Return the URI of the monster.
     // URI matches `/codex/{kind}/{slug}/`.
     pub fn uri(&self) -> String {
         match self {
@@ -266,12 +267,97 @@ impl<'a> CodexGenericMonster<'a> {
         }
     }
 
-    /// Returns the event to which the monster belongs, if any.
-    pub fn event(&self) -> Option<&'a String> {
+    /// Return the name of the monster.
+    pub fn name(&self) -> &'a String {
         match self {
-            CodexGenericMonster::Monster(x) => x.event.as_ref(),
-            CodexGenericMonster::Boss(x) => x.event.as_ref(),
-            CodexGenericMonster::Raid(x) => x.event.as_ref(),
+            CodexGenericMonster::Monster(x) => &x.name,
+            CodexGenericMonster::Boss(x) => &x.name,
+            CodexGenericMonster::Raid(x) => &x.name,
+        }
+    }
+
+    /// Return the icon of the monster.
+    pub fn icon(&self) -> &'a String {
+        match self {
+            CodexGenericMonster::Monster(x) => &x.icon,
+            CodexGenericMonster::Boss(x) => &x.icon,
+            CodexGenericMonster::Raid(x) => &x.icon,
+        }
+    }
+
+    /// Return the events to which the monster belongs.
+    pub fn events(&self) -> &'a Vec<String> {
+        match self {
+            CodexGenericMonster::Monster(x) => x.events.as_ref(),
+            CodexGenericMonster::Boss(x) => x.events.as_ref(),
+            CodexGenericMonster::Raid(x) => x.events.as_ref(),
+        }
+    }
+
+    /// Return the family of the monster, if any.
+    pub fn family(&self) -> Option<&'a String> {
+        match self {
+            CodexGenericMonster::Monster(x) => Some(&x.family),
+            CodexGenericMonster::Boss(x) => Some(&x.family),
+            CodexGenericMonster::Raid(_) => None,
+        }
+    }
+
+    /// Return the rarity of the monster, if any.
+    pub fn rarity(&self) -> Option<&'a String> {
+        match self {
+            CodexGenericMonster::Monster(x) => Some(&x.rarity),
+            CodexGenericMonster::Boss(x) => Some(&x.rarity),
+            CodexGenericMonster::Raid(_) => None,
+        }
+    }
+
+    /// Return the tier of the monster.
+    pub fn tier(&self) -> u8 {
+        match self {
+            CodexGenericMonster::Monster(x) => x.tier,
+            CodexGenericMonster::Boss(x) => x.tier,
+            CodexGenericMonster::Raid(x) => x.tier,
+        }
+    }
+
+    /// Return the tags attached to the monster.
+    pub fn tags(&self) -> &'a Vec<Tag> {
+        match self {
+            CodexGenericMonster::Monster(x) => &x.tags,
+            CodexGenericMonster::Boss(x) => &x.tags,
+            CodexGenericMonster::Raid(x) => &x.tags,
+        }
+    }
+
+    /// Return the tags attached to the monster as guide spawns
+    pub fn tags_as_guide_spawns(&self) -> Vec<String> {
+        self.tags()
+            .iter()
+            .map(|tag| match tag {
+                Tag::WorldRaid => "World Raid".to_string(),
+                Tag::KingdomRaid => "Kingdom Raid".to_string(),
+                _ => panic!("Unknown tag {:?} for monster", tag),
+            })
+            .sorted()
+            .collect()
+    }
+
+    /// Return the abilities of the monster.
+    pub fn abilities(&self) -> &'a Vec<MonsterAbility> {
+        match self {
+            CodexGenericMonster::Monster(x) => &x.abilities,
+            CodexGenericMonster::Boss(x) => &x.abilities,
+            CodexGenericMonster::Raid(x) => &x.abilities,
+        }
+    }
+
+    /// Return the list of drops of the monster.
+    pub fn drops(&self) -> &'a Vec<MonsterDrop> {
+        match self {
+            CodexGenericMonster::Monster(x) => &x.drops,
+            CodexGenericMonster::Boss(x) => &x.drops,
+            CodexGenericMonster::Raid(x) => &x.drops,
         }
     }
 }

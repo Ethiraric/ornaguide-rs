@@ -121,6 +121,10 @@ pub trait AdminGuide {
             equipped_bys: self.admin_retrieve_equipped_bys_list(),
         })
     }
+
+    /// Add a new spawn to the guide.
+    /// In order to retrieve the id of the new spawn, all spawns have to be queried again.
+    fn admin_add_spawn(&self, spawn_name: &str) -> Result<(), Error>;
 }
 
 pub use cache::CachedGuide;

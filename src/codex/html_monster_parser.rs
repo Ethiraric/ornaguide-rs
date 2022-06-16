@@ -18,8 +18,8 @@ struct ExtractedInfo {
     pub description: Option<String>,
     /// The icon of the monster.
     pub icon: String,
-    /// The event in which the monster appears.
-    pub event: Option<String>,
+    /// The events in which the monster appears.
+    pub events: Vec<String>,
     /// The family to which the monster belongs.
     pub family: Option<String>,
     /// The rarity of the monster.
@@ -38,8 +38,8 @@ struct ExtractedInfo {
 struct DescriptionNode {
     /// The description of the monster (Raids-only).
     pub description: Option<String>,
-    /// The event in which the monster appears.
-    pub event: Option<String>,
+    /// The events in which the monster appears.
+    pub events: Vec<String>,
     /// The family to which the monster belongs (non-Raids-only).
     pub family: Option<String>,
     /// The rarity of the monster (non-Raids-only).
@@ -66,13 +66,13 @@ fn parse_family_rarity_text<'a>(txt: &'a str, expected_left: &str) -> Result<&'a
     }
 }
 
-/// Parse the event, family and rarity of the monster.
+/// Parse the events, family and rarity of the monster.
 fn parse_description_nodes<T>(
     iter: impl Iterator<Item = NodeDataRef<T>>,
 ) -> Result<DescriptionNode, Error> {
     let mut iter = iter.peekable();
     let mut description = None;
-    let mut event = None;
+    let mut events = Vec::new();
 
     if let Some(event_node) = iter.peek() {
         let txt = node_to_text(event_node.as_node());
@@ -84,15 +84,22 @@ fn parse_description_nodes<T>(
     }
 
     if let Some(event_node) = iter.peek() {
-        if let Ok(ev) = parse_family_rarity_text(&node_to_text(event_node.as_node()), "Event:") {
-            event = Some(ev.to_string());
+        // The event string is composed of the different events separated by a single slash (`/`).
+        if let Ok(events_str) =
+            parse_family_rarity_text(&node_to_text(event_node.as_node()), "Event:")
+        {
+            events = events_str
+                .split('/')
+                .map(|ev| ev.trim().to_string())
+                .collect();
+            events.sort_unstable();
             iter.next();
         }
     }
     if let (Some(family_node), Some(rarity_node), None) = (iter.next(), iter.next(), iter.next()) {
         Ok(DescriptionNode {
             description,
-            event,
+            events,
             family: Some(
                 parse_family_rarity_text(&node_to_text(family_node.as_node()), "Family:")?
                     .to_string(),
@@ -105,7 +112,7 @@ fn parse_description_nodes<T>(
     } else {
         Ok(DescriptionNode {
             description,
-            event,
+            events,
             family: None,
             rarity: None,
         })
@@ -200,7 +207,7 @@ fn parse_html_page(contents: &str) -> Result<ExtractedInfo, Error> {
 
     let DescriptionNode {
         description,
-        event,
+        events,
         family,
         rarity,
     } = parse_description_nodes(descriptions_it)?;
@@ -221,7 +228,7 @@ fn parse_html_page(contents: &str) -> Result<ExtractedInfo, Error> {
         name: node_to_text(name.as_node()),
         description,
         icon: parse_icon(icon.as_node())?,
-        event,
+        events,
         family,
         rarity,
         tier: parse_tier(tier.as_node())?,
@@ -238,7 +245,7 @@ pub fn parse_html_codex_monster(contents: &str, slug: String) -> Result<CodexMon
             slug,
             name: info.name,
             icon: info.icon,
-            event: info.event,
+            events: info.events,
             family: info.family.ok_or_else(|| {
                 Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
             })?,
@@ -260,7 +267,7 @@ pub fn parse_html_codex_boss(contents: &str, slug: String) -> Result<CodexBoss, 
             slug,
             name: info.name,
             icon: info.icon,
-            event: info.event,
+            events: info.events,
             family: info.family.ok_or_else(|| {
                 Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
             })?,
@@ -285,7 +292,7 @@ pub fn parse_html_codex_raid(contents: &str, slug: String) -> Result<CodexRaid, 
                 Error::HTMLParsingError("Failed to retrieve description from raid".to_string())
             })?,
             icon: info.icon,
-            event: info.event,
+            events: info.events,
             tier: info.tier,
             tags: info.tags,
             abilities: info.abilities,

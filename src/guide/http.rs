@@ -29,6 +29,8 @@ use crate::{
     skills::RawSkill,
 };
 
+use super::html_form_parser::parse_spawn_html;
+
 pub(crate) struct Http {
     http: Client,
 }
@@ -376,6 +378,14 @@ impl Http {
     pub(crate) fn admin_retrieve_status_effects_list(&self) -> Result<Vec<Entry>, Error> {
         let url = concat!(BASE_PATH!(), "/admin/orna/statuseffect/");
         query_all_pages(url, &self.http)
+    }
+
+    pub(crate) fn admin_add_spawn(&self, spawn_name: &str) -> Result<(), Error> {
+        let url = concat!(BASE_PATH!(), "/admin/orna/spawn/add/");
+        let mut form = parse_spawn_html(&self.http.get(url).send()?.text()?)?;
+        form.fields
+            .push(("description".to_string(), spawn_name.to_string()));
+        post_forms_to(&self.http, url, form)
     }
 
     pub(crate) fn codex_retrieve_skills_list(&self) -> Result<Vec<CodexListEntry>, Error> {

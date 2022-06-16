@@ -65,7 +65,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
     Ok(())
 }
 
-/// Returns an iterator over the status afflictions a weapon with the given element may inflict.
+/// Return an iterator over the status afflictions a weapon with the given element may inflict.
 fn get_iter_element_statuses(element: Option<&CodexElement>) -> std::vec::IntoIter<String> {
     match element {
         Some(CodexElement::Fire) => vec!["Burning".to_string()].into_iter(),
@@ -86,8 +86,8 @@ fn get_iter_element_statuses(element: Option<&CodexElement>) -> std::vec::IntoIt
     }
 }
 
-/// Compares a single stat and prints an error message if they differ.
-/// Returns whether the stats matched.
+/// Compare a single stat and print an error message if they differ.
+/// Return whether the stats matched.
 fn check_stat<AS, CS, Fixer>(
     stat_name: &str,
     admin_item: &AdminItem,

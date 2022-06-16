@@ -153,3 +153,8 @@ pub fn parse_monster_html(contents: &str, field_names: &[&str]) -> Result<Parsed
 pub fn parse_skill_html(contents: &str, field_names: &[&str]) -> Result<ParsedForm, Error> {
     parse_html_form(contents, "#skill_form", field_names)
 }
+
+/// Extract given fields from an admin spawn add HTML page.
+pub fn parse_spawn_html(contents: &str) -> Result<ParsedForm, Error> {
+    parse_html_form(contents, "#spawn_form", &[])
+}

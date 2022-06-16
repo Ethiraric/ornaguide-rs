@@ -5,6 +5,7 @@ use crate::{
     guide::{html_form_parser::ParsedForm, Spawn},
     misc::sanitize_guide_name,
 };
+
 /// An item fetched from the admin panel.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AdminMonster {
@@ -192,5 +193,25 @@ impl AdminMonster {
             self.name.clone()
         };
         sanitize_guide_name(&monster_name).to_string()
+    }
+
+    // List the events to which the monster belongs.
+    // The events returned won't have the `Event:` or `Past Event` prefix.
+    pub fn get_events(&self, guide_spawns: &[Spawn]) -> Vec<String> {
+        self.spawns
+            .iter()
+            .filter_map(|spawn_id| guide_spawns.iter().find(|spawn| *spawn_id == spawn.id))
+            .map(|spawn| &spawn.name)
+            .filter_map(|spawn| {
+                if spawn.starts_with("Event:") {
+                    Some(&spawn[7..])
+                } else if spawn.starts_with("Past Event:") {
+                    Some(&spawn[12..])
+                } else {
+                    None
+                }
+            })
+            .map(|spawn| spawn.to_string())
+            .collect()
     }
 }
