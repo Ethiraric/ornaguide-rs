@@ -8,7 +8,7 @@ pub struct AdminSkill {
     pub(crate) csrfmiddlewaretoken: String,
     pub id: u32,
     pub name: String,
-    pub tier: u32,
+    pub tier: u8,
     pub type_: u32,
     pub is_magic: bool,
     pub mana_cost: u32,

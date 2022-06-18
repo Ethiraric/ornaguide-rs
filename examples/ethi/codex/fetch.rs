@@ -41,7 +41,7 @@ pub struct CodexRaids {
 #[derive(Serialize, Deserialize)]
 pub struct CodexSkills {
     /// Skills from the codex.
-    pub raids: Vec<CodexSkill>,
+    pub skills: Vec<CodexSkill>,
 }
 
 impl<'a> CodexItems {
@@ -161,5 +161,5 @@ pub fn skills(guide: &OrnaAdminGuide) -> Result<CodexSkills, Error> {
         bar.inc(1);
     }
     bar.finish_with_message("CSkills fetched");
-    Ok(CodexSkills { raids: ret })
+    Ok(CodexSkills { skills: ret })
 }
