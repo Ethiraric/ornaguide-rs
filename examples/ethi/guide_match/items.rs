@@ -8,7 +8,7 @@ use ornaguide_rs::{
     items::admin::AdminItem,
 };
 
-use crate::output::OrnaData;
+use crate::{misc::sanitize_guide_name, output::OrnaData};
 
 /// List items that are on the guide and not the codex, or on the codex and not on the guide.
 fn list_missing(data: &OrnaData) -> Result<(), Error> {
@@ -554,7 +554,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                             .iter()
                             .find(|skill| skill.id == ability_id)
                     })
-                    .map(|skill| skill.name.clone())
+                    .map(|skill| sanitize_guide_name(&skill.name))
                     .unwrap_or_default(),
                 codex_item
                     .ability
