@@ -355,6 +355,13 @@ impl Http {
         query_all_pages(url, &self.http)
     }
 
+    pub(crate) fn admin_add_skill(&self, form: ParsedForm) -> Result<(), Error> {
+        let url = concat!(BASE_PATH!(), "/admin/skills/skill/add/");
+        let mut post_form = parse_skill_html(&self.http.get(url).send()?.text()?, &[])?;
+        post_form.fields = form.fields;
+        post_forms_to(&self.http, url, post_form)
+    }
+
     pub(crate) fn admin_retrieve_spawns_list(&self) -> Result<Vec<Entry>, Error> {
         let url = concat!(BASE_PATH!(), "/admin/orna/spawn/");
         query_all_pages(url, &self.http)

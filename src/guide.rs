@@ -95,6 +95,10 @@ pub trait AdminGuide {
     fn admin_save_skill(&self, skill: AdminSkill) -> Result<(), Error>;
     /// Retrieve the list of skills from the admin view.
     fn admin_retrieve_skills_list(&self) -> Result<Vec<SkillRow>, Error>;
+    /// Add a new skill to the guide.
+    /// The csrfmiddlewaretoken and id fields of the provided skill will be ignored.
+    /// In order to retrieve the id of the new skill, all skills have to be queried again.
+    fn admin_add_skill(&self, skill: AdminSkill) -> Result<(), Error>;
 
     /// Retrieve the list of spawns from the admin view.
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error>;

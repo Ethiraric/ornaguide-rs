@@ -215,6 +215,10 @@ impl AdminGuide for OrnaAdminGuide {
             .collect())
     }
 
+    fn admin_add_skill(&self, skill: AdminSkill) -> Result<(), Error> {
+        self.guide.http().admin_add_skill(ParsedForm::from(skill))
+    }
+
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error> {
         Ok(self
             .guide
