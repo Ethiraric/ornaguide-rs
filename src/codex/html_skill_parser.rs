@@ -1,41 +1,16 @@
 use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
-use serde::{Deserialize, Serialize};
 
 use crate::{
+    codex::{CodexSkill, SkillStatusEffect},
     error::Error,
+    guide::html_utils::parse_tags,
     utils::html::{descend_iter, descend_to, node_to_text, parse_icon},
 };
 
-/// A status effect caused or given from a skill.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct StatusEffect {
-    /// The name of the effect.
-    pub effect: String,
-    /// The chance (0-100) of the effect happening.
-    pub chance: i8,
-}
-
-/// A skill on the codex.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CodexSkill {
-    /// The name of the skill.
-    pub name: String,
-    /// The icon of the skill.
-    pub icon: String,
-    /// The description of the skill.
-    pub description: String,
-    /// The tier of the skill.
-    pub tier: i8,
-    /// The effects the skill causes to the opponent.
-    pub causes: Vec<StatusEffect>,
-    /// The effects the skill gives to the caster.
-    pub gives: Vec<StatusEffect>,
-}
-
 /// Parse the tier of the skill.
-fn parse_tier(node: &NodeRef) -> Result<i8, Error> {
+fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
     let text = node_to_text(node);
     let text = text.trim();
     if let Some(pos) = text.find(':') {
@@ -52,7 +27,7 @@ fn parse_tier(node: &NodeRef) -> Result<i8, Error> {
 }
 
 /// Parse a status effect section.
-fn parse_status_effects(iter_node: &NodeRef) -> Result<Vec<StatusEffect>, Error> {
+fn parse_status_effects(iter_node: &NodeRef) -> Result<Vec<SkillStatusEffect>, Error> {
     let mut ret = vec![];
     let mut iter_node = (*iter_node).clone();
     while let Some(node) = iter_node.next_sibling() {
@@ -73,7 +48,7 @@ fn parse_status_effects(iter_node: &NodeRef) -> Result<Vec<StatusEffect>, Error>
                     let text = text.trim();
                     if let Some(pos) = text.find('(') {
                         let (status, chance) = text.split_at(pos);
-                        ret.push(StatusEffect {
+                        ret.push(SkillStatusEffect {
                             effect: status.trim().to_string(),
                             chance: chance
                                 .trim()
@@ -104,7 +79,7 @@ fn parse_status_effects(iter_node: &NodeRef) -> Result<Vec<StatusEffect>, Error>
 
 /// Parses a page from `playorna.com` and returns the list of entries that were found and their
 /// associated tiers.
-pub fn parse_html_codex_skill(contents: &str) -> Result<CodexSkill, Error> {
+pub fn parse_html_codex_skill(contents: &str, slug: String) -> Result<CodexSkill, Error> {
     let html = parse_html().one(contents);
 
     let name = descend_to(&html, ".herotext", "html")?;
@@ -112,6 +87,7 @@ pub fn parse_html_codex_skill(contents: &str) -> Result<CodexSkill, Error> {
     let icon = descend_to(page.as_node(), ".codex-page-icon", "page")?;
     let description = descend_to(page.as_node(), ".codex-page-description", "page")?;
     let tier = descend_to(page.as_node(), ".codex-page-meta", "page")?;
+    let tags = parse_tags(descend_iter(page.as_node(), ".codex-page-tag", "page")?)?;
     let mut causes = vec![];
     let mut gives = vec![];
 
@@ -129,9 +105,11 @@ pub fn parse_html_codex_skill(contents: &str) -> Result<CodexSkill, Error> {
 
     Ok(CodexSkill {
         name: node_to_text(name.as_node()),
+        slug,
         icon: parse_icon(icon.as_node())?,
         description: node_to_text(description.as_node()),
         tier: parse_tier(tier.as_node())?,
+        tags,
         causes,
         gives,
     })

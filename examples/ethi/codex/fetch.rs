@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use ornaguide_rs::{
-    codex::{Codex, CodexBoss, CodexItem, CodexMonster, CodexRaid, CodexSkill},
+    codex::{Codex, CodexBoss, CodexItem, CodexMonster, CodexRaid, CodexSkill, Tag},
     error::Error,
     guide::OrnaAdminGuide,
     items::admin::AdminItem,

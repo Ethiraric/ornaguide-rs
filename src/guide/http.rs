@@ -410,7 +410,7 @@ impl Http {
             concat!(PLAYORNA_BASE_PATH!(), "/codex/spells/{}"),
             skill_name
         );
-        parse_html_codex_skill(&get_and_save(&self.http, &url)?)
+        parse_html_codex_skill(&get_and_save(&self.http, &url)?, skill_name.to_string())
     }
 
     pub(crate) fn codex_retrieve_monsters_list(&self) -> Result<Vec<CodexListEntry>, Error> {
