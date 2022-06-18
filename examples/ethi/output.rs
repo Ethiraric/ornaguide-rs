@@ -166,6 +166,10 @@ pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
         BufWriter::new(File::create("output/guide_monster_families.json")?),
         &data.guide.static_.monster_families,
     )?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_skill_types.json")?),
+        &data.guide.static_.skill_types,
+    )?;
 
     Ok(())
 }
@@ -540,6 +544,10 @@ impl OrnaData {
                     monster_families: serde_json::from_reader(BufReader::new(File::open(
                         format!("{}/guide_monster_families.json", directory),
                     )?))?,
+                    skill_types: serde_json::from_reader(BufReader::new(File::open(format!(
+                        "{}/guide_skill_types.json",
+                        directory
+                    ))?))?,
                 },
             },
         })

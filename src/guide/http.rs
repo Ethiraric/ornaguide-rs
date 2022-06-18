@@ -380,6 +380,11 @@ impl Http {
         query_all_pages(url, &self.http)
     }
 
+    pub(crate) fn admin_retrieve_skill_types_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/skills/skilltype/");
+        query_all_pages(url, &self.http)
+    }
+
     pub(crate) fn admin_add_spawn(&self, spawn_name: &str) -> Result<(), Error> {
         let url = concat!(BASE_PATH!(), "/admin/orna/spawn/add/");
         let mut form = parse_spawn_html(&self.http.get(url).send()?.text()?)?;

@@ -7,13 +7,13 @@ use crate::{
     error::Error,
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, Guide,
-        ItemCategory, ItemRow, ItemType, MonsterFamily, MonsterRow, SkillRow, Spawn, StatusEffect,
+        ItemCategory, ItemRow, ItemType, MonsterFamily, MonsterRow, SkillRow, SkillType, Spawn,
+        StatusEffect,
     },
     items::{admin::AdminItem, raw::RawItem},
     monsters::{admin::AdminMonster, RawMonster},
     skills::{admin::AdminSkill, RawSkill},
 };
-
 /// The main interface for the guide.
 pub struct OrnaGuide {
     http: Http,
@@ -336,6 +336,19 @@ impl AdminGuide for OrnaAdminGuide {
                 name: "Thief".to_string(),
             },
         ]
+    }
+
+    fn admin_retrieve_skill_types_list(&self) -> Result<Vec<SkillType>, Error> {
+        Ok(self
+            .guide
+            .http()
+            .admin_retrieve_skill_types_list()?
+            .into_iter()
+            .map(|entry| SkillType {
+                id: entry.id,
+                name: entry.value,
+            })
+            .collect())
     }
 
     fn admin_add_spawn(&self, spawn_name: &str) -> Result<(), Error> {

@@ -14,7 +14,8 @@ mod ornaguide;
 mod r#static;
 
 pub use r#static::{
-    Element, EquippedBy, ItemCategory, ItemType, MonsterFamily, Spawn, Static, StatusEffect,
+    Element, EquippedBy, ItemCategory, ItemType, MonsterFamily, SkillType, Spawn, Static,
+    StatusEffect,
 };
 
 /// A skill "row" when listing the skills from the admin guide. It does not contain much details.
@@ -109,6 +110,8 @@ pub trait AdminGuide {
     fn admin_retrieve_elements_list(&self) -> Vec<Element>;
     /// Retrieve the list of `equipped_by`s.
     fn admin_retrieve_equipped_bys_list(&self) -> Vec<EquippedBy>;
+    /// Retrieve the list of skill types.
+    fn admin_retrieve_skill_types_list(&self) -> Result<Vec<SkillType>, Error>;
     /// Retrieve all static resources from the admin view.
     fn admin_retrieve_static_resources(&self) -> Result<Static, Error> {
         Ok(Static {
@@ -119,6 +122,7 @@ pub trait AdminGuide {
             status_effects: self.admin_retrieve_status_effects_list()?,
             elements: self.admin_retrieve_elements_list(),
             equipped_bys: self.admin_retrieve_equipped_bys_list(),
+            skill_types: self.admin_retrieve_skill_types_list()?,
         })
     }
 

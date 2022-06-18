@@ -67,6 +67,15 @@ pub struct EquippedBy {
     pub name: String,
 }
 
+/// A skill type (passive, magic, AoE, ...).
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SkillType {
+    /// Id of the skill type.
+    pub id: u32,
+    /// Name of the skill type.
+    pub name: String,
+}
+
 /// Static resources that are used by the guide.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Static {
@@ -84,6 +93,8 @@ pub struct Static {
     pub elements: Vec<Element>,
     /// List of `equipped_by`s.
     pub equipped_bys: Vec<EquippedBy>,
+    /// List of skill types.
+    pub skill_types: Vec<SkillType>,
 }
 
 impl Spawn {
