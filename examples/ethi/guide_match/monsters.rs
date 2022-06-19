@@ -136,7 +136,7 @@ where
 {
     if admin_field != codex_field {
         println!(
-            "\x1B[0;34m{:30}:{:11}:\x1B[0m codex= {:<80?} guide= {:?}",
+            "\x1B[0;34m{:30}:{:11}:\x1B[0m\ncodex= {:<80?}\nguide= {:?}",
             admin_monster.name, field_name, codex_field, admin_field
         );
         if fix {
@@ -223,6 +223,80 @@ fn fix_monster_event_spawns(
                 .find(|spawn| spawn.event_name() == **name)
         }) {
             monster.spawns.push(spawn.id);
+        }
+    }
+    Ok(())
+}
+
+fn fix_monster_abilities(
+    monster: &mut AdminMonster,
+    data: &OrnaData,
+    expected_abilities: &[String],
+) -> Result<(), Error> {
+    // Start by listing the abilities on the guide.
+    let mut admin_abilities = monster
+        .skills
+        .iter()
+        .filter_map(|id| {
+            data.guide
+                .skills
+                .skills
+                .iter()
+                .find(|skill| skill.id == *id)
+                .map(|skill| skill.codex_uri.clone())
+                .filter(|uri| !uri.is_empty())
+        })
+        .sorted()
+        .collect::<Vec<_>>();
+    admin_abilities.sort_unstable();
+    let (to_add, to_remove) = diff_sorted_slices(expected_abilities, &admin_abilities);
+    if !to_add.is_empty() {
+        println!("\x1B[0;32mSuggest adding: {:?}\x1B[0m", to_add);
+    }
+    if !to_remove.is_empty() {
+        println!("\x1B[0;31mSuggest removing: {:?}\x1B[0m", to_remove);
+    }
+
+    // Remove unneeded skills by filtering the `Vec`.
+    if !to_remove.is_empty() {
+        monster.skills.retain(|skill_id| {
+            if let Some(skill) = data
+                .guide
+                .skills
+                .skills
+                .iter()
+                .find(|skill| skill.id == *skill_id)
+            {
+                !to_remove.iter().any(|name| **name == skill.codex_uri)
+            } else {
+                false
+            }
+        });
+    }
+
+    // Add the new skills.
+    if !to_add.is_empty() {
+        // Convert URIs to ids.
+        let ids_to_add = to_add.iter().filter_map(|skill_codex_uri| {
+            if let Some(skill) = data
+                .guide
+                .skills
+                .skills
+                .iter()
+                .find(|skill| skill.codex_uri == **skill_codex_uri)
+            {
+                Some(skill.id)
+            } else {
+                println!(
+                    "Failed to find guide skill with codex uri {}",
+                    skill_codex_uri
+                );
+                None
+            }
+        });
+
+        for skill_id in ids_to_add {
+            monster.skills.push(skill_id);
         }
     }
     Ok(())
@@ -372,18 +446,25 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                             .skills
                             .iter()
                             .find(|skill| skill.id == *id)
-                            .map(|skill| skill.name.clone())
+                            .map(|skill| skill.codex_uri.clone())
+                            .filter(|uri| !uri.is_empty())
                     })
                     .sorted()
                     .collect::<Vec<_>>(),
                 codex_monster
                     .abilities()
                     .iter()
-                    .map(|ability| ability.name.clone())
+                    .map(|ability| ability.uri.clone())
                     .sorted()
                     .collect::<Vec<_>>(),
                 fix,
-                |monster, abilities| {},
+                |monster, abilities| {
+                    fix_monster_abilities(monster, data, abilities)
+                        .map_err(|err| {
+                            println!("Error while trying to fix monster abilities: {}", err)
+                        })
+                        .unwrap_or(())
+                },
                 guide,
             )?;
         }
