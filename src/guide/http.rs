@@ -132,6 +132,7 @@ const MONSTER_FORM_FIELD_NAMES: &[&str] = &[
 
 /// Names of the fields in the admin skill change page.
 const SKILL_FORM_FIELD_NAMES: &[&str] = &[
+    "codex",
     "name",
     "tier",
     "type",

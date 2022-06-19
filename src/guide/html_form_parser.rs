@@ -79,9 +79,24 @@ fn find_textarea_field_value(select: &NodeRef) -> String {
 /// `image_name`, ...).
 /// The function tries to find it in the page and, depending on the value type, calls the
 /// appropriate helper function to push the value(s) into `fields`.
-fn add_field_value(form: &NodeRef, field_name: &str, fields: &mut Vec<(String, String)>) {
+fn add_field_value(
+    form: &NodeRef,
+    field_name: &str,
+    fields: &mut Vec<(String, String)>,
+) -> Result<(), Error> {
     let html_id = format!("#id_{}", field_name);
-    let field_node = form.select(&html_id).unwrap().next().unwrap();
+    let field_node = form
+        .select(&html_id)
+        .map_err(|()| {
+            Error::HTMLParsingError(format!(
+                "Failed to select html id {} in guide form parsing",
+                html_id
+            ))
+        })?
+        .next()
+        .ok_or_else(|| {
+            Error::HTMLParsingError(format!("No node {} in guide form parsing", html_id))
+        })?;
     let field_node = field_node.as_node();
     if let NodeData::Element(ElementData {
         name,
@@ -113,6 +128,7 @@ fn add_field_value(form: &NodeRef, field_name: &str, fields: &mut Vec<(String, S
     } else {
         panic!("Failed to find node with id {}", html_id)
     }
+    Ok(())
 }
 
 /// Extract given fields from an HTML page.
@@ -128,7 +144,7 @@ fn parse_html_form(
 
     let mut fields = Vec::new();
     for field_name in field_names {
-        add_field_value(form, field_name, &mut fields);
+        add_field_value(form, field_name, &mut fields)?;
     }
 
     let csrfmiddlewaretoken = find_csrfmiddlewaretoken(form);

@@ -4,6 +4,7 @@ use ornaguide_rs::{
     error::Error,
     guide::OrnaAdminGuide,
     items::admin::AdminItem,
+    skills::admin::AdminSkill,
 };
 use serde::{Deserialize, Serialize};
 
@@ -63,6 +64,71 @@ impl<'a> CodexItems {
         } else {
             Err(Error::Misc(format!(
                 "No match for raw item '{}'",
+                needle.name
+            )))
+        }
+    }
+}
+
+impl<'a> CodexSkills {
+    /// Find the codex skill associated with the given admin skill.
+    /// If there is no or multiple match, return an `Err`.
+    #[allow(clippy::unnecessary_unwrap)]
+    pub fn find_match_for_admin_skill(
+        &'a self,
+        needle: &AdminSkill,
+    ) -> Result<&'a CodexSkill, Error> {
+        let sanitized_name = sanitize_guide_name(&needle.name);
+        let mut matches = self
+            .skills
+            .iter()
+            .filter(|skill| {
+                skill.name == sanitized_name && skill.is_offhand() == needle.offhand
+                // && skill.tier == needle.tier
+            })
+            .peekable();
+        let first_match = matches.next();
+        if first_match.is_some() && matches.peek().is_none() {
+            Ok(first_match.unwrap())
+        } else if needle.name == "Twin Attack" || needle.name == "Twin Blast" {
+            // TODO(ethiraric, 19/06/2022): Remove when codex is updated.
+            // These two skills are not marked as off-hand abilities on the codex.
+            let is_phys = needle.name.chars().nth(5) == Some('A');
+            let slug = if is_phys { "TwinAttack" } else { "TwinBlast" };
+            if let Some(skill) = self.skills.iter().find(|skill| skill.slug == slug) {
+                Ok(skill)
+            } else {
+                Err(Error::Misc(format!(
+                    "No match for admin skill '{}'",
+                    needle.name
+                )))
+            }
+        } else if needle.name == "Defend [Physical]" || needle.name == "Defend [Magical]" {
+            // These two skills are named "Defend" on the codex, but not on the guide.
+            // Match "CerusDefendPhys" with "Defend [Physical]" (#604) and "CerusDefendMag" with
+            // "Defend [Magical]" (#605).
+            let is_phys = needle.name.chars().nth(8) == Some('P');
+            let slug = if is_phys {
+                "CerusDefendPhys"
+            } else {
+                "CerusDefendMag"
+            };
+            if let Some(skill) = self.skills.iter().find(|skill| skill.slug == slug) {
+                Ok(skill)
+            } else {
+                Err(Error::Misc(format!(
+                    "No match for admin skill '{}'",
+                    needle.name
+                )))
+            }
+        } else if matches.peek().is_some() {
+            Err(Error::Misc(format!(
+                "Multiple matches for admin skill '{}'",
+                needle.name
+            )))
+        } else {
+            Err(Error::Misc(format!(
+                "No match for admin skill '{}'",
                 needle.name
             )))
         }
