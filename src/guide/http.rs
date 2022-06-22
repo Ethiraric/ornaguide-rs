@@ -55,6 +55,7 @@ macro_rules! PLAYORNA_BASE_PATH {
 
 /// Names of the fields in the admin item change page.
 const ITEM_FORM_FIELD_NAMES: &[&str] = &[
+    "codex",
     "name",
     "tier",
     "type",

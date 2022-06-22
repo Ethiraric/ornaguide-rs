@@ -7,6 +7,7 @@ use crate::{error::Error, guide::html_form_parser::ParsedForm};
 pub struct AdminItem {
     pub(crate) csrfmiddlewaretoken: String,
     pub id: u32,
+    pub codex_uri: String,
     pub name: String,
     pub tier: u8,
     pub type_: u32,
@@ -66,6 +67,7 @@ impl Default for AdminItem {
         AdminItem {
             csrfmiddlewaretoken: String::new(),
             id: 0,
+            codex_uri: String::new(),
             name: String::new(),
             tier: 0,
             type_: 0,
@@ -133,6 +135,7 @@ impl TryFrom<ParsedForm> for AdminItem {
 
         for (key, value) in form.fields.into_iter() {
             match key.as_str() {
+                "codex" => item.codex_uri = value,
                 "name" => item.name = value,
                 "tier" => item.tier = value.parse()?,
                 "type" => item.type_ = value.parse()?,
@@ -226,6 +229,7 @@ impl From<AdminItem> for ParsedForm {
 
         let mut push = |key: &str, value: String| form.fields.push((key.to_string(), value));
 
+        push("codex", item.codex_uri);
         push("name", item.name);
         push("tier", item.tier.to_string());
         push("type", item.type_.to_string());
