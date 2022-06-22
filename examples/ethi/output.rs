@@ -368,7 +368,7 @@ impl<'a> CodexGenericMonster<'a> {
 
 impl GuideData {
     /// Find the admin monster associated with the given codex monster.
-    /// If there is no or multiple match, return an `Err`.
+    /// If there is no match, return an `Err`.
     pub fn find_match_for_codex_generic_monster<'a>(
         &'a self,
         needle: CodexGenericMonster,
@@ -383,99 +383,61 @@ impl GuideData {
     }
 
     /// Find the admin monster associated with the given codex monster.
-    /// If there is no or multiple match, return an `Err`.
+    /// If there is no match, return an `Err`.
     pub fn find_match_for_codex_regular_monster<'a>(
         &'a self,
         needle: &CodexMonster,
     ) -> Result<&'a AdminMonster, Error> {
-        let matches = self
-            .monsters
+        self.monsters
             .monsters
             .iter()
-            .filter(|admin| {
-                admin.is_regular_monster()
-                    && admin.tier == needle.tier
-                    && admin.image_name == needle.icon
-                    && admin.codex_name() == needle.name
+            .find(|admin| {
+                !admin.codex_uri.is_empty()
+                    && admin.is_regular_monster()
+                    && admin.codex_uri["/codex/monsters/".len()..].trim_end_matches('/')
+                        == needle.slug
             })
-            .collect::<Vec<_>>();
-        if matches.is_empty() {
-            Err(Error::Misc(format!(
-                "No match for codex regular monster '{}'",
-                needle.slug
-            )))
-        } else if matches.len() > 1 {
-            Err(Error::Misc(format!(
-                "Multiple matches for codex regular monster '{}'",
-                needle.slug
-            )))
-        } else {
-            Ok(matches[0])
-        }
+            .ok_or_else(|| {
+                Error::Misc(format!(
+                    "No match for codex regular monster '{}'",
+                    needle.slug
+                ))
+            })
     }
 
     /// Find the admin monster associated with the given codex boss.
-    /// If there is no or multiple match, return an `Err`.
+    /// If there is no match, return an `Err`.
     pub fn find_match_for_codex_boss<'a>(
         &'a self,
         needle: &CodexBoss,
     ) -> Result<&'a AdminMonster, Error> {
-        let matches = self
-            .monsters
+        self.monsters
             .monsters
             .iter()
-            .filter(|admin| {
-                admin.is_boss(&self.static_.spawns)
-                    && admin.tier == needle.tier
-                    && admin.image_name == needle.icon
-                    && admin.codex_name() == needle.name
+            .find(|admin| {
+                !admin.codex_uri.is_empty()
+                    && admin.is_boss(&self.static_.spawns)
+                    && admin.codex_uri["/codex/bosses/".len()..].trim_end_matches('/')
+                        == needle.slug
             })
-            .collect::<Vec<_>>();
-        if matches.is_empty() {
-            Err(Error::Misc(format!(
-                "No match for codex boss '{}'",
-                needle.slug
-            )))
-        } else if matches.len() > 1 {
-            Err(Error::Misc(format!(
-                "Multiple matches for codex boss '{}'",
-                needle.slug
-            )))
-        } else {
-            Ok(matches[0])
-        }
+            .ok_or_else(|| Error::Misc(format!("No match for codex boss '{}'", needle.slug)))
     }
 
     /// Find the admin monster associated with the given codex raid.
-    /// If there is no or multiple match, return an `Err`.
+    /// If there is no match, return an `Err`.
     pub fn find_match_for_codex_raid<'a>(
         &'a self,
         needle: &CodexRaid,
     ) -> Result<&'a AdminMonster, Error> {
-        let matches = self
-            .monsters
+        self.monsters
             .monsters
             .iter()
-            .filter(|admin| {
-                admin.is_raid(&self.static_.spawns)
-                    && admin.tier == needle.tier
-                    && admin.image_name == needle.icon
-                    && admin.codex_name() == needle.name
+            .find(|admin| {
+                !admin.codex_uri.is_empty()
+                    && admin.is_raid(&self.static_.spawns)
+                    && admin.codex_uri["/codex/raids/".len()..].trim_end_matches('/') == needle.slug
             })
-            .collect::<Vec<_>>();
-        if matches.is_empty() {
-            Err(Error::Misc(format!(
-                "No match for codex raid '{}'",
-                needle.slug
-            )))
-        } else if matches.len() > 1 {
-            Err(Error::Misc(format!(
-                "Multiple matches for codex raid '{}'",
-                needle.slug
-            )))
-        } else {
-            Ok(matches[0])
-        }
+            .ok_or_else(|| Error::Misc(format!("No match for codex raid '{}'", needle.slug)))
     }
 }
 
@@ -558,74 +520,58 @@ impl OrnaData {
         &'a self,
         admin_monster: &AdminMonster,
     ) -> Result<CodexGenericMonster<'a>, Error> {
-        let monster_name = admin_monster.codex_name();
-        // TODO(fsabourin, 06/06/2022): Factorize.
+        if admin_monster.codex_uri.is_empty() {
+            return Err(Error::Misc(format!(
+                "Empty codex_uri for admin monster '{}'",
+                admin_monster.name
+            )));
+        }
+
         if admin_monster.is_regular_monster() {
             // Monster
-            let mut matches = self.codex.monsters.monsters.iter().filter(|codex_monster| {
-                admin_monster.tier == codex_monster.tier
-                    && admin_monster.image_name == codex_monster.icon
-                    && monster_name == codex_monster.name
-            });
-            if let Some(matched) = matches.next() {
-                if matches.next().is_some() {
-                    Err(Error::Misc(format!(
-                        "Multiple codex monster matches for admin monster {} (#{}, {})",
-                        admin_monster.name, admin_monster.id, monster_name
-                    )))
-                } else {
-                    Ok(CodexGenericMonster::Monster(matched))
-                }
-            } else {
-                Err(Error::Misc(format!(
-                    "No codex monster match for admin monster {} (#{}, {})",
-                    admin_monster.name, admin_monster.id, monster_name
-                )))
-            }
+            let slug = admin_monster.codex_uri["/codex/monsters/".len()..].trim_end_matches('/');
+            self.codex
+                .monsters
+                .monsters
+                .iter()
+                .find(|codex_monster| codex_monster.slug == slug)
+                .map(CodexGenericMonster::Monster)
+                .ok_or_else(|| {
+                    Error::Misc(format!(
+                        "No codex monster match for admin monster {} (#{})",
+                        admin_monster.name, admin_monster.id
+                    ))
+                })
         } else if admin_monster.is_boss(&self.guide.static_.spawns) {
             // Boss
-            let mut matches = self.codex.bosses.bosses.iter().filter(|codex_boss| {
-                admin_monster.tier == codex_boss.tier
-                    && admin_monster.image_name == codex_boss.icon
-                    && monster_name == codex_boss.name
-            });
-            if let Some(matched) = matches.next() {
-                if matches.next().is_some() {
-                    Err(Error::Misc(format!(
-                        "Multiple codex monster matches for admin boss {} (#{}, {})",
-                        admin_monster.name, admin_monster.id, monster_name
-                    )))
-                } else {
-                    Ok(CodexGenericMonster::Boss(matched))
-                }
-            } else {
-                Err(Error::Misc(format!(
-                    "No codex monster match for admin boss {} (#{}, {})",
-                    admin_monster.name, admin_monster.id, monster_name
-                )))
-            }
+            let slug = admin_monster.codex_uri["/codex/bosses/".len()..].trim_end_matches('/');
+            self.codex
+                .bosses
+                .bosses
+                .iter()
+                .find(|codex_boss| codex_boss.slug == slug)
+                .map(CodexGenericMonster::Boss)
+                .ok_or_else(|| {
+                    Error::Misc(format!(
+                        "No codex monster match for admin boss {} (#{})",
+                        admin_monster.name, admin_monster.id
+                    ))
+                })
         } else {
             // Raid
-            let mut matches = self.codex.raids.raids.iter().filter(|codex_raid| {
-                admin_monster.tier == codex_raid.tier
-                    && admin_monster.image_name == codex_raid.icon
-                    && monster_name == codex_raid.name
-            });
-            if let Some(matched) = matches.next() {
-                if matches.next().is_some() {
-                    Err(Error::Misc(format!(
-                        "Multiple codex monster matches for admin raid {} (#{}, {})",
-                        admin_monster.name, admin_monster.id, monster_name
-                    )))
-                } else {
-                    Ok(CodexGenericMonster::Raid(matched))
-                }
-            } else {
-                Err(Error::Misc(format!(
-                    "No codex monster match for admin raid {} (#{}, {})",
-                    admin_monster.name, admin_monster.id, monster_name
-                )))
-            }
+            let slug = admin_monster.codex_uri["/codex/raids/".len()..].trim_end_matches('/');
+            self.codex
+                .raids
+                .raids
+                .iter()
+                .find(|codex_raid| codex_raid.slug == slug)
+                .map(CodexGenericMonster::Raid)
+                .ok_or_else(|| {
+                    Error::Misc(format!(
+                        "No codex monster match for admin raid {} (#{})",
+                        admin_monster.name, admin_monster.id
+                    ))
+                })
         }
     }
 }

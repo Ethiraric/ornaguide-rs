@@ -1,5 +1,5 @@
 use ornaguide_rs::{
-    codex::{CodexItem, CodexSkill, Tag},
+    codex::{CodexItem, CodexSkill},
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
     items::admin::AdminItem,
@@ -8,7 +8,7 @@ use ornaguide_rs::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::misc::{bar, sanitize_guide_name};
+use crate::misc::bar;
 
 /// Collection of items from the guide's admin view.
 #[derive(Serialize, Deserialize)]
@@ -33,89 +33,34 @@ pub struct AdminSkills {
 
 impl<'a> AdminItems {
     /// Find the admin item associated with the given codex item.
-    /// If there is no or multiple match, return an `Err`.
+    /// If there is no match, return an `Err`.
     pub fn find_match_for_codex_item(&'a self, needle: &CodexItem) -> Result<&'a AdminItem, Error> {
-        let mut matches = self.items.iter().filter(|item| {
-            sanitize_guide_name(&item.name) == needle.name
-                && item.tier == needle.tier
-                && needle.icon == item.image_name
-        });
-        if let Some(item) = matches.next() {
-            if matches.next().is_some() {
-                Err(Error::Misc(format!(
-                    "Multiple matches for codex item '{}'",
-                    needle.slug
-                )))
-            } else {
-                Ok(item)
-            }
-        } else {
-            Err(Error::Misc(format!(
-                "No match for admin item '{}'",
-                needle.slug
-            )))
-        }
+        self.items
+            .iter()
+            .find(|item| {
+                !item.codex_uri.is_empty()
+                    && item.codex_uri["/codex/items/".len()..].trim_end_matches('/') == needle.slug
+            })
+            .ok_or_else(|| Error::Misc(format!("No match for codex item '{}'", needle.slug)))
     }
 }
 
 impl<'a> AdminSkills {
     /// Find the admin skill associated with the given codex skill.
-    /// If there is no or multiple match, return an `Err`.
+    /// If there is no match, return an `Err`.
     #[allow(clippy::unnecessary_unwrap)]
     pub fn find_match_for_codex_skill(
         &'a self,
         needle: &CodexSkill,
     ) -> Result<&'a AdminSkill, Error> {
-        let mut matches = self
-            .skills
+        self.skills
             .iter()
-            .filter(|skill| {
-                sanitize_guide_name(&skill.name) == needle.name
-                    && skill.offhand == needle.is_offhand()
-                // && skill.tier == needle.tier
+            .find(|skill| {
+                !skill.codex_uri.is_empty()
+                    && skill.codex_uri["/codex/spells/".len()..].trim_end_matches('/')
+                        == needle.slug
             })
-            .peekable();
-        let first_match = matches.next();
-        if first_match.is_some() && matches.peek().is_none() {
-            Ok(first_match.unwrap())
-        } else if needle.slug == "TwinAttack" || needle.slug == "TwinBlast" {
-            // TODO(ethiraric, 19/06/2022): Remove when codex is updated.
-            // These two skills are not marked as off-hand abilities on the codex.
-            let is_phys = needle.slug.chars().nth(4) == Some('A');
-            let id = if is_phys { 695 } else { 696 };
-            if let Some(skill) = self.skills.iter().find(|skill| skill.id == id) {
-                Ok(skill)
-            } else {
-                Err(Error::Misc(format!(
-                    "No match for codex skill '{}'",
-                    needle.slug
-                )))
-            }
-        } else if needle.slug == "CerusDefendPhys" || needle.slug == "CerusDefendMag" {
-            // These two skills are named "Defend" on the codex, but not on the guide.
-            // Match "CerusDefendPhys" with "Defend [Physical]" (#604) and "CerusDefendMag" with
-            // "Defend [Magical]" (#605).
-            let is_phys = needle.slug.chars().nth(11) == Some('P');
-            let id = if is_phys { 604 } else { 605 };
-            if let Some(skill) = self.skills.iter().find(|skill| skill.id == id) {
-                Ok(skill)
-            } else {
-                Err(Error::Misc(format!(
-                    "No match for codex skill '{}'",
-                    needle.slug
-                )))
-            }
-        } else if matches.peek().is_some() {
-            Err(Error::Misc(format!(
-                "Multiple matches for codex skill '{}'",
-                needle.slug
-            )))
-        } else {
-            Err(Error::Misc(format!(
-                "No match for codex skill '{}'",
-                needle.slug
-            )))
-        }
+            .ok_or_else(|| Error::Misc(format!("No match for codex skill '{}'", needle.slug)))
     }
 }
 

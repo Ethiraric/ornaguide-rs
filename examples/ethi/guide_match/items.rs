@@ -8,7 +8,10 @@ use ornaguide_rs::{
     items::admin::AdminItem,
 };
 
-use crate::{misc::sanitize_guide_name, output::OrnaData};
+use crate::{
+    misc::{diff_sorted_slices, sanitize_guide_name},
+    output::OrnaData,
+};
 
 /// List items that are on the guide and not the codex, or on the codex and not on the guide.
 fn list_missing(data: &OrnaData) -> Result<(), Error> {
@@ -119,7 +122,7 @@ where
     }
 }
 
-/// Compares a single stat and prints an error message if they differ.
+/// Compare a single stat and prints an error message if they differ.
 /// Requires `Debug` instead of `Display`.
 /// Returns whether the stats matched.
 fn check_stat_debug<AS, CS, Fixer>(
@@ -153,6 +156,9 @@ where
     }
 }
 
+/// Compare the dropped_by list for an item.
+/// The steps to accomplish that are longer than for other fields, so the piece of code is isolated
+/// in its own function.
 fn check_item_dropped_by(
     data: &OrnaData,
     fix: bool,
@@ -162,8 +168,8 @@ fn check_item_dropped_by(
 ) -> Result<(), Error> {
     // TODO*ethiraric, 10/06/2022): Refactor this mess.
 
-    // List monster names that drop the item.
-    let guide_slugs = data
+    // List monster uris that drop the item.
+    let guide_uris = data
         .guide
         .monsters
         .monsters
@@ -175,15 +181,11 @@ fn check_item_dropped_by(
                 .find(|id| **id == guide_item.id)
                 .map(|_| monster)
         })
-        // Filter out Vulcan, and The Fools entries.
-        .filter(|monster| ![276, 300, 362, 430].contains(&monster.id))
-        // Map them to their codex entry.
-        .filter_map(|monster| {
-            data.find_generic_codex_monster_from_admin_monster(monster)
-                .map_err(|err| println!("{}", err))
-                .ok()
-                .map(|codex_monster| codex_monster.uri())
-        })
+        // Filter out entries without a codex_uri.
+        // This should remove Vulcan and The Fools entries.
+        .filter(|monster| !monster.codex_uri.is_empty())
+        // Map them to their codex_uris.
+        .map(|monster| monster.codex_uri.clone())
         .sorted()
         .collect::<Vec<_>>();
     let codex_uris = codex_item
@@ -195,7 +197,7 @@ fn check_item_dropped_by(
     let ok = check_stat_debug(
         "dropped_by",
         guide_item,
-        &guide_slugs,
+        &guide_uris,
         &codex_uris,
         false,
         |_, _| {},
@@ -207,14 +209,7 @@ fn check_item_dropped_by(
     }
 
     // List the codex uris of monsters we should edit.
-    let addenda = codex_uris
-        .iter()
-        .filter(|dropped_by| !guide_slugs.contains(dropped_by))
-        .collect::<Vec<_>>();
-    let to_remove = guide_slugs
-        .iter()
-        .filter(|dropped_by| !codex_uris.contains(dropped_by))
-        .collect::<Vec<_>>();
+    let (addenda, to_remove) = diff_sorted_slices(&codex_uris, &guide_uris);
     if addenda.is_empty() && to_remove.is_empty() {
         return Ok(());
     }
@@ -295,7 +290,6 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
         .unwrap()
         .id;
     for codex_item in data.codex.items.items.iter() {
-        // let x = codex_item.stats.as_ref().and_then(|stats| stats.attack);
         if let Ok(guide_item) = data.guide.items.find_match_for_codex_item(codex_item) {
             // Icon
             check_stat(
