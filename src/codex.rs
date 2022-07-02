@@ -4,17 +4,18 @@ pub(crate) mod html_item_parser;
 pub(crate) mod html_list_parser;
 pub(crate) mod html_monster_parser;
 pub(crate) mod html_skill_parser;
+pub(crate) mod item;
 pub(crate) mod monster;
 pub(crate) mod skill;
 
-pub use html_item_parser::{
+pub use item::{
     Ability as ItemAbility, DroppedBy as ItemDroppedBy, Element as CodexElement, Item as CodexItem,
-    Stats as ItemStats, UpgradeMaterial as ItemUpgradeMaterial,
+    ItemStatusEffects, Stats as ItemStats, UpgradeMaterial as ItemUpgradeMaterial,
 };
 pub use monster::{
     Ability as MonsterAbility, CodexBoss, CodexMonster, CodexRaid, Drop as MonsterDrop, Tag,
 };
-pub use skill::{CodexSkill, SkillStatusEffect};
+pub use skill::{CodexSkill, SkillStatusEffect, SkillStatusEffects};
 
 #[derive(Debug)]
 pub struct SkillEntry {

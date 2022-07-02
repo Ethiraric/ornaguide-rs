@@ -1,8 +1,15 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{codex::Tag, error::Error, guide::Static, skills::admin::AdminSkill};
+use crate::{
+    codex::Tag,
+    error::Error,
+    guide::Static,
+    misc::{codex_effect_name_iter_to_guide_id_results, codex_effect_name_to_guide_name},
+    skills::admin::AdminSkill,
+};
 
-/// A status effect caused or given from a skill.
+/// A status effect caused or given by a skill.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SkillStatusEffect {
     /// The name of the effect.
@@ -15,25 +22,24 @@ pub struct SkillStatusEffect {
 pub trait SkillStatusEffects {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide status_effect ids.
     fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error>;
+    /// Convert the list of status effects to a list of effect names, matching those of the guide.
+    fn to_guide_names(&self) -> Vec<String>;
 }
 
 impl SkillStatusEffects for Vec<SkillStatusEffect> {
     fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error> {
+        codex_effect_name_iter_to_guide_id_results(
+            self.iter().map(|name| name.effect.as_str()),
+            static_,
+        )
+        .collect::<Result<Vec<_>, Error>>()
+    }
+
+    fn to_guide_names(&self) -> Vec<String> {
         self.iter()
-            .map(|cause| {
-                static_
-                    .status_effects
-                    .iter()
-                    .find(|effect| effect.name == cause.effect)
-                    .map(|effect| effect.id)
-                    .ok_or_else(|| {
-                        Error::Misc(format!(
-                            "Failed to find a status effect for codex status_effect {}",
-                            cause.effect
-                        ))
-                    })
-            })
-            .collect::<Result<Vec<_>, Error>>()
+            .map(|cause| codex_effect_name_to_guide_name(&cause.effect).to_string())
+            .sorted()
+            .collect()
     }
 }
 

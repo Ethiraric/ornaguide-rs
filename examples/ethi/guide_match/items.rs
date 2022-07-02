@@ -2,7 +2,7 @@ use std::fmt::{Debug, Display};
 
 use itertools::Itertools;
 use ornaguide_rs::{
-    codex::{CodexElement, CodexItem},
+    codex::{CodexElement, CodexItem, ItemStatusEffects},
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
     items::admin::AdminItem,
@@ -596,8 +596,8 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                     .collect::<Vec<_>>(),
                 &codex_item
                     .causes
-                    .iter()
-                    .map(|cause| cause.name.clone())
+                    .to_guide_names()
+                    .into_iter()
                     // TODO(ethiraric, 04/06/2022): Remove this chain and the dedup call below once
                     // the codex fixes elemental statuses for weapons.
                     .chain(if guide_item.type_ == guide_weapon_id {
@@ -648,12 +648,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                     })
                     .sorted()
                     .collect::<Vec<_>>(),
-                &codex_item
-                    .cures
-                    .iter()
-                    .map(|cure| cure.name.clone())
-                    .sorted()
-                    .collect::<Vec<_>>(),
+                &codex_item.cures.to_guide_names(),
                 fix,
                 |item, codex_cures| {
                     item.cures = codex_cures
@@ -689,12 +684,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                     })
                     .sorted()
                     .collect::<Vec<_>>(),
-                &codex_item
-                    .gives
-                    .iter()
-                    .map(|give| give.name.clone())
-                    .sorted()
-                    .collect::<Vec<_>>(),
+                &codex_item.gives.to_guide_names(),
                 fix,
                 |item, codex_give| {
                     item.gives = codex_give
@@ -732,12 +722,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                     })
                     .sorted()
                     .collect::<Vec<_>>(),
-                &codex_item
-                    .immunities
-                    .iter()
-                    .map(|immunity| immunity.name.clone())
-                    .sorted()
-                    .collect::<Vec<_>>(),
+                &codex_item.immunities.to_guide_names(),
                 fix,
                 |item, codex_immunity| {
                     item.prevents = codex_immunity

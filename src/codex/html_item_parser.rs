@@ -1,177 +1,18 @@
 use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
-use serde::{Deserialize, Serialize};
 
 use crate::{
+    codex::item::{
+        Ability, Cause, Cure, DroppedBy, Element, Give, Immunity, Item, Stats, UpgradeMaterial,
+    },
     error::Error,
-    guide::html_utils::{parse_tags, Tag},
+    guide::html_utils::parse_tags,
     utils::html::{
         descend_iter, descend_to, get_attribute_from_node, icon_url_to_path, node_to_text,
         parse_icon, try_descend_to,
     },
 };
-
-/// An element (fire, water, arcane, ...).
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
-pub enum Element {
-    Fire,
-    Water,
-    Earthen,
-    Lightning,
-    Holy,
-    Dark,
-    Arcane,
-    Dragon,
-    Physical,
-}
-
-/// Stats of an item.
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct Stats {
-    /// The base attack stat of the item.
-    pub attack: Option<i16>,
-    /// The base magic stat of the item.
-    pub magic: Option<i16>,
-    /// The base HP stat of the item.
-    pub hp: Option<i16>,
-    /// The base MP stat of the item.
-    pub mana: Option<i16>,
-    /// The base defense stat of the item.
-    pub defense: Option<i16>,
-    /// The base resistance stat of the item.
-    pub resistance: Option<i16>,
-    /// The base ward stat of the item (%).
-    pub ward: Option<i8>,
-    /// The base dexterity stat of the item.
-    pub dexterity: Option<i16>,
-    /// The crit stat of the item.
-    pub crit: Option<u8>,
-    /// The foresight of the item.
-    pub foresight: Option<i8>,
-    /// The number of adorn slots at level 10, common quality.
-    pub adornment_slots: Option<u8>,
-    /// The elment of the item.
-    pub element: Option<Element>,
-}
-
-/// The ability the item has in off-hand.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Ability {
-    /// The name of the ability.
-    pub name: String,
-    /// The description of the ability.
-    pub description: String,
-}
-
-/// A monster dropping an item.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct DroppedBy {
-    /// The name of the monster.
-    pub name: String,
-    /// The uri to the monster.
-    pub uri: String,
-    /// The icon of the monster.
-    pub icon: String,
-}
-
-/// A monster dropping an item.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct UpgradeMaterial {
-    /// The name of the material.
-    pub name: String,
-    /// The uri to the material.
-    pub uri: String,
-    /// The icon of the material.
-    pub icon: String,
-}
-
-/// A debuff the item causes.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Cause {
-    /// The name of the debuff.
-    pub name: String,
-    /// The icon of the debuff.
-    pub icon: String,
-}
-
-/// A buff the item gives.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Give {
-    /// The name of the buff.
-    pub name: String,
-    /// The chance (0-100) of the effect happening.
-    pub chance: i8,
-    /// The icon of the buff.
-    pub icon: String,
-}
-
-/// A debuff the item cures.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Cure {
-    /// The name of the buff.
-    pub name: String,
-    /// The icon of the buff.
-    pub icon: String,
-}
-
-/// An debuff the item prevents.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Immunity {
-    /// The name of the debuff.
-    pub name: String,
-    /// The icon of the debuff.
-    pub icon: String,
-}
-
-/// An item on the codex.
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Item {
-    /// The slug of the item (`https://playorna.com/codex/items/{slug}`).
-    pub slug: String,
-    /// The name of the item.
-    pub name: String,
-    /// The icon of the item.
-    pub icon: String,
-    /// The description of the item.
-    pub description: String,
-    /// The tier of the item.
-    pub tier: u8,
-    /// Tags attached to the item.
-    pub tags: Vec<Tag>,
-    /// The stats of the item.
-    pub stats: Option<Stats>,
-    /// The ability of the item.
-    pub ability: Option<Ability>,
-    /// Debuffs the item can cause.
-    pub causes: Vec<Cause>,
-    /// Debuffs the item cures.
-    pub cures: Vec<Cure>,
-    /// Buffs the item can give.
-    pub gives: Vec<Give>,
-    /// Immunities the item grants.
-    pub immunities: Vec<Immunity>,
-    /// The monsters that drop the item.
-    pub dropped_by: Vec<DroppedBy>,
-    /// The materials needed to upgrade the item.
-    pub upgrade_materials: Vec<UpgradeMaterial>,
-}
-
-impl ToString for Element {
-    fn to_string(&self) -> String {
-        match self {
-            Element::Fire => "Fire".to_string(),
-            Element::Water => "Water".to_string(),
-            Element::Earthen => "Earthen".to_string(),
-            Element::Lightning => "Lightning".to_string(),
-            Element::Holy => "Holy".to_string(),
-            Element::Dark => "Dark".to_string(),
-            Element::Arcane => "Arcane".to_string(),
-            Element::Dragon => "Dragon".to_string(),
-            Element::Physical => "Physical".to_string(),
-        }
-    }
-}
 
 /// Parse the tier of the skill.
 fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
