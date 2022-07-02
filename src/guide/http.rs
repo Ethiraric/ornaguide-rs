@@ -11,13 +11,14 @@ use reqwest::{
 
 use crate::{
     codex::{
+        html_follower_parser::parse_html_codex_follower,
         html_item_parser::parse_html_codex_item,
         html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
         html_monster_parser::{
             parse_html_codex_boss, parse_html_codex_monster, parse_html_codex_raid,
         },
         html_skill_parser::parse_html_codex_skill,
-        CodexBoss, CodexItem, CodexMonster, CodexRaid, CodexSkill,
+        CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill,
     },
     error::Error,
     guide::{
@@ -459,5 +460,21 @@ impl Http {
     pub(crate) fn codex_retrieve_item(&self, item_name: &str) -> Result<CodexItem, Error> {
         let url = format!(concat!(PLAYORNA_BASE_PATH!(), "/codex/items/{}"), item_name);
         parse_html_codex_item(&get_and_save(&self.http, &url)?, item_name.to_string())
+    }
+
+    pub(crate) fn codex_retrieve_followers_list(&self) -> Result<Vec<CodexListEntry>, Error> {
+        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/followers");
+        query_all_codex_pages(url, &self.http)
+    }
+
+    pub(crate) fn codex_retrieve_follower(
+        &self,
+        follower_name: &str,
+    ) -> Result<CodexFollower, Error> {
+        let url = format!(
+            concat!(PLAYORNA_BASE_PATH!(), "/codex/followers/{}"),
+            follower_name
+        );
+        parse_html_codex_follower(&get_and_save(&self.http, &url)?, follower_name.to_string())
     }
 }

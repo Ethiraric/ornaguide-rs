@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use ornaguide_rs::{
-    codex::{Codex, CodexBoss, CodexItem, CodexMonster, CodexRaid, CodexSkill},
+    codex::{Codex, CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill},
     error::Error,
     guide::OrnaAdminGuide,
     items::admin::AdminItem,
@@ -43,6 +43,13 @@ pub struct CodexRaids {
 pub struct CodexSkills {
     /// Skills from the codex.
     pub skills: Vec<CodexSkill>,
+}
+
+/// Collection of followers from the codex.
+#[derive(Serialize, Deserialize)]
+pub struct CodexFollowers {
+    /// Followers from the codex.
+    pub followers: Vec<CodexFollower>,
 }
 
 impl<'a> CodexItems {
@@ -179,4 +186,23 @@ pub fn skills(guide: &OrnaAdminGuide) -> Result<CodexSkills, Error> {
     }
     bar.finish_with_message("CSkills fetched");
     Ok(CodexSkills { skills: ret })
+}
+
+pub fn followers(guide: &OrnaAdminGuide) -> Result<CodexFollowers, Error> {
+    let followers = guide.codex_fetch_follower_list()?;
+    let mut ret = Vec::new();
+    let bar = bar(followers.len() as u64);
+    for follower in followers.iter() {
+        let slug = follower
+            .uri
+            .strip_suffix('/')
+            .unwrap()
+            .strip_prefix("/codex/followers/")
+            .unwrap();
+        bar.set_message(slug.to_string());
+        ret.push(guide.codex_fetch_follower(slug)?);
+        bar.inc(1);
+    }
+    bar.finish_with_message("CFllwrs fetched");
+    Ok(CodexFollowers { followers: ret })
 }

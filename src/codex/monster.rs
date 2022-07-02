@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 pub use crate::guide::html_utils::Tag;
 
-/// An ability for a monster
+/// An ability for a monster.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Ability {
     /// The name of the ability.

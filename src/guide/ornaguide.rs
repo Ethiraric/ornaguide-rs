@@ -1,8 +1,8 @@
 use crate::{
     codex::{
-        BossEntry as CodexBossEntry, Codex, CodexSkill, ItemEntry as CodexItemEntry,
-        MonsterEntry as CodexMonsterEntry, RaidEntry as CodexRaidEntry,
-        SkillEntry as CodexSkillEntry,
+        BossEntry as CodexBossEntry, Codex, CodexSkill, FollowerEntry as CodexFollowerEntry,
+        ItemEntry as CodexItemEntry, MonsterEntry as CodexMonsterEntry,
+        RaidEntry as CodexRaidEntry, SkillEntry as CodexSkillEntry,
     },
     error::Error,
     guide::{
@@ -359,7 +359,6 @@ impl AdminGuide for OrnaAdminGuide {
         self.guide.http().admin_add_spawn(spawn_name)
     }
 }
-
 impl Codex for OrnaAdminGuide {
     fn codex_fetch_skill_list(&self) -> Result<Vec<CodexSkillEntry>, Error> {
         Ok(self
@@ -461,5 +460,27 @@ impl Codex for OrnaAdminGuide {
 
     fn codex_fetch_item(&self, item_name: &str) -> Result<crate::codex::CodexItem, Error> {
         self.guide.http().codex_retrieve_item(item_name)
+    }
+
+    fn codex_fetch_follower_list(&self) -> Result<Vec<crate::codex::FollowerEntry>, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_followers_list()?
+            .into_iter()
+            .map(|entry| {
+                Ok(CodexFollowerEntry {
+                    name: entry.value,
+                    tier: entry.tier,
+                    uri: entry.uri,
+                })
+            })
+            .collect()
+    }
+
+    fn codex_fetch_follower(
+        &self,
+        follower_name: &str,
+    ) -> Result<crate::codex::CodexFollower, Error> {
+        self.guide.http().codex_retrieve_follower(follower_name)
     }
 }

@@ -12,7 +12,9 @@ use ornaguide_rs::{
 };
 
 use crate::{
-    codex::fetch::{CodexBosses, CodexItems, CodexMonsters, CodexRaids, CodexSkills},
+    codex::fetch::{
+        CodexBosses, CodexFollowers, CodexItems, CodexMonsters, CodexRaids, CodexSkills,
+    },
     guide::fetch::{AdminItems, AdminMonsters, AdminSkills},
     misc::bar,
 };
@@ -92,6 +94,7 @@ pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
             monsters: crate::codex::fetch::monsters(guide)?,
             bosses: crate::codex::fetch::bosses(guide)?,
             skills: crate::codex::fetch::skills(guide)?,
+            followers: crate::codex::fetch::followers(guide)?,
         },
         guide: GuideData {
             items: crate::guide::fetch::items(guide)?,
@@ -122,6 +125,10 @@ pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/codex_skills.json")?),
         &data.codex.skills,
+    )?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/codex_followers.json")?),
+        &data.codex.followers,
     )?;
 
     // Guide jsons
@@ -180,6 +187,7 @@ pub struct CodexData {
     pub monsters: CodexMonsters,
     pub bosses: CodexBosses,
     pub skills: CodexSkills,
+    pub followers: CodexFollowers,
 }
 
 /// A monster from the codex, which may be a regular monster, a boss or a raid.
@@ -463,6 +471,10 @@ impl OrnaData {
                 ))?))?,
                 skills: serde_json::from_reader(BufReader::new(File::open(format!(
                     "{}/codex_skills.json",
+                    directory
+                ))?))?,
+                followers: serde_json::from_reader(BufReader::new(File::open(format!(
+                    "{}/codex_followers.json",
                     directory
                 ))?))?,
             },

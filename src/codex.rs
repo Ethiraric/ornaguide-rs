@@ -1,5 +1,7 @@
 use crate::error::Error;
 
+pub(crate) mod follower;
+pub(crate) mod html_follower_parser;
 pub(crate) mod html_item_parser;
 pub(crate) mod html_list_parser;
 pub(crate) mod html_monster_parser;
@@ -8,6 +10,7 @@ pub(crate) mod item;
 pub(crate) mod monster;
 pub(crate) mod skill;
 
+pub use follower::{Ability as FollowerAbility, Follower as CodexFollower};
 pub use item::{
     Ability as ItemAbility, DroppedBy as ItemDroppedBy, Element as CodexElement, Item as CodexItem,
     ItemStatusEffects, Stats as ItemStats, UpgradeMaterial as ItemUpgradeMaterial,
@@ -54,6 +57,13 @@ pub struct ItemEntry {
     pub uri: String,
 }
 
+#[derive(Debug)]
+pub struct FollowerEntry {
+    pub name: String,
+    pub tier: u32,
+    pub uri: String,
+}
+
 /// The public codex on `playorna.com`.
 pub trait Codex {
     /// Retrieve the list of skills from the orna codex.
@@ -80,4 +90,9 @@ pub trait Codex {
     fn codex_fetch_item_list(&self) -> Result<Vec<ItemEntry>, Error>;
     /// Retrieve the details about a item from the orna codex.
     fn codex_fetch_item(&self, item_name: &str) -> Result<CodexItem, Error>;
+
+    /// Retrieve the list of followers from the orna codex.
+    fn codex_fetch_follower_list(&self) -> Result<Vec<FollowerEntry>, Error>;
+    /// Retrieve the details about a follower from the orna codex.
+    fn codex_fetch_follower(&self, follower_name: &str) -> Result<CodexFollower, Error>;
 }
