@@ -741,6 +741,52 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
             // Dropped by
             check_item_dropped_by(data, fix, guide, codex_item, guide_item)?;
+            // Upgrade Materials
+            check_stat_debug(
+                "upgrade materials",
+                guide_item,
+                &guide_item
+                    .materials
+                    .iter()
+                    .map(|material_id| {
+                        data.guide
+                            .items
+                            .items
+                            .iter()
+                            .find(|item| item.id == *material_id)
+                            .unwrap_or_else(|| {
+                                panic!("Failed to find guide material {}", material_id)
+                            })
+                            .codex_uri
+                            .clone()
+                    })
+                    .sorted()
+                    .collect::<Vec<_>>(),
+                &codex_item
+                    .upgrade_materials
+                    .iter()
+                    .map(|material| material.uri.clone())
+                    .sorted()
+                    .collect::<Vec<_>>(),
+                fix,
+                |item, materials| {
+                    item.materials = materials
+                        .iter()
+                        .map(|material_uri| {
+                            data.guide
+                                .items
+                                .items
+                                .iter()
+                                .find(|item| item.codex_uri == *material_uri)
+                                .unwrap_or_else(|| {
+                                    panic!("Failed to find material with uri {}", material_uri)
+                                })
+                        })
+                        .map(|item| item.id)
+                        .collect();
+                },
+                guide,
+            )?;
         }
     }
     Ok(())
