@@ -38,7 +38,7 @@ pub struct AdminItem {
     pub follower_act: u32,
     pub status_infliction: u32,
     pub status_protection: u32,
-    pub mana_saver: u32,
+    pub mana_saver: i8,
     pub has_slots: bool,
     pub base_adornment_slots: u8,
     pub rarity: String,
