@@ -7,11 +7,12 @@ use crate::{
     error::Error,
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, Guide,
-        ItemCategory, ItemRow, ItemType, MonsterFamily, MonsterRow, SkillRow, SkillType, Spawn,
-        StatusEffect,
+        ItemCategory, ItemRow, ItemType, MonsterFamily, MonsterRow, PetRow, SkillRow, SkillType,
+        Spawn, StatusEffect,
     },
     items::{admin::AdminItem, raw::RawItem},
     monsters::{admin::AdminMonster, RawMonster},
+    pets::admin::AdminPet,
     skills::{admin::AdminSkill, RawSkill},
 };
 /// The main interface for the guide.
@@ -217,6 +218,32 @@ impl AdminGuide for OrnaAdminGuide {
 
     fn admin_add_skill(&self, skill: AdminSkill) -> Result<(), Error> {
         self.guide.http().admin_add_skill(ParsedForm::from(skill))
+    }
+
+    fn admin_retrieve_pet_by_id(&self, id: u32) -> Result<AdminPet, Error> {
+        Ok(AdminPet {
+            id,
+            ..AdminPet::try_from(self.guide.http().admin_retrieve_pet_by_id(id)?)?
+        })
+    }
+
+    fn admin_save_pet(&self, pet: AdminPet) -> Result<(), Error> {
+        self.guide
+            .http()
+            .admin_save_pet(pet.id, ParsedForm::from(pet))
+    }
+
+    fn admin_retrieve_pets_list(&self) -> Result<Vec<PetRow>, Error> {
+        Ok(self
+            .guide
+            .http()
+            .admin_retrieve_pets_list()?
+            .into_iter()
+            .map(|entry| PetRow {
+                id: entry.id,
+                name: entry.value,
+            })
+            .collect())
     }
 
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error> {

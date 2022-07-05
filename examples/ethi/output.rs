@@ -15,7 +15,7 @@ use crate::{
     codex::fetch::{
         CodexBosses, CodexFollowers, CodexItems, CodexMonsters, CodexRaids, CodexSkills,
     },
-    guide::fetch::{AdminItems, AdminMonsters, AdminSkills},
+    guide::fetch::{AdminItems, AdminMonsters, AdminPets, AdminSkills},
     misc::bar,
 };
 
@@ -100,6 +100,7 @@ pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
             items: crate::guide::fetch::items(guide)?,
             monsters: crate::guide::fetch::monsters(guide)?,
             skills: crate::guide::fetch::skills(guide)?,
+            pets: crate::guide::fetch::pets(guide)?,
             static_: guide.admin_retrieve_static_resources()?,
         },
     };
@@ -143,6 +144,10 @@ pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
     serde_json::to_writer_pretty(
         BufWriter::new(File::create("output/guide_skills.json")?),
         &data.guide.skills,
+    )?;
+    serde_json::to_writer_pretty(
+        BufWriter::new(File::create("output/guide_pets.json")?),
+        &data.guide.pets,
     )?;
 
     serde_json::to_writer_pretty(
@@ -205,6 +210,7 @@ pub struct GuideData {
     pub items: AdminItems,
     pub monsters: AdminMonsters,
     pub skills: AdminSkills,
+    pub pets: AdminPets,
     pub static_: Static,
 }
 
@@ -489,6 +495,10 @@ impl OrnaData {
                 ))?))?,
                 skills: serde_json::from_reader(BufReader::new(File::open(format!(
                     "{}/guide_skills.json",
+                    directory
+                ))?))?,
+                pets: serde_json::from_reader(BufReader::new(File::open(format!(
+                    "{}/guide_pets.json",
                     directory
                 ))?))?,
                 static_: Static {

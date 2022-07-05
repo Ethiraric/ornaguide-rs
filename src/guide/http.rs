@@ -22,15 +22,16 @@ use crate::{
     },
     error::Error,
     guide::{
-        html_form_parser::{parse_item_html, parse_monster_html, parse_skill_html, ParsedForm},
+        html_form_parser::{
+            parse_item_html, parse_monster_html, parse_pet_html, parse_skill_html,
+            parse_spawn_html, ParsedForm,
+        },
         html_list_parser::{parse_list_html, Entry, ParsedTable},
     },
     items::RawItem,
     monsters::RawMonster,
     skills::RawSkill,
 };
-
-use super::html_form_parser::parse_spawn_html;
 
 pub(crate) struct Http {
     http: Client,
@@ -154,6 +155,26 @@ const SKILL_FORM_FIELD_NAMES: &[&str] = &[
     "causes",
     "cures",
     "gives",
+];
+
+/// Names of the fields in the admin pet change page.
+const PET_FORM_FIELD_NAMES: &[&str] = &[
+    "codex",
+    "name",
+    "tier",
+    "image_name",
+    "description",
+    "attack",
+    "heal",
+    "buff",
+    "debuff",
+    "spell",
+    "protect",
+    "cost",
+    "cost_type",
+    "limited",
+    "limited_details",
+    "skills",
 ];
 
 /// Perform a POST request on the URL, serializing the form as an urlencoded body and setting the
@@ -363,6 +384,24 @@ impl Http {
         let mut post_form = parse_skill_html(&self.http.get(url).send()?.text()?, &[])?;
         post_form.fields = form.fields;
         post_forms_to(&self.http, url, post_form)
+    }
+
+    pub(crate) fn admin_save_pet(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
+        post_forms_to(
+            &self.http,
+            &format!(concat!(BASE_PATH!(), "/admin/pets/pet/{}/change/"), id),
+            form,
+        )
+    }
+
+    pub(crate) fn admin_retrieve_pet_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
+        let url = format!(concat!(BASE_PATH!(), "/admin/pets/pet/{}/change/"), id);
+        parse_pet_html(&get_and_save(&self.http, &url)?, PET_FORM_FIELD_NAMES)
+    }
+
+    pub(crate) fn admin_retrieve_pets_list(&self) -> Result<Vec<Entry>, Error> {
+        let url = concat!(BASE_PATH!(), "/admin/pets/pet/");
+        query_all_pages(url, &self.http)
     }
 
     pub(crate) fn admin_retrieve_spawns_list(&self) -> Result<Vec<Entry>, Error> {

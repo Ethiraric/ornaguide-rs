@@ -170,6 +170,11 @@ pub fn parse_skill_html(contents: &str, field_names: &[&str]) -> Result<ParsedFo
     parse_html_form(contents, "#skill_form", field_names)
 }
 
+/// Extract given fields from an admin pet add HTML page.
+pub fn parse_pet_html(contents: &str, field_names: &[&str]) -> Result<ParsedForm, Error> {
+    parse_html_form(contents, "#pet_form", field_names)
+}
+
 /// Extract given fields from an admin spawn add HTML page.
 pub fn parse_spawn_html(contents: &str) -> Result<ParsedForm, Error> {
     parse_html_form(contents, "#spawn_form", &[])

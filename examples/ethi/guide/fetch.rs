@@ -4,6 +4,7 @@ use ornaguide_rs::{
     guide::{AdminGuide, OrnaAdminGuide},
     items::admin::AdminItem,
     monsters::admin::AdminMonster,
+    pets::admin::AdminPet,
     skills::admin::AdminSkill,
 };
 use serde::{Deserialize, Serialize};
@@ -29,6 +30,13 @@ pub struct AdminMonsters {
 pub struct AdminSkills {
     /// Skills from the guide's admin view.
     pub skills: Vec<AdminSkill>,
+}
+
+/// Collection of pets from the guide's admin view.
+#[derive(Serialize, Deserialize)]
+pub struct AdminPets {
+    /// Pets from the guide's admin view.
+    pub pets: Vec<AdminPet>,
 }
 
 impl<'a> AdminItems {
@@ -101,4 +109,17 @@ pub fn skills(guide: &OrnaAdminGuide) -> Result<AdminSkills, Error> {
     }
     bar.finish_with_message("ASkills fetched");
     Ok(AdminSkills { skills: ret })
+}
+
+pub fn pets(guide: &OrnaAdminGuide) -> Result<AdminPets, Error> {
+    let pets = guide.admin_retrieve_pets_list()?;
+    let mut ret = Vec::new();
+    let bar = bar(pets.len() as u64);
+    for pet in pets.iter() {
+        bar.set_message(pet.name.clone());
+        ret.push(guide.admin_retrieve_pet_by_id(pet.id)?);
+        bar.inc(1);
+    }
+    bar.finish_with_message("APets   fetched");
+    Ok(AdminPets { pets: ret })
 }

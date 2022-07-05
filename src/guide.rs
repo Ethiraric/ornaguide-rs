@@ -2,6 +2,7 @@ use crate::{
     error::Error,
     items::{admin::AdminItem, raw::RawItem},
     monsters::{admin::AdminMonster, raw::RawMonster},
+    pets::admin::AdminPet,
     skills::{admin::AdminSkill, raw::RawSkill},
 };
 
@@ -42,6 +43,15 @@ pub struct MonsterRow {
     /// Id of the monster.
     pub id: u32,
     /// Name of the monster.
+    pub name: String,
+}
+
+/// A pet "row" when listing the pets from the admin guide. It does not contain much details.
+#[derive(Debug)]
+pub struct PetRow {
+    /// Id of the pet.
+    pub id: u32,
+    /// Name of the pet.
     pub name: String,
 }
 
@@ -99,6 +109,13 @@ pub trait AdminGuide {
     /// The csrfmiddlewaretoken and id fields of the provided skill will be ignored.
     /// In order to retrieve the id of the new skill, all skills have to be queried again.
     fn admin_add_skill(&self, skill: AdminSkill) -> Result<(), Error>;
+
+    /// Retrieve the pet with the given id from the guide.
+    fn admin_retrieve_pet_by_id(&self, id: u32) -> Result<AdminPet, Error>;
+    /// Save the given pet to the guide.
+    fn admin_save_pet(&self, pet: AdminPet) -> Result<(), Error>;
+    /// Retrieve the list of pets from the admin view.
+    fn admin_retrieve_pets_list(&self) -> Result<Vec<PetRow>, Error>;
 
     /// Retrieve the list of spawns from the admin view.
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error>;
