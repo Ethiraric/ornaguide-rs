@@ -4,6 +4,7 @@ use ornaguide_rs::{
     error::Error,
     guide::OrnaAdminGuide,
     items::admin::AdminItem,
+    pets::admin::AdminPet,
     skills::admin::AdminSkill,
 };
 use serde::{Deserialize, Serialize};
@@ -93,6 +94,28 @@ impl<'a> CodexSkills {
     }
 }
 
+impl<'a> CodexFollowers {
+    /// Find the codex follower associated with the given admin pet.
+    /// If there is no match, return an `Err`.
+    pub fn find_match_for_admin_pet(
+        &'a self,
+        needle: &AdminPet,
+    ) -> Result<&'a CodexFollower, Error> {
+        if needle.codex_uri.is_empty() {
+            return Err(Error::Misc(format!(
+                "Empty codex uri for admin pet '{}'",
+                needle.name
+            )));
+        }
+
+        let slug = needle.codex_uri["/codex/followers/".len()..].trim_end_matches('/');
+        self.followers
+            .iter()
+            .find(|follower| follower.slug == slug)
+            .ok_or_else(|| Error::Misc(format!("No match for admin pet '{}'", needle.name)))
+    }
+}
+
 pub fn items(guide: &OrnaAdminGuide) -> Result<CodexItems, Error> {
     let items = guide.codex_fetch_item_list()?;
     let mut ret = Vec::new();
@@ -108,7 +131,7 @@ pub fn items(guide: &OrnaAdminGuide) -> Result<CodexItems, Error> {
         ret.push(guide.codex_fetch_item(slug)?);
         bar.inc(1);
     }
-    bar.finish_with_message("CItems fetched");
+    bar.finish_with_message("CItems  fetched");
     Ok(CodexItems { items: ret })
 }
 
@@ -165,7 +188,7 @@ pub fn raids(guide: &OrnaAdminGuide) -> Result<CodexRaids, Error> {
         ret.push(guide.codex_fetch_raid(slug)?);
         bar.inc(1);
     }
-    bar.finish_with_message("CRaids fetched");
+    bar.finish_with_message("CRaids  fetched");
     Ok(CodexRaids { raids: ret })
 }
 

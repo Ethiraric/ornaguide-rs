@@ -1,5 +1,5 @@
 use ornaguide_rs::{
-    codex::{CodexItem, CodexSkill},
+    codex::{CodexFollower, CodexItem, CodexSkill},
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
     items::admin::AdminItem,
@@ -56,7 +56,6 @@ impl<'a> AdminItems {
 impl<'a> AdminSkills {
     /// Find the admin skill associated with the given codex skill.
     /// If there is no match, return an `Err`.
-    #[allow(clippy::unnecessary_unwrap)]
     pub fn find_match_for_codex_skill(
         &'a self,
         needle: &CodexSkill,
@@ -72,6 +71,24 @@ impl<'a> AdminSkills {
     }
 }
 
+impl<'a> AdminPets {
+    /// Find the admin pet associated with the given codex follower.
+    /// If there is no match, return an `Err`.
+    pub fn find_match_for_codex_follower(
+        &'a self,
+        needle: &CodexFollower,
+    ) -> Result<&'a AdminPet, Error> {
+        self.pets
+            .iter()
+            .find(|pet| {
+                !pet.codex_uri.is_empty()
+                    && pet.codex_uri["/codex/followers/".len()..].trim_end_matches('/')
+                        == needle.slug
+            })
+            .ok_or_else(|| Error::Misc(format!("No match for codex follower '{}'", needle.slug)))
+    }
+}
+
 pub fn items(guide: &OrnaAdminGuide) -> Result<AdminItems, Error> {
     let items = guide.admin_retrieve_items_list()?;
     let mut ret = Vec::new();
@@ -81,7 +98,7 @@ pub fn items(guide: &OrnaAdminGuide) -> Result<AdminItems, Error> {
         ret.push(guide.admin_retrieve_item_by_id(item.id)?);
         bar.inc(1);
     }
-    bar.finish_with_message("AItems fetched");
+    bar.finish_with_message("AItems  fetched");
     Ok(AdminItems { items: ret })
 }
 

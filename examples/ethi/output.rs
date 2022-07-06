@@ -82,7 +82,90 @@ pub fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Res
             println!("Failed to parse monster for URI {}", uri);
         }
     }
-    bar.finish_with_message("CUnlist fetched");
+    bar.finish_with_message("CUnlstM fetched");
+    Ok(())
+}
+
+/// Add unlisted followers to the data.
+/// Modifies `data` in-place.
+pub fn add_event_followers(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<(), Error> {
+    // List of event pet slugs. Those may or may not appear in the follower list, depending on the
+    // time of the year.
+    let event_pets = &[
+        "age-old-mimic",
+        "alfar",
+        "alfar-mage",
+        "amadan",
+        "apollyons-apprentice",
+        "apollyons-apprentice-91d096c2",
+        "apollyons-apprentice-d370c676",
+        "apollyons-apprentice-e9f91df6",
+        "apollyons-pupil",
+        "apollyons-pupil-9d70a08e",
+        "apollyons-pupil-dde6d90b",
+        "apollyons-pupil-e453d6d9",
+        "archimedes",
+        "arisen-naggeneen",
+        "ashen-phoenix",
+        "balor-flame",
+        "balor-worm",
+        "carman",
+        "castor",
+        "cerus",
+        "cruel-banshee",
+        "ebon-scruug",
+        "fey-chimera",
+        "fey-dragon",
+        "fey-gazer",
+        "fey-yeti",
+        "glatisant",
+        "great-pegasus",
+        "gullinkambi",
+        "gwyllgi",
+        "hengreon",
+        "kerberos",
+        "kin-of-kerberos",
+        "lindworm",
+        "llamrai",
+        "naggeneen",
+        "phoenix",
+        "pollux",
+        "pumpkinhead",
+        "raging-cerus",
+        "scary-skeleton",
+        "scruug",
+        "spooky-ghost",
+        "steward-cactus",
+        "steward-dragon",
+        "steward-gazer",
+        "steward-golem",
+        "steward-wolf",
+        "surtrs-flame",
+        "surtrs-mighty-flame",
+        "the-mightiest-mimic",
+        "untamed-cerus",
+        "very-scary-skeleton",
+    ];
+
+    let bar = bar(event_pets.len() as u64);
+    for slug in event_pets {
+        bar.set_message(slug.to_string());
+        // Don't include a follower twice.
+        if !data
+            .codex
+            .followers
+            .followers
+            .iter()
+            .any(|follower| &&*follower.slug == slug)
+        {
+            data.codex
+                .followers
+                .followers
+                .push(guide.codex_fetch_follower(slug)?);
+        }
+        bar.inc(1);
+    }
+    bar.finish_with_message("CEvtFlw fetched");
     Ok(())
 }
 
@@ -105,6 +188,7 @@ pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
         },
     };
     add_unlisted_monsters(guide, &mut data)?;
+    add_event_followers(guide, &mut data)?;
 
     // Codex jsons
     serde_json::to_writer_pretty(
