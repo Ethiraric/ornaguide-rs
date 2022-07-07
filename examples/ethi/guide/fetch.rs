@@ -69,6 +69,29 @@ impl<'a> AdminSkills {
             })
             .ok_or_else(|| Error::Misc(format!("No match for codex skill '{}'", needle.slug)))
     }
+
+    /// Find the admin skill corresponding to the given id.
+    /// If there is no match, return an `Err`.
+    pub fn find_skill_by_id(&'a self, needle: u32) -> Result<&'a AdminSkill, Error> {
+        self.skills
+            .iter()
+            .find(|skill| skill.id == needle)
+            .ok_or_else(|| Error::Misc(format!("No match for admin skill with id #{}", needle)))
+    }
+
+    /// Find the admin skill corresponding to the given codex URI.
+    /// If there is no match, return an `Err`.
+    pub fn find_skill_by_codex_uri(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
+        self.skills
+            .iter()
+            .find(|skill| skill.codex_uri == needle)
+            .ok_or_else(|| {
+                Error::Misc(format!(
+                    "No match for admin skill with codex_uri #{}",
+                    needle
+                ))
+            })
+    }
 }
 
 impl<'a> AdminPets {
