@@ -1,4 +1,7 @@
 use indicatif::{ProgressBar, ProgressStyle};
+use itertools::Itertools;
+
+use crate::output::OrnaData;
 
 pub fn bar(len: u64) -> ProgressBar {
     let bar = ProgressBar::new(len);
@@ -57,4 +60,28 @@ pub fn diff_sorted_slices<'a, T: PartialEq + PartialOrd>(
     }
 
     (left, right)
+}
+
+/// A trait to extend `Vec<u32>` specifically.
+/// Use with caution, as this should only be used on `Vec`s that hold `u32`s representing skill
+/// ids.
+pub trait VecSkillIds {
+    fn guide_skill_ids_to_codex_uri(&self, data: &OrnaData) -> Vec<String>;
+}
+
+impl VecSkillIds for Vec<u32> {
+    fn guide_skill_ids_to_codex_uri(&self, data: &OrnaData) -> Vec<String> {
+        self.iter()
+            .filter_map(|id| {
+                data.guide
+                    .skills
+                    .skills
+                    .iter()
+                    .find(|skill| skill.id == *id)
+                    .map(|skill| skill.codex_uri.clone())
+                    .filter(|uri| !uri.is_empty())
+            })
+            .sorted()
+            .collect()
+    }
 }

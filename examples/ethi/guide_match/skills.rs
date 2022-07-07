@@ -138,7 +138,7 @@ where
 }
 
 /// Compare fields of every codex skill and their counterpart on the guide.
-/// Attempt to fix discrepances.
+/// Attempt to fix discrepancies.
 fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     for codex_skill in data.codex.skills.skills.iter() {
         if let Ok(admin_skill) = data.guide.skills.find_match_for_codex_skill(codex_skill) {
