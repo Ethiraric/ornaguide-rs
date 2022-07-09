@@ -131,7 +131,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
             let expected_skills_uris = follower
                 .abilities
                 .iter()
-                .map(|ability| ability.uri.clone())
+                .map(|ability| ability.uri.as_str())
                 .sorted()
                 .collect::<Vec<_>>();
             let pet_skills_uris = pet.skills.guide_skill_ids_to_codex_uri(data);

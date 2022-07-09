@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -213,5 +214,22 @@ impl AdminMonster {
             })
             .map(|spawn| spawn.to_string())
             .collect()
+    }
+
+    // List the raid spawns associated to the monster.
+    // The spawns are either "Kingdom Raid" or "World Raid" (may be inclusive).
+    pub fn get_raid_spawns<'a>(&self, guide_spawns: &'a [Spawn]) -> Vec<&'a str> {
+        self.spawns
+            .iter()
+            .map(|spawn_id| {
+                guide_spawns
+                    .iter()
+                    .find(|spawn| spawn.id == *spawn_id)
+                    .unwrap()
+            })
+            .filter(|spawn| spawn.name == "Kingdom Raid" || spawn.name == "World Raid")
+            .map(|spawn| spawn.name.as_str())
+            .sorted()
+            .collect::<Vec<_>>()
     }
 }

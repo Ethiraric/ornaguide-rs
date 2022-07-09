@@ -9,19 +9,18 @@ use crate::{misc::diff_sorted_slices, output::OrnaData};
 pub fn fix_vec_field<'a, AdminEntity, AdminToVec, T: 'a, FnRemove, FnAdd>(
     admin: &mut AdminEntity,
     admin_to_vec: AdminToVec,
-    expected_vec: &[T],
+    expected_vec: &'a [T],
     fn_remove: FnRemove,
     fn_add: FnAdd,
 ) -> Result<(), Error>
 where
     AdminToVec: FnOnce(&mut AdminEntity) -> Result<&'a Vec<T>, Error>,
     T: std::cmp::Ord + std::fmt::Debug,
-    FnRemove: FnOnce(&mut AdminEntity, &Vec<&T>) -> Result<(), Error>,
-    FnAdd: FnOnce(&mut AdminEntity, &Vec<&T>) -> Result<(), Error>,
+    FnRemove: FnOnce(&mut AdminEntity, &Vec<&'a T>) -> Result<(), Error>,
+    FnAdd: FnOnce(&mut AdminEntity, &Vec<&'a T>) -> Result<(), Error>,
 {
     // Start by listing the elements from the guide.
     let admin_vec = admin_to_vec(admin)?;
-
     // Compute the diff between it and that from the codex.
     let (to_add, to_remove) = diff_sorted_slices(expected_vec, admin_vec);
     if !to_add.is_empty() {
@@ -45,11 +44,11 @@ where
 /// Compare the list of abilities registered on the guide to those on the codex.
 /// The match is made based on the codex_uri (that which is registered on the admin skill, and that
 /// which is indicated on the codex).
-pub fn fix_abilities_field<'a, AdminEntity, EntitySkillsGetter>(
+pub fn fix_abilities_field<AdminEntity, EntitySkillsGetter>(
     entity: &mut AdminEntity,
-    entity_uris: &'a Vec<String>,
+    entity_uris: &Vec<&str>,
     data: &OrnaData,
-    expected_skills_uris: &[String],
+    expected_skills_uris: &[&str],
     entity_skills_getter: EntitySkillsGetter,
 ) -> Result<(), Error>
 where
@@ -57,7 +56,7 @@ where
 {
     fix_vec_field(
         entity,
-        |_| -> Result<&'a Vec<String>, Error> { Ok(entity_uris) },
+        |_| -> Result<&Vec<&str>, Error> { Ok(entity_uris) },
         expected_skills_uris,
         |entity, to_remove| {
             // Retain only skills that do not match any URI in `to_remove`.
@@ -169,5 +168,85 @@ where
         Ok(false)
     } else {
         Ok(true)
+    }
+}
+
+/// Helper structure to capture the context when fixing an entity.
+/// Used to reduce code duplication by providing sensible default arguments to `check_field` and
+/// `check_field_debug`.
+pub struct Checker<'a, AdminEntity, Retriever, Saver>
+where
+    Retriever: Fn(u32) -> Result<AdminEntity, Error>,
+    Saver: Fn(AdminEntity) -> Result<(), Error>,
+{
+    /// The name of the entity we inspect.
+    pub entity_name: &'a str,
+    /// The id of the entity we inspect.
+    pub entity_id: u32,
+    /// Whether changes should be written back to the guide.
+    pub fix: bool,
+    /// The function used to retrieve the entity from the guide.
+    pub golden: Retriever,
+    /// The function used to commit the entity to the guide.
+    pub saver: Saver,
+}
+
+impl<'a, AdminEntity, Retriever, Saver> Checker<'a, AdminEntity, Retriever, Saver>
+where
+    Retriever: Fn(u32) -> Result<AdminEntity, Error>,
+    Saver: Fn(AdminEntity) -> Result<(), Error>,
+{
+    /// Check a particular field.
+    /// The field's values (`admin_field` and `codex_field`) must implement `std::fmt::Display`.
+    pub fn display<AS, CS, Fixer>(
+        &'a self,
+        field_name: &str,
+        admin_field: &AS,
+        codex_field: &CS,
+        fixer: Fixer,
+    ) -> Result<bool, Error>
+    where
+        AS: PartialEq<CS> + Display,
+        CS: Display,
+        Fixer: FnOnce(&mut AdminEntity, &CS) -> Result<(), Error>,
+    {
+        check_field(
+            field_name,
+            self.entity_name,
+            self.entity_id,
+            admin_field,
+            codex_field,
+            self.fix,
+            fixer,
+            &self.golden,
+            &self.saver,
+        )
+    }
+
+    /// Check a particular field.
+    /// The field's values (`admin_field` and `codex_field`) must implement `std::fmt::Debug`.
+    pub fn debug<AS, CS, Fixer>(
+        &'a self,
+        field_name: &str,
+        admin_field: &AS,
+        codex_field: &CS,
+        fixer: Fixer,
+    ) -> Result<bool, Error>
+    where
+        AS: PartialEq<CS> + Debug,
+        CS: Debug + ?Sized,
+        Fixer: FnOnce(&mut AdminEntity, &CS) -> Result<(), Error>,
+    {
+        check_field_debug(
+            field_name,
+            self.entity_name,
+            self.entity_id,
+            admin_field,
+            codex_field,
+            self.fix,
+            fixer,
+            &self.golden,
+            &self.saver,
+        )
     }
 }

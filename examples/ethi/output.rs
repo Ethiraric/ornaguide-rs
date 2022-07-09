@@ -433,12 +433,14 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     /// Return the tags attached to the monster as guide spawns
-    pub fn tags_as_guide_spawns(&self) -> Vec<String> {
+    pub fn tags_as_guide_spawns(&self) -> Vec<&'static str> {
+        static WRB_STR: &str = "World Raid";
+        static KRB_STR: &str = "Kingdom Raid";
         self.tags()
             .iter()
             .map(|tag| match tag {
-                Tag::WorldRaid => "World Raid".to_string(),
-                Tag::KingdomRaid => "Kingdom Raid".to_string(),
+                Tag::WorldRaid => WRB_STR,
+                Tag::KingdomRaid => KRB_STR,
                 _ => panic!("Unknown tag {:?} for monster", tag),
             })
             .sorted()

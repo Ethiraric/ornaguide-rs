@@ -166,7 +166,7 @@ fn check_item_dropped_by(
     codex_item: &CodexItem,
     guide_item: &AdminItem,
 ) -> Result<(), Error> {
-    // TODO*ethiraric, 10/06/2022): Refactor this mess.
+    // TODO(ethiraric, 10/06/2022): Refactor this mess.
 
     // List monster uris that drop the item.
     let guide_uris = data
