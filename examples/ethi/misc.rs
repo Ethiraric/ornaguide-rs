@@ -47,13 +47,13 @@ pub fn diff_sorted_slices<'a, T: PartialEq + PartialOrd>(
                     bit.next();
                 }
             }
-            (Some(a), None) => {
-                left.push(*a);
-                ait.next();
+            (Some(_), None) => {
+                left.extend(ait);
+                break;
             }
-            (None, Some(b)) => {
-                right.push(*b);
-                bit.next();
+            (None, Some(_)) => {
+                right.extend(bit);
+                break;
             }
             (None, None) => break,
         }
