@@ -7,9 +7,10 @@ use ornaguide_rs::{
 
 use crate::{
     guide_match::misc::{
-        fix_option_field, fix_staus_effects_field, fix_vec_field, fix_vec_id_field, Checker,
+        fix_option_field, fix_status_effects_field, fix_vec_field, fix_vec_id_field, Checker,
+        ItemDroppedBys, ItemUpgradeMaterials,
     },
-    misc::{sanitize_guide_name, VecStatusEffectIds},
+    misc::sanitize_guide_name,
     output::OrnaData,
 };
 
@@ -357,10 +358,13 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             // Causes
             let guide_causes = guide_item
                 .causes
-                .guide_status_effect_ids_to_guide_names(data);
+                .iter()
+                .cloned()
+                .sorted()
+                .collect::<Vec<_>>();
             let codex_causes = codex_item
                 .causes
-                .to_guide_names()
+                .try_to_guide_ids(&data.guide.static_)?
                 .into_iter()
                 // TODO(ethiraric, 04/06/2022): Remove this chain and the dedup call below once
                 // the codex fixes elemental statuses for weapons.
@@ -371,79 +375,104 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                             .as_ref()
                             .and_then(|stats| stats.element.as_ref()),
                     )
+                    .map(|status| {
+                        data.guide
+                            .static_
+                            .status_effects
+                            .iter()
+                            .find(|effect| effect.name == status)
+                            .map(|effect| effect.id)
+                            .unwrap()
+                    })
+                    .collect::<Vec<_>>()
+                    .into_iter()
                 } else {
-                    Vec::<&str>::new().into_iter()
+                    Vec::<u32>::new().into_iter()
                 })
                 .sorted()
                 .dedup()
                 .collect::<Vec<_>>();
-            check.debug(
+            check.status_effect_id_vec(
                 "causes",
                 &guide_causes,
                 &codex_causes,
                 |item, codex_causes| {
-                    fix_staus_effects_field(
-                        "causes",
-                        item,
-                        &guide_causes,
-                        data,
-                        codex_causes,
-                        |item| &mut item.causes,
-                    )
+                    fix_status_effects_field(item, &guide_causes, data, codex_causes, |item| {
+                        &mut item.causes
+                    })
                 },
+                data,
             )?;
 
             // Cures
             let guide_cures = guide_item
                 .cures
-                .guide_status_effect_ids_to_guide_names(data);
-            check.debug(
+                .iter()
+                .cloned()
+                .sorted()
+                .collect::<Vec<_>>();
+            let codex_cures = codex_item
+                .cures
+                .try_to_guide_ids(&data.guide.static_)?
+                .into_iter()
+                .sorted()
+                .collect::<Vec<_>>();
+            check.status_effect_id_vec(
                 "cures",
                 &guide_cures,
-                &codex_item.cures.to_guide_names(),
+                &codex_cures,
                 |item, codex_cures| {
-                    fix_staus_effects_field(
-                        "cures",
-                        item,
-                        &guide_cures,
-                        data,
-                        codex_cures,
-                        |item| &mut item.cures,
-                    )
+                    fix_status_effects_field(item, &guide_cures, data, codex_cures, |item| {
+                        &mut item.cures
+                    })
                 },
+                data,
             )?;
 
             // Gives
             let guide_gives = guide_item
                 .gives
-                .guide_status_effect_ids_to_guide_names(data);
-            check.debug(
+                .iter()
+                .cloned()
+                .sorted()
+                .collect::<Vec<_>>();
+            let codex_gives = codex_item
+                .gives
+                .try_to_guide_ids(&data.guide.static_)?
+                .into_iter()
+                .sorted()
+                .collect::<Vec<_>>();
+            check.status_effect_id_vec(
                 "gives",
                 &guide_gives,
-                &codex_item.gives.to_guide_names(),
+                &codex_gives,
                 |item, codex_gives| {
-                    fix_staus_effects_field(
-                        "gives",
-                        item,
-                        &guide_gives,
-                        data,
-                        codex_gives,
-                        |item| &mut item.gives,
-                    )
+                    fix_status_effects_field(item, &guide_gives, data, codex_gives, |item| {
+                        &mut item.gives
+                    })
                 },
+                data,
             )?;
 
             // Immunities
             let guide_immunities = guide_item
                 .prevents
-                .guide_status_effect_ids_to_guide_names(data);
-            check.debug(
+                .iter()
+                .cloned()
+                .sorted()
+                .collect::<Vec<_>>();
+            let codex_immunities = codex_item
+                .immunities
+                .try_to_guide_ids(&data.guide.static_)?
+                .into_iter()
+                .sorted()
+                .collect::<Vec<_>>();
+            check.status_effect_id_vec(
                 "immunities",
                 &guide_immunities,
-                &codex_item.immunities.to_guide_names(),
+                &codex_immunities,
                 |item, codex_immunities| {
-                    fix_staus_effects_field(
-                        "immunities",
+                    fix_status_effects_field(
                         item,
                         &guide_immunities,
                         data,
@@ -451,10 +480,11 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                         |item| &mut item.prevents,
                     )
                 },
+                data,
             )?;
 
             // Dropped by
-            let guide_dropped_by_uris = data
+            let guide_dropped_by_ids = data
                 .guide
                 .monsters
                 .monsters
@@ -469,98 +499,88 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 // Filter out entries without a codex_uri.
                 // This should remove Vulcan and The Fools entries.
                 .filter(|monster| !monster.codex_uri.is_empty())
-                // Map them to their codex_uris.
-                .map(|monster| monster.codex_uri.as_str())
+                // Map them to their ids.
+                .map(|monster| monster.id)
                 .sorted()
                 .collect::<Vec<_>>();
-            let codex_dropped_by_uris = codex_item
+            let codex_dropped_by_ids = codex_item
                 .dropped_by
-                .iter()
-                .map(|dropped_by| dropped_by.uri.as_str())
+                .try_to_guide_ids(&data.guide.monsters)?
+                .into_iter()
                 .sorted()
                 .collect::<Vec<_>>();
-            check.debug(
+            check.monster_id_vec(
                 "dropped_by",
-                &guide_dropped_by_uris,
-                &codex_dropped_by_uris,
+                &guide_dropped_by_ids,
+                &codex_dropped_by_ids,
                 |item, dropped_by| {
                     fix_vec_field(
                         item,
-                        |_| Ok(&guide_dropped_by_uris),
+                        |_| Ok(&guide_dropped_by_ids),
                         dropped_by,
-                        |_, uris| {
+                        |_, ids| {
                             // For each monster that is missing a drop.
-                            for uri in uris.iter() {
+                            for id in ids.iter() {
                                 // Fetch the monster.
-                                let id = data.guide.monsters.get_match_for_codex_uri(uri)?.id;
-                                let mut monster = guide.admin_retrieve_monster_by_id(id)?;
+                                let mut monster = guide.admin_retrieve_monster_by_id(**id)?;
                                 // Check whether the drop was not just missing from the cache.
                                 if !monster.drops.contains(&guide_item.id) {
                                     // Add the drop to the monster and save it.
                                     monster.drops.push(guide_item.id);
                                     guide.admin_save_monster(monster)?;
-                                    guide.admin_retrieve_monster_by_id(id)?;
+                                    guide.admin_retrieve_monster_by_id(**id)?;
                                 }
                             }
                             Ok(())
                         },
-                        |_, uris| {
+                        |_, ids| {
                             // For each monster thet has one too much a drop.
-                            for uri in uris.iter() {
+                            for id in ids.iter() {
                                 // Fetch the monster.
-                                let id = data.guide.monsters.get_match_for_codex_uri(uri)?.id;
-                                let mut monster = guide.admin_retrieve_monster_by_id(id)?;
+                                let mut monster = guide.admin_retrieve_monster_by_id(**id)?;
                                 // Check whether the drop was not just present in the cache.
                                 if monster.drops.contains(&guide_item.id) {
                                     // Remove the drop from the monster and save it.
                                     monster.drops.retain(|id| *id != guide_item.id);
                                     guide.admin_save_monster(monster)?;
-                                    guide.admin_retrieve_monster_by_id(id)?;
+                                    guide.admin_retrieve_monster_by_id(**id)?;
                                 }
                             }
                             Ok(())
                         },
+                        |id| data.guide.monsters.get_match_for_id(*id),
                     )
                 },
+                data,
             )?;
 
             // Upgrade Materials
             let guide_upgrade_materials = guide_item
                 .materials
                 .iter()
-                .map(|material_id| {
-                    data.guide
-                        .items
-                        .items
-                        .iter()
-                        .find(|item| item.id == *material_id)
-                        .unwrap_or_else(|| panic!("Failed to find guide material {}", material_id))
-                        .codex_uri
-                        .as_str()
-                })
+                .cloned()
                 .sorted()
                 .collect::<Vec<_>>();
             let codex_upgrade_materials = codex_item
                 .upgrade_materials
-                .iter()
-                .map(|material| material.uri.as_str())
+                .try_to_guide_ids(&data.guide.items)?
+                .into_iter()
                 .sorted()
                 .collect::<Vec<_>>();
-            check.debug(
+            check.item_id_vec(
                 "upgrade materials",
                 &guide_upgrade_materials,
                 &codex_upgrade_materials,
                 |item, materials| {
                     fix_vec_id_field(
-                        "upgrade_materials",
                         item,
                         &guide_upgrade_materials,
                         materials,
                         |item| &mut item.materials,
-                        |id| Ok(&data.guide.items.get_item_by_id(id)?.codex_uri),
-                        |uri| Ok(data.guide.items.get_item_by_uri(uri)?.id),
+                        |id| data.guide.items.get_item_by_id(*id).map(|item| &item.name),
                     )
                 },
+                data,
             )?;
         }
     }

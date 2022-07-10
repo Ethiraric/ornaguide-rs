@@ -92,6 +92,18 @@ impl<'a> AdminMonsters {
         self.find_match_for_codex_uri(needle)
             .ok_or_else(|| Error::Misc(format!("No monster with codex uri '{}'", needle)))
     }
+
+    /// Find the monster with the given id.
+    pub fn find_match_for_id(&'a self, needle: u32) -> Option<&'a AdminMonster> {
+        self.monsters.iter().find(|monster| monster.id == needle)
+    }
+
+    /// Find the monster with the given id
+    /// If there is no match, return an `Err`.
+    pub fn get_match_for_id(&'a self, needle: u32) -> Result<&'a AdminMonster, Error> {
+        self.find_match_for_id(needle)
+            .ok_or_else(|| Error::Misc(format!("No monster with id {}", needle)))
+    }
 }
 
 impl<'a> AdminSkills {

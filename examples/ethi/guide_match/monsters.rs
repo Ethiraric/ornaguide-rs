@@ -6,8 +6,8 @@ use ornaguide_rs::{
 };
 
 use crate::{
-    guide_match::misc::{fix_abilities_field, Checker},
-    misc::{diff_sorted_slices, VecSkillIds},
+    guide_match::misc::{fix_abilities_field, Checker, CodexAbilities},
+    misc::diff_sorted_slices,
     output::{CodexGenericMonster, OrnaData},
 };
 
@@ -185,6 +185,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                     Ok(())
                 },
             )?;
+
             // Event
             check.debug(
                 "events",
@@ -194,6 +195,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                     fix_monster_event_spawns(monster, &mut data.guide.static_, events, guide)
                 },
             )?;
+
             // Family
             let admin_family = admin_monster.family.as_ref().and_then(|id| {
                 data.guide
@@ -230,6 +232,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                     }
                 },
             )?;
+
             // Tags
             let admin_tags = admin_monster.get_raid_spawns(&data.guide.static_.spawns);
             static WRB_STR: &str = "World Raid";
@@ -278,27 +281,44 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                     Ok(())
                 },
             )?;
+
             // Abilities
-            let admin_ability_uris = admin_monster.skills.guide_skill_ids_to_codex_uri(data);
-            let expected_uris = codex_monster
-                .abilities()
+            let admin_ability_ids = admin_monster
+                .skills
                 .iter()
-                .map(|ability| ability.uri.as_str())
+                .cloned()
+                // TODO(ethiraric, 11/07/2022): Remove filter when the codex fixes Bind and Bite.
+                .filter(|id| {
+                    !data
+                        .guide
+                        .skills
+                        .find_skill_by_id(*id)
+                        .unwrap()
+                        .codex_uri
+                        .is_empty()
+                })
                 .sorted()
                 .collect::<Vec<_>>();
-            check.debug(
+            let expected_ids = codex_monster
+                .abilities()
+                .try_to_guide_ids(&data.guide.skills)?
+                .into_iter()
+                .sorted()
+                .collect::<Vec<_>>();
+            check.skill_id_vec(
                 "abilities",
-                &admin_ability_uris,
-                &expected_uris,
+                &admin_ability_ids,
+                &expected_ids,
                 |monster: &mut AdminMonster, _| {
                     fix_abilities_field(
                         monster,
-                        &admin_ability_uris,
+                        &admin_ability_ids,
                         data,
-                        &expected_uris,
+                        &expected_ids,
                         |monster| &mut monster.skills,
                     )
                 },
+                data,
             )?;
         }
     }

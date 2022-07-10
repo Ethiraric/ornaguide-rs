@@ -7,9 +7,10 @@ use ornaguide_rs::{
 
 use crate::{
     guide_match::misc::{fix_abilities_field, Checker},
-    misc::VecSkillIds,
     output::OrnaData,
 };
+
+use super::misc::CodexAbilities;
 
 /// List pets that are either:
 ///   - On the guide, but missing on the codex.
@@ -116,19 +117,19 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 },
             )?;
             // Abilities
-            let expected_skills_uris = follower
+            let pet_skills_ids = pet.skills.iter().cloned().sorted().collect::<Vec<_>>();
+            let expected_skills_ids = follower
                 .abilities
-                .iter()
-                .map(|ability| ability.uri.as_str())
+                .try_to_guide_ids(&data.guide.skills)?
+                .into_iter()
                 .sorted()
                 .collect::<Vec<_>>();
-            let pet_skills_uris = pet.skills.guide_skill_ids_to_codex_uri(data);
             check.debug(
                 "abilities",
-                &pet_skills_uris,
-                &expected_skills_uris,
+                &pet_skills_ids,
+                &expected_skills_ids,
                 |pet: &mut AdminPet, _| {
-                    fix_abilities_field(pet, &pet_skills_uris, data, &expected_skills_uris, |pet| {
+                    fix_abilities_field(pet, &pet_skills_ids, data, &expected_skills_ids, |pet| {
                         &mut pet.skills
                     })
                 },

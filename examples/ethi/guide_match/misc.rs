@@ -1,8 +1,15 @@
 use std::fmt::{Debug, Display};
 
-use ornaguide_rs::error::Error;
+use ornaguide_rs::{
+    codex::{FollowerAbility, ItemDroppedBy, ItemUpgradeMaterial, MonsterAbility},
+    error::Error,
+};
 
-use crate::{misc::diff_sorted_slices, output::OrnaData};
+use crate::{
+    guide::fetch::{AdminItems, AdminMonsters, AdminSkills},
+    misc::diff_sorted_slices,
+    output::OrnaData,
+};
 
 /// Compare the option in a field and fix it to what is expected.
 /// The conversion function is used to translate from the codex to the guide.
@@ -27,30 +34,48 @@ where
     Ok(())
 }
 
-/// Compare the list of elements in a field and remove or add depending on what is expected.
-/// Need to be able to convert to a common type (usually `String`).
-pub fn fix_vec_field<'a, AdminEntity, AdminToVec, T: 'a, FnRemove, FnAdd>(
+/// Compare the list of elements in a field and split them into a list to add and one to remove.
+/// Call the given callable accordingly.
+pub fn fix_vec_field<
+    'a,
+    AdminEntity,
+    AdminToVec,
+    T: 'a,
+    FnRemove,
+    FnAdd,
+    FnToDebuggable,
+    Debuggable,
+>(
     admin: &mut AdminEntity,
     admin_to_vec: AdminToVec,
     expected_vec: &'a [T],
     fn_remove: FnRemove,
     fn_add: FnAdd,
+    to_str: FnToDebuggable,
 ) -> Result<(), Error>
 where
     AdminToVec: FnOnce(&mut AdminEntity) -> Result<&'a Vec<T>, Error>,
-    T: std::cmp::Ord + std::fmt::Debug,
+    T: std::cmp::Ord,
     FnRemove: FnOnce(&mut AdminEntity, &Vec<&'a T>) -> Result<(), Error>,
     FnAdd: FnOnce(&mut AdminEntity, &Vec<&'a T>) -> Result<(), Error>,
+    FnToDebuggable: Fn(&T) -> Debuggable,
+    Debuggable: std::fmt::Debug,
 {
     // Start by listing the elements from the guide.
     let admin_vec = admin_to_vec(admin)?;
     // Compute the diff between it and that from the codex.
     let (to_add, to_remove) = diff_sorted_slices(expected_vec, admin_vec);
     if !to_add.is_empty() {
-        println!("\x1B[0;32mSuggest adding: {:?}\x1B[0m", to_add);
+        println!(
+            "\x1B[0;32mSuggest adding: {:?}\x1B[0m",
+            to_add.iter().map(|t| to_str(t)).collect::<Vec<_>>()
+        );
     }
     if !to_remove.is_empty() {
-        println!("\x1B[0;31mSuggest removing: {:?}\x1B[0m", to_remove);
+        println!(
+            "\x1B[0;31mSuggest removing: {:?}\x1B[0m",
+            to_remove.iter().map(|t| to_str(t)).collect::<Vec<_>>()
+        );
     }
 
     // Remove unneeded elements.
@@ -64,52 +89,37 @@ where
     Ok(())
 }
 
-/// Compare a list of ids to their matching URIs on the codex.
-/// Converts ids to URIs thanks to the conversion function provided, and URIs can be converted back
-/// to ids thanks to the other conversion function.
-/// The comparison is made when everything is converted to URIs.
-pub fn fix_vec_id_field<'a, AdminEntity, EntityIdsGetter, IdToUriConverter, UriToIdConverter>(
-    id_kind: &str,
+/// Compare two list of ids: one from the guide and the other one from the codex.
+/// Data from the codex has to be converted to guide ids before calling this function.
+/// The "id -> debuggable" conversion is used only for displaying purposes.
+pub fn fix_vec_id_field<AdminEntity, EntityIdsGetter, IdToDebuggable, Debuggable>(
     entity: &mut AdminEntity,
-    entity_uris: &Vec<&str>,
-    expected_uris: &[&str],
+    entity_ids: &Vec<u32>,
+    expected_ids: &[u32],
     entity_ids_getter: EntityIdsGetter,
-    id_to_uri: IdToUriConverter,
-    uri_to_id: UriToIdConverter,
+    id_to_debuggable: IdToDebuggable,
 ) -> Result<(), Error>
 where
     EntityIdsGetter: Fn(&mut AdminEntity) -> &mut Vec<u32>,
-    IdToUriConverter: Fn(u32) -> Result<&'a str, Error>,
-    UriToIdConverter: Fn(&str) -> Result<u32, Error>,
+    IdToDebuggable: Fn(&u32) -> Debuggable,
+    Debuggable: std::fmt::Debug,
 {
     fix_vec_field(
         entity,
-        |_| -> Result<&Vec<&str>, Error> { Ok(entity_uris) },
-        expected_uris,
+        |_| -> Result<&Vec<u32>, Error> { Ok(entity_ids) },
+        expected_ids,
         |entity, to_remove| {
-            // Retain only ids that do not match any URI in `to_remove`.
-            entity_ids_getter(entity).retain(|id| {
-                id_to_uri(*id)
-                    // If a matching URI is found, remove it if it is within `to_remove`.
-                    .map(|id_uri| !to_remove.iter().any(|uri| **uri == id_uri))
-                    // If a matching URI is not found, panic (this shouldn't happen).
-                    .unwrap_or_else(|err| {
-                        panic!("An entity has an invalid {} id #{}: {}", id_kind, id, err)
-                    })
-            });
+            entity_ids_getter(entity).retain(|id| !to_remove.contains(&id));
             Ok(())
         },
         |entity, to_add| {
-            // Convert URIs to ids.
-            let ids_to_add = to_add.iter().map(|uri| uri_to_id(uri));
-
-            // Push ids into entity.
             let entity_ids = entity_ids_getter(entity);
-            for id in ids_to_add {
-                entity_ids.push(id?);
+            for id in to_add {
+                entity_ids.push(**id);
             }
             Ok(())
         },
+        id_to_debuggable,
     )
 }
 
@@ -118,33 +128,25 @@ where
 /// which is indicated on the codex).
 pub fn fix_abilities_field<AdminEntity, EntitySkillsGetter>(
     entity: &mut AdminEntity,
-    entity_uris: &Vec<&str>,
+    entity_ids: &Vec<u32>,
     data: &OrnaData,
-    expected_skills_uris: &[&str],
+    expected_skills_ids: &[u32],
     entity_skills_getter: EntitySkillsGetter,
 ) -> Result<(), Error>
 where
     EntitySkillsGetter: Fn(&mut AdminEntity) -> &mut Vec<u32>,
 {
     fix_vec_id_field(
-        "abilities",
         entity,
-        entity_uris,
-        expected_skills_uris,
+        entity_ids,
+        expected_skills_ids,
         entity_skills_getter,
-        // Id to URI
+        // Id to debuggable
         |id| {
             data.guide
                 .skills
-                .find_skill_by_id(id)
-                .map(|skill| skill.codex_uri.as_str())
-        },
-        // URI to id
-        |uri| {
-            data.guide
-                .skills
-                .find_skill_by_codex_uri(uri)
-                .map(|skill| skill.id)
+                .find_skill_by_id(*id)
+                .map(|skill| &skill.name)
         },
     )
 }
@@ -152,46 +154,90 @@ where
 /// Compare the list of status effects registered on the guide to those on the codex.
 /// The match is made based on the status name. The names given in `expected_names` have to be
 /// those from the guide, not from the codex.
-pub fn fix_staus_effects_field<AdminEntity, EntityStatusEffectsGetter>(
-    status_effect_name: &str,
+pub fn fix_status_effects_field<AdminEntity, EntityStatusEffectsGetter>(
     entity: &mut AdminEntity,
-    entity_names: &Vec<&str>,
+    entity_ids: &Vec<u32>,
     data: &OrnaData,
-    expected_names: &[&str],
+    expected_ids: &[u32],
     entity_skills_getter: EntityStatusEffectsGetter,
 ) -> Result<(), Error>
 where
     EntityStatusEffectsGetter: Fn(&mut AdminEntity) -> &mut Vec<u32>,
 {
     fix_vec_id_field(
-        status_effect_name,
         entity,
-        entity_names,
-        expected_names,
+        entity_ids,
+        expected_ids,
         entity_skills_getter,
-        // Id to name
+        // Id to debuggable
         |id| {
             data.guide
                 .static_
                 .status_effects
                 .iter()
-                .find(|status| status.id == id)
+                .find(|status| status.id == *id)
                 .map(|status| status.name.as_str())
                 .ok_or_else(|| Error::Misc(format!("Failed to find status effect #{}", id)))
         },
-        // Name to id
-        |name| {
-            data.guide
-                .static_
-                .status_effects
-                .iter()
-                .find(|cause| cause.name == *name)
-                .map(|cause| cause.id)
-                .ok_or_else(|| {
-                    Error::Misc(format!("Failed to find a status effect named {}", name))
-                })
-        },
     )
+}
+
+/// Compare a `Vec` field and print an error message if they differ.
+/// The `Vec` elements are passed through a formatter.
+/// Return whether the stats matched.
+#[allow(clippy::too_many_arguments)]
+pub fn check_field_vec_formatter<
+    AdminEntity,
+    AS,
+    CS,
+    Fixer,
+    GuideRetriever,
+    GuideSaver,
+    AFormatter,
+    CFormatter,
+    ADebuggable,
+    CDebuggable,
+>(
+    field_name: &str,
+    entity_name: &str,
+    entity_id: u32,
+    admin_field: &Vec<AS>,
+    codex_field: &Vec<CS>,
+    fix: bool,
+    fixer: Fixer,
+    guide_retriever: GuideRetriever,
+    guide_saver: GuideSaver,
+    admin_formatter: AFormatter,
+    codex_formatter: CFormatter,
+) -> Result<bool, Error>
+where
+    AS: PartialEq<CS>,
+    Fixer: FnOnce(&mut AdminEntity, &Vec<CS>) -> Result<(), Error>,
+    GuideRetriever: Fn(u32) -> Result<AdminEntity, Error>,
+    GuideSaver: FnOnce(AdminEntity) -> Result<(), Error>,
+    AFormatter: Fn(&AS) -> ADebuggable,
+    CFormatter: Fn(&CS) -> CDebuggable,
+    ADebuggable: Debug,
+    CDebuggable: Debug,
+{
+    if admin_field != codex_field {
+        println!(
+            "\x1B[0;34m{:30}:{:11}:\x1B[0m\ncodex= {:?}\nguide= {:?}",
+            entity_name,
+            field_name,
+            codex_field.iter().map(codex_formatter).collect::<Vec<_>>(),
+            admin_field.iter().map(admin_formatter).collect::<Vec<_>>(),
+        );
+        if fix {
+            let mut entity = guide_retriever(entity_id)?;
+            fixer(&mut entity, codex_field)?;
+            guide_saver(entity)?;
+            guide_retriever(entity_id)?;
+        }
+        Ok(false)
+    } else {
+        Ok(true)
+    }
 }
 
 /// Compare a single field and print an error message if they differ.
@@ -218,7 +264,7 @@ where
 {
     if admin_field != codex_field {
         println!(
-            "\x1B[0;34m{:30}:{:11}:\x1B[0m\ncodex= {:<80?}\nguide= {:?}",
+            "\x1B[0;34m{:30}:{:11}:\x1B[0m\ncodex= {:?}\nguide= {:?}",
             entity_name, field_name, codex_field, admin_field
         );
         if fix {
@@ -348,5 +394,219 @@ where
             &self.golden,
             &self.saver,
         )
+    }
+
+    /// Check a particular field.
+    /// The field's values (`admin_field` and `codex_field`) are formatted through the given formatters.
+    #[allow(dead_code)]
+    pub fn vec<AS, CS, Fixer, AFormatter, CFormatter, ADebuggable, CDebuggable>(
+        &'a self,
+        field_name: &str,
+        admin_field: &Vec<AS>,
+        codex_field: &Vec<CS>,
+        fixer: Fixer,
+        admin_formatter: AFormatter,
+        codex_formatter: CFormatter,
+    ) -> Result<bool, Error>
+    where
+        AS: PartialEq<CS>,
+        Fixer: FnOnce(&mut AdminEntity, &Vec<CS>) -> Result<(), Error>,
+        AFormatter: Fn(&AS) -> ADebuggable,
+        CFormatter: Fn(&CS) -> CDebuggable,
+        ADebuggable: Debug,
+        CDebuggable: Debug,
+    {
+        check_field_vec_formatter(
+            field_name,
+            self.entity_name,
+            self.entity_id,
+            admin_field,
+            codex_field,
+            self.fix,
+            fixer,
+            &self.golden,
+            &self.saver,
+            admin_formatter,
+            codex_formatter,
+        )
+    }
+
+    /// Check a field containing guide skill ids.
+    pub fn skill_id_vec<Fixer>(
+        &'a self,
+        field_name: &str,
+        admin_field: &Vec<u32>,
+        codex_field: &Vec<u32>,
+        fixer: Fixer,
+        data: &OrnaData,
+    ) -> Result<bool, Error>
+    where
+        Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
+    {
+        check_field_vec_formatter(
+            field_name,
+            self.entity_name,
+            self.entity_id,
+            admin_field,
+            codex_field,
+            self.fix,
+            fixer,
+            &self.golden,
+            &self.saver,
+            |id| &data.guide.skills.find_skill_by_id(*id).unwrap().name,
+            |id| &data.guide.skills.find_skill_by_id(*id).unwrap().name,
+        )
+    }
+
+    /// Check a field containing guide item ids.
+    pub fn item_id_vec<Fixer>(
+        &'a self,
+        field_name: &str,
+        admin_field: &Vec<u32>,
+        codex_field: &Vec<u32>,
+        fixer: Fixer,
+        data: &OrnaData,
+    ) -> Result<bool, Error>
+    where
+        Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
+    {
+        check_field_vec_formatter(
+            field_name,
+            self.entity_name,
+            self.entity_id,
+            admin_field,
+            codex_field,
+            self.fix,
+            fixer,
+            &self.golden,
+            &self.saver,
+            |id| &data.guide.items.find_item_by_id(*id).unwrap().name,
+            |id| &data.guide.items.find_item_by_id(*id).unwrap().name,
+        )
+    }
+
+    /// Check a field containing guide monster ids.
+    pub fn monster_id_vec<Fixer>(
+        &'a self,
+        field_name: &str,
+        admin_field: &Vec<u32>,
+        codex_field: &Vec<u32>,
+        fixer: Fixer,
+        data: &OrnaData,
+    ) -> Result<bool, Error>
+    where
+        Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
+    {
+        check_field_vec_formatter(
+            field_name,
+            self.entity_name,
+            self.entity_id,
+            admin_field,
+            codex_field,
+            self.fix,
+            fixer,
+            &self.golden,
+            &self.saver,
+            |id| &data.guide.monsters.find_match_for_id(*id).unwrap().name,
+            |id| &data.guide.monsters.find_match_for_id(*id).unwrap().name,
+        )
+    }
+
+    /// Check a field containing guide status effects ids.
+    pub fn status_effect_id_vec<Fixer>(
+        &'a self,
+        field_name: &str,
+        admin_field: &Vec<u32>,
+        codex_field: &Vec<u32>,
+        fixer: Fixer,
+        data: &OrnaData,
+    ) -> Result<bool, Error>
+    where
+        Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
+    {
+        check_field_vec_formatter(
+            field_name,
+            self.entity_name,
+            self.entity_id,
+            admin_field,
+            codex_field,
+            self.fix,
+            fixer,
+            &self.golden,
+            &self.saver,
+            |id| {
+                &data
+                    .guide
+                    .static_
+                    .status_effects
+                    .iter()
+                    .find(|effect| effect.id == *id)
+                    .unwrap()
+                    .name
+            },
+            |id| &data.guide.items.find_item_by_id(*id).unwrap().name,
+        )
+    }
+}
+
+/// A trait to extend `Vec<ItemDroppedBy>` specifically.
+pub trait ItemDroppedBys {
+    /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide monster ids.
+    fn try_to_guide_ids(&self, monsters: &AdminMonsters) -> Result<Vec<u32>, Error>;
+}
+
+impl ItemDroppedBys for Vec<ItemDroppedBy> {
+    fn try_to_guide_ids(&self, monsters: &AdminMonsters) -> Result<Vec<u32>, Error> {
+        self.iter()
+            .map(|dropped_by| {
+                monsters
+                    .get_match_for_codex_uri(&dropped_by.uri)
+                    .map(|monster| monster.id)
+            })
+            .collect()
+    }
+}
+
+/// A trait to extend `Vec<ItemUpgradeMaterial>` specifically.
+pub trait ItemUpgradeMaterials {
+    /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide item ids.
+    fn try_to_guide_ids(&self, items: &AdminItems) -> Result<Vec<u32>, Error>;
+}
+
+impl ItemUpgradeMaterials for Vec<ItemUpgradeMaterial> {
+    fn try_to_guide_ids(&self, items: &AdminItems) -> Result<Vec<u32>, Error> {
+        self.iter()
+            .map(|dropped_by| items.get_item_by_uri(&dropped_by.uri).map(|item| item.id))
+            .collect()
+    }
+}
+
+/// A trait to extend `Vec`s of codex abilities.
+pub trait CodexAbilities {
+    /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide skill ids.
+    fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error>;
+}
+
+impl CodexAbilities for Vec<FollowerAbility> {
+    fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error> {
+        self.iter()
+            .map(|ability| {
+                skills
+                    .find_skill_by_codex_uri(&ability.uri)
+                    .map(|skill| skill.id)
+            })
+            .collect()
+    }
+}
+
+impl CodexAbilities for Vec<MonsterAbility> {
+    fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error> {
+        self.iter()
+            .map(|ability| {
+                skills
+                    .find_skill_by_codex_uri(&ability.uri)
+                    .map(|skill| skill.id)
+            })
+            .collect()
     }
 }
