@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::error::Error;
+
 /// A spawn for monsters.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Spawn {
@@ -117,5 +119,39 @@ impl Static {
         self.spawns.iter().filter(|spawn| {
             spawn.name.starts_with("Event:") || spawn.name.starts_with("Past Event:")
         })
+    }
+}
+
+/// A trait to extend `Vec<Element>` specifically.
+pub trait VecElements {
+    /// Find the element with the given id.
+    fn find_element_by_id(&self, needle: u32) -> Option<&Element>;
+    /// Find the element with the given id.
+    /// If there is no match, return an `Err`.
+    fn get_element_by_id(&self, needle: u32) -> Result<&Element, Error>;
+    /// Find the element with the given name.
+    fn find_element_by_name(&self, needle: &str) -> Option<&Element>;
+    /// Find the element with the given name.
+    /// If there is no match, return an `Err`.
+    fn get_element_by_name(&self, needle: &str) -> Result<&Element, Error>;
+}
+
+impl VecElements for Vec<Element> {
+    fn find_element_by_id(&self, needle: u32) -> Option<&Element> {
+        self.iter().find(|element| element.id == needle)
+    }
+
+    fn get_element_by_id(&self, needle: u32) -> Result<&Element, Error> {
+        self.find_element_by_id(needle)
+            .ok_or_else(|| Error::Misc(format!("No element with id {}", needle)))
+    }
+
+    fn find_element_by_name(&self, needle: &str) -> Option<&Element> {
+        self.iter().find(|element| element.name == needle)
+    }
+
+    fn get_element_by_name(&self, needle: &str) -> Result<&Element, Error> {
+        self.find_element_by_name(needle)
+            .ok_or_else(|| Error::Misc(format!("No element with name {}", needle)))
     }
 }

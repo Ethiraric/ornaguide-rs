@@ -1,15 +1,15 @@
-use std::fmt::{Debug, Display};
-
 use itertools::Itertools;
 use ornaguide_rs::{
-    codex::{CodexElement, CodexItem, ItemStatusEffects},
+    codex::{CodexElement, ItemStatusEffects},
     error::Error,
-    guide::{AdminGuide, OrnaAdminGuide},
-    items::admin::AdminItem,
+    guide::{AdminGuide, OrnaAdminGuide, VecElements},
 };
 
 use crate::{
-    misc::{diff_sorted_slices, sanitize_guide_name},
+    guide_match::misc::{
+        fix_option_field, fix_staus_effects_field, fix_vec_field, fix_vec_id_field, Checker,
+    },
+    misc::{sanitize_guide_name, VecStatusEffectIds},
     output::OrnaData,
 };
 
@@ -69,214 +69,18 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
 }
 
 /// Return an iterator over the status afflictions a weapon with the given element may inflict.
-fn get_iter_element_statuses(element: Option<&CodexElement>) -> std::vec::IntoIter<String> {
+fn get_iter_element_statuses(element: Option<&CodexElement>) -> std::vec::IntoIter<&str> {
     match element {
-        Some(CodexElement::Fire) => vec!["Burning".to_string()].into_iter(),
-        Some(CodexElement::Water) => vec!["Frozen".to_string()].into_iter(),
-        Some(CodexElement::Earthen) => vec!["Rot".to_string()].into_iter(),
-        Some(CodexElement::Lightning) => vec!["Paralyzed".to_string()].into_iter(),
-        Some(CodexElement::Holy) => vec!["Blind".to_string()].into_iter(),
-        Some(CodexElement::Dark) => vec!["Asleep".to_string()].into_iter(),
-        Some(CodexElement::Arcane) => vec![
-            "Burning".to_string(),
-            "Frozen".to_string(),
-            "Rot".to_string(),
-            "Paralyzed".to_string(),
-        ]
-        .into_iter(),
-        Some(CodexElement::Dragon) => vec!["Blight".to_string()].into_iter(),
+        Some(CodexElement::Fire) => vec!["Burning"].into_iter(),
+        Some(CodexElement::Water) => vec!["Frozen"].into_iter(),
+        Some(CodexElement::Earthen) => vec!["Rot"].into_iter(),
+        Some(CodexElement::Lightning) => vec!["Paralyzed"].into_iter(),
+        Some(CodexElement::Holy) => vec!["Blind"].into_iter(),
+        Some(CodexElement::Dark) => vec!["Asleep"].into_iter(),
+        Some(CodexElement::Arcane) => vec!["Burning", "Frozen", "Rot", "Paralyzed"].into_iter(),
+        Some(CodexElement::Dragon) => vec!["Blight"].into_iter(),
         _ => vec![].into_iter(),
     }
-}
-
-/// Compare a single stat and print an error message if they differ.
-/// Return whether the stats matched.
-fn check_stat<AS, CS, Fixer>(
-    stat_name: &str,
-    admin_item: &AdminItem,
-    admin_stat: AS,
-    codex_stat: CS,
-    fix: bool,
-    fixer: Fixer,
-    guide: &OrnaAdminGuide,
-) -> Result<bool, Error>
-where
-    AS: PartialEq<CS> + Display,
-    CS: Display,
-    Fixer: FnOnce(&mut AdminItem, &CS),
-{
-    if admin_stat != codex_stat {
-        println!(
-            "\x1B[0;34m{:30}:{:11}:\x1B[0m codex= {:<20} guide= {:<20}",
-            admin_item.name, stat_name, codex_stat, admin_stat
-        );
-        if fix {
-            let mut item = guide.admin_retrieve_item_by_id(admin_item.id)?;
-            fixer(&mut item, &codex_stat);
-            guide.admin_save_item(item)?;
-            guide.admin_retrieve_item_by_id(admin_item.id)?;
-        }
-        Ok(false)
-    } else {
-        Ok(true)
-    }
-}
-
-/// Compare a single stat and prints an error message if they differ.
-/// Requires `Debug` instead of `Display`.
-/// Returns whether the stats matched.
-fn check_stat_debug<AS, CS, Fixer>(
-    stat_name: &str,
-    admin_item: &AdminItem,
-    admin_stat: &AS,
-    codex_stat: &CS,
-    fix: bool,
-    fixer: Fixer,
-    guide: &OrnaAdminGuide,
-) -> Result<bool, Error>
-where
-    AS: PartialEq<CS> + Debug,
-    CS: Debug,
-    Fixer: FnOnce(&mut AdminItem, &CS),
-{
-    if admin_stat != codex_stat {
-        println!(
-            "\x1B[0;34m{:30}:{:11}:\x1B[0m\ncodex= {:<80?}\nguide= {:?}",
-            admin_item.name, stat_name, codex_stat, admin_stat
-        );
-        if fix {
-            let mut item = guide.admin_retrieve_item_by_id(admin_item.id)?;
-            fixer(&mut item, codex_stat);
-            guide.admin_save_item(item)?;
-            guide.admin_retrieve_item_by_id(admin_item.id)?;
-        }
-        Ok(false)
-    } else {
-        Ok(true)
-    }
-}
-
-/// Compare the dropped_by list for an item.
-/// The steps to accomplish that are longer than for other fields, so the piece of code is isolated
-/// in its own function.
-fn check_item_dropped_by(
-    data: &OrnaData,
-    fix: bool,
-    guide: &OrnaAdminGuide,
-    codex_item: &CodexItem,
-    guide_item: &AdminItem,
-) -> Result<(), Error> {
-    // TODO(ethiraric, 10/06/2022): Refactor this mess.
-
-    // List monster uris that drop the item.
-    let guide_uris = data
-        .guide
-        .monsters
-        .monsters
-        .iter()
-        .filter_map(|monster| {
-            monster
-                .drops
-                .iter()
-                .find(|id| **id == guide_item.id)
-                .map(|_| monster)
-        })
-        // Filter out entries without a codex_uri.
-        // This should remove Vulcan and The Fools entries.
-        .filter(|monster| !monster.codex_uri.is_empty())
-        // Map them to their codex_uris.
-        .map(|monster| monster.codex_uri.clone())
-        .sorted()
-        .collect::<Vec<_>>();
-    let codex_uris = codex_item
-        .dropped_by
-        .iter()
-        .map(|drop_by| drop_by.uri.clone())
-        .sorted()
-        .collect::<Vec<_>>();
-    let ok = check_stat_debug(
-        "dropped_by",
-        guide_item,
-        &guide_uris,
-        &codex_uris,
-        false,
-        |_, _| {},
-        guide,
-    )?;
-
-    if ok {
-        return Ok(());
-    }
-
-    // List the codex uris of monsters we should edit.
-    let (addenda, to_remove) = diff_sorted_slices(&codex_uris, &guide_uris);
-    if addenda.is_empty() && to_remove.is_empty() {
-        return Ok(());
-    }
-    if !addenda.is_empty() {
-        println!("\x1b[0;32mSuggest adding: {:?}\x1b[0m", addenda);
-    }
-    if !to_remove.is_empty() {
-        println!("\x1b[0;31mSuggest removing: {:?}\x1b[0m", to_remove);
-    }
-
-    if fix && !addenda.is_empty() && !to_remove.is_empty() {
-        // Edit all monsters we should add the drop to.
-        for monster_id in addenda
-            .iter()
-            .filter_map(|uri| data.codex.find_generic_monster_from_uri(uri))
-            .filter_map(|codex_monster| {
-                data.guide
-                    .find_match_for_codex_generic_monster(codex_monster)
-                    .map_err(|err| println!("{}", err))
-                    .ok()
-                    .map(|monster| monster.id)
-            })
-        {
-            let mut monster = guide.admin_retrieve_monster_by_id(monster_id)?;
-            println!(
-                "Adding drop {} (#{}) to monster {} (#{})",
-                guide_item.name, guide_item.id, monster.name, monster.id
-            );
-            // Guard editing a monster we might already have added the item to, but not refreshed
-            // the jsons yet.
-            if monster.drops.contains(&guide_item.id) {
-                continue;
-            }
-            monster.drops.push(guide_item.id);
-            guide.admin_save_monster(monster)?;
-            guide.admin_retrieve_monster_by_id(monster_id)?;
-        }
-
-        // Edit all monsters we should remove the drop from.
-        for monster_id in to_remove
-            .iter()
-            .filter_map(|uri| data.codex.find_generic_monster_from_uri(uri))
-            .filter_map(|codex_monster| {
-                data.guide
-                    .find_match_for_codex_generic_monster(codex_monster)
-                    .map_err(|err| println!("{}", err))
-                    .ok()
-                    .map(|monster| monster.id)
-            })
-        {
-            let mut monster = guide.admin_retrieve_monster_by_id(monster_id)?;
-            println!(
-                "Removing drop {} (#{}) from monster {} (#{})",
-                guide_item.name, guide_item.id, monster.name, monster.id
-            );
-            if let Some(pos) = monster
-                .drops
-                .iter()
-                .position(|item_id| *item_id == guide_item.id)
-            {
-                monster.drops.remove(pos);
-                guide.admin_save_monster(monster)?;
-                guide.admin_retrieve_monster_by_id(monster_id)?;
-            }
-        }
-    }
-    Ok(())
 }
 
 /// Check for mismatches in the stats.
@@ -291,501 +95,472 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
         .id;
     for codex_item in data.codex.items.items.iter() {
         if let Ok(guide_item) = data.guide.items.find_match_for_codex_item(codex_item) {
+            let check = Checker {
+                entity_name: &guide_item.name,
+                entity_id: guide_item.id,
+                fix,
+                golden: |id| guide.admin_retrieve_item_by_id(id),
+                saver: |item| guide.admin_save_item(item),
+            };
+
             // Icon
-            check_stat(
+            check.display(
                 "icon",
-                guide_item,
                 &guide_item.image_name,
                 &codex_item.icon,
-                fix,
                 |item, icon| {
                     item.image_name = icon.to_string();
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Description
-            check_stat(
+            check.display(
                 "description",
-                guide_item,
                 &guide_item.description,
                 &codex_item.description,
-                fix,
                 |item, description| {
                     item.description = description.to_string();
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Attack
-            check_stat(
+            check.display(
                 "attack",
-                guide_item,
-                guide_item.attack,
-                codex_item
+                &guide_item.attack,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.attack)
                     .unwrap_or(0),
-                fix,
                 |item, attack| {
                     item.attack = *attack;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Magic
-            check_stat(
+            check.display(
                 "magic",
-                guide_item,
-                guide_item.magic,
-                codex_item
+                &guide_item.magic,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.magic)
                     .unwrap_or(0),
-                fix,
                 |item, magic| {
                     item.magic = *magic;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // HP
-            check_stat(
+            check.display(
                 "hp",
-                guide_item,
-                guide_item.hp,
-                codex_item
+                &guide_item.hp,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.hp)
                     .unwrap_or(0),
-                fix,
                 |item, hp| {
                     item.hp = *hp;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Mana
-            check_stat(
+            check.display(
                 "mana",
-                guide_item,
-                guide_item.mana,
-                codex_item
+                &guide_item.mana,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.mana)
                     .unwrap_or(0),
-                fix,
                 |item, mana| {
                     item.mana = *mana;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Defense
-            check_stat(
+            check.display(
                 "defense",
-                guide_item,
-                guide_item.defense,
-                codex_item
+                &guide_item.defense,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.defense)
                     .unwrap_or(0),
-                fix,
                 |item, defense| {
                     item.defense = *defense;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Resistance
-            check_stat(
+            check.display(
                 "resistance",
-                guide_item,
-                guide_item.resistance,
-                codex_item
+                &guide_item.resistance,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.resistance)
                     .unwrap_or(0),
-                fix,
                 |item, resistance| {
                     item.resistance = *resistance;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Ward
-            check_stat(
+            check.display(
                 "ward",
-                guide_item,
-                guide_item.ward,
-                codex_item
+                &guide_item.ward,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.ward)
                     .unwrap_or(0),
-                fix,
                 |item, ward| {
                     item.ward = *ward;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Dexterity
-            check_stat(
+            check.display(
                 "dexterity",
-                guide_item,
-                guide_item.dexterity,
-                codex_item
+                &guide_item.dexterity,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.dexterity)
                     .unwrap_or(0),
-                fix,
                 |item, dexterity| {
                     item.dexterity = *dexterity;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Crit
-            check_stat(
+            check.display(
                 "crit",
-                guide_item,
-                guide_item.crit,
-                codex_item
+                &guide_item.crit,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.crit)
                     .unwrap_or(0),
-                fix,
                 |item, crit| {
                     item.crit = *crit;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Foresight
-            check_stat(
+            check.display(
                 "foresight",
-                guide_item,
-                guide_item.foresight,
-                codex_item
+                &guide_item.foresight,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.foresight)
                     .unwrap_or(0),
-                fix,
                 |item, foresight| {
                     item.foresight = *foresight;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Adorn slots
-            check_stat(
+            check.display(
                 "adorn slots",
-                guide_item,
-                guide_item.base_adornment_slots,
-                codex_item
+                &guide_item.base_adornment_slots,
+                &codex_item
                     .stats
                     .as_ref()
                     .and_then(|stats| stats.adornment_slots)
                     .unwrap_or(0),
-                fix,
                 |item, slots| {
                     item.base_adornment_slots = *slots;
                     item.has_slots = *slots != 0;
+                    Ok(())
                 },
-                guide,
             )?;
+
             // Element
-            check_stat(
+            let guide_element = &guide_item.element.map(|element_id| {
+                data.guide
+                    .static_
+                    .elements
+                    .find_element_by_id(element_id)
+                    .unwrap()
+                    .name
+                    .as_str()
+            });
+            let codex_element = &codex_item
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.element.as_ref())
+                .map(|element| element.to_string());
+            check.debug(
                 "element",
-                guide_item,
-                guide_item
-                    .element
-                    .map(|element_id| {
-                        data.guide
-                            .static_
-                            .elements
-                            .iter()
-                            .find(|element| element.id == element_id)
-                            .unwrap()
-                            .name
-                            .clone()
-                    })
-                    .unwrap_or_default(),
-                codex_item
-                    .stats
-                    .as_ref()
-                    .and_then(|stats| stats.element.as_ref())
-                    .map(|element| element.to_string())
-                    .unwrap_or_default(),
-                fix,
+                guide_element,
+                &codex_element.as_deref(),
                 |item, element| {
-                    if element.is_empty() {
-                        item.element = None;
-                    } else {
-                        let guide_element = data
-                            .guide
-                            .static_
-                            .elements
-                            .iter()
-                            .find(|el| el.name == *element);
-                        if let Some(guide_element) = guide_element {
-                            item.element = Some(guide_element.id);
-                        } else {
-                            println!("Failed to find element {} on guide", element);
-                        }
-                    }
+                    fix_option_field(
+                        item,
+                        |item| Ok(&mut item.element),
+                        element,
+                        |element| Ok(data.guide.static_.elements.get_element_by_name(element)?.id),
+                    )
                 },
-                guide,
             )?;
+
             // Ability
-            check_stat(
+            let guide_ability = guide_item
+                .ability
+                .and_then(|ability_id| {
+                    data.guide
+                        .skills
+                        .skills
+                        .iter()
+                        .find(|skill| skill.id == ability_id)
+                })
+                .map(|skill| sanitize_guide_name(&skill.name));
+            let codex_ability = codex_item
+                .ability
+                .as_ref()
+                .map(|ability| ability.name.as_str());
+            check.debug(
                 "ability",
-                guide_item,
-                guide_item
-                    .ability
-                    .and_then(|ability_id| {
-                        data.guide
-                            .skills
-                            .skills
-                            .iter()
-                            .find(|skill| skill.id == ability_id)
-                    })
-                    .map(|skill| sanitize_guide_name(&skill.name))
-                    .unwrap_or_default(),
-                codex_item
-                    .ability
-                    .as_ref()
-                    .map(|ability| ability.name.clone())
-                    .unwrap_or_default(),
-                fix,
+                &guide_ability,
+                &codex_ability,
                 |item, ability_name| {
-                    if ability_name.is_empty() {
-                        item.ability = None;
-                    } else {
-                        let guide_ability = data
-                            .guide
-                            .skills
-                            .skills
-                            .iter()
-                            .find(|skill| skill.name == *ability_name);
-                        if let Some(guide_ability) = guide_ability {
-                            item.ability = Some(guide_ability.id);
-                        } else {
-                            println!("Failed to find ability {} on guide", ability_name);
-                        }
-                    }
+                    fix_option_field(
+                        item,
+                        |item| Ok(&mut item.ability),
+                        ability_name,
+                        |ability_name| {
+                            data.guide
+                                .skills
+                                .get_offhand_skill_from_name(ability_name)
+                                .map(|skill| skill.id)
+                        },
+                    )
                 },
-                guide,
             )?;
+
             // Causes
-            check_stat_debug(
+            let guide_causes = guide_item
+                .causes
+                .guide_status_effect_ids_to_guide_names(data);
+            let codex_causes = codex_item
+                .causes
+                .to_guide_names()
+                .into_iter()
+                // TODO(ethiraric, 04/06/2022): Remove this chain and the dedup call below once
+                // the codex fixes elemental statuses for weapons.
+                .chain(if guide_item.type_ == guide_weapon_id {
+                    get_iter_element_statuses(
+                        codex_item
+                            .stats
+                            .as_ref()
+                            .and_then(|stats| stats.element.as_ref()),
+                    )
+                } else {
+                    Vec::<&str>::new().into_iter()
+                })
+                .sorted()
+                .dedup()
+                .collect::<Vec<_>>();
+            check.debug(
                 "causes",
-                guide_item,
-                &guide_item
-                    .causes
-                    .iter()
-                    .map(|cause_id| {
-                        data.guide
-                            .static_
-                            .status_effects
-                            .iter()
-                            .find(|status| status.id == *cause_id)
-                            .unwrap_or_else(|| panic!("Failed to find guide cause {}", cause_id))
-                            .name
-                            .clone()
-                    })
-                    .sorted()
-                    .collect::<Vec<_>>(),
-                &codex_item
-                    .causes
-                    .to_guide_names()
-                    .into_iter()
-                    // TODO(ethiraric, 04/06/2022): Remove this chain and the dedup call below once
-                    // the codex fixes elemental statuses for weapons.
-                    .chain(if guide_item.type_ == guide_weapon_id {
-                        get_iter_element_statuses(
-                            codex_item
-                                .stats
-                                .as_ref()
-                                .and_then(|stats| stats.element.as_ref()),
-                        )
-                    } else {
-                        Vec::<String>::new().into_iter()
-                    })
-                    .sorted()
-                    .dedup()
-                    .collect::<Vec<_>>(),
-                fix,
+                &guide_causes,
+                &codex_causes,
                 |item, codex_causes| {
-                    item.causes = codex_causes
-                        .iter()
-                        .filter_map(|cause_name| {
-                            data.guide
-                                .static_
-                                .status_effects
-                                .iter()
-                                .find(|cause| cause.name == *cause_name)
-                                .map(|cause| cause.id)
-                        })
-                        .collect();
+                    fix_staus_effects_field(
+                        "causes",
+                        item,
+                        &guide_causes,
+                        data,
+                        codex_causes,
+                        |item| &mut item.causes,
+                    )
                 },
-                guide,
             )?;
+
             // Cures
-            check_stat_debug(
+            let guide_cures = guide_item
+                .cures
+                .guide_status_effect_ids_to_guide_names(data);
+            check.debug(
                 "cures",
-                guide_item,
-                &guide_item
-                    .cures
-                    .iter()
-                    .map(|cure_id| {
-                        data.guide
-                            .static_
-                            .status_effects
-                            .iter()
-                            .find(|status| status.id == *cure_id)
-                            .unwrap_or_else(|| panic!("Failed to find guide cures {}", cure_id))
-                            .name
-                            .clone()
-                    })
-                    .sorted()
-                    .collect::<Vec<_>>(),
+                &guide_cures,
                 &codex_item.cures.to_guide_names(),
-                fix,
                 |item, codex_cures| {
-                    item.cures = codex_cures
-                        .iter()
-                        .filter_map(|cure_name| {
-                            data.guide
-                                .static_
-                                .status_effects
-                                .iter()
-                                .find(|cure| cure.name == *cure_name)
-                                .map(|cure| cure.id)
-                        })
-                        .collect();
+                    fix_staus_effects_field(
+                        "cures",
+                        item,
+                        &guide_cures,
+                        data,
+                        codex_cures,
+                        |item| &mut item.cures,
+                    )
                 },
-                guide,
             )?;
+
             // Gives
-            check_stat_debug(
+            let guide_gives = guide_item
+                .gives
+                .guide_status_effect_ids_to_guide_names(data);
+            check.debug(
                 "gives",
-                guide_item,
-                &guide_item
-                    .gives
-                    .iter()
-                    .map(|give_id| {
-                        data.guide
-                            .static_
-                            .status_effects
-                            .iter()
-                            .find(|status| status.id == *give_id)
-                            .unwrap_or_else(|| panic!("Failed to find guide give {}", give_id))
-                            .name
-                            .clone()
-                    })
-                    .sorted()
-                    .collect::<Vec<_>>(),
+                &guide_gives,
                 &codex_item.gives.to_guide_names(),
-                fix,
-                |item, codex_give| {
-                    item.gives = codex_give
-                        .iter()
-                        .filter_map(|give_name| {
-                            data.guide
-                                .static_
-                                .status_effects
-                                .iter()
-                                .find(|give| give.name == *give_name)
-                                .map(|give| give.id)
-                        })
-                        .collect();
+                |item, codex_gives| {
+                    fix_staus_effects_field(
+                        "gives",
+                        item,
+                        &guide_gives,
+                        data,
+                        codex_gives,
+                        |item| &mut item.gives,
+                    )
                 },
-                guide,
             )?;
+
             // Immunities
-            check_stat_debug(
+            let guide_immunities = guide_item
+                .prevents
+                .guide_status_effect_ids_to_guide_names(data);
+            check.debug(
                 "immunities",
-                guide_item,
-                &guide_item
-                    .prevents
-                    .iter()
-                    .map(|immunity_id| {
-                        data.guide
-                            .static_
-                            .status_effects
-                            .iter()
-                            .find(|status| status.id == *immunity_id)
-                            .unwrap_or_else(|| {
-                                panic!("Failed to find guide immunity {}", immunity_id)
-                            })
-                            .name
-                            .clone()
-                    })
-                    .sorted()
-                    .collect::<Vec<_>>(),
+                &guide_immunities,
                 &codex_item.immunities.to_guide_names(),
-                fix,
-                |item, codex_immunity| {
-                    item.prevents = codex_immunity
-                        .iter()
-                        .filter_map(|immunity_name| {
-                            data.guide
-                                .static_
-                                .status_effects
-                                .iter()
-                                .find(|immunity| immunity.name == *immunity_name)
-                                .map(|immunity| immunity.id)
-                        })
-                        .collect();
+                |item, codex_immunities| {
+                    fix_staus_effects_field(
+                        "immunities",
+                        item,
+                        &guide_immunities,
+                        data,
+                        codex_immunities,
+                        |item| &mut item.prevents,
+                    )
                 },
-                guide,
             )?;
+
             // Dropped by
-            check_item_dropped_by(data, fix, guide, codex_item, guide_item)?;
-            // Upgrade Materials
-            check_stat_debug(
-                "upgrade materials",
-                guide_item,
-                &guide_item
-                    .materials
-                    .iter()
-                    .map(|material_id| {
-                        data.guide
-                            .items
-                            .items
-                            .iter()
-                            .find(|item| item.id == *material_id)
-                            .unwrap_or_else(|| {
-                                panic!("Failed to find guide material {}", material_id)
-                            })
-                            .codex_uri
-                            .clone()
-                    })
-                    .sorted()
-                    .collect::<Vec<_>>(),
-                &codex_item
-                    .upgrade_materials
-                    .iter()
-                    .map(|material| material.uri.clone())
-                    .sorted()
-                    .collect::<Vec<_>>(),
-                fix,
-                |item, materials| {
-                    item.materials = materials
+            let guide_dropped_by_uris = data
+                .guide
+                .monsters
+                .monsters
+                .iter()
+                .filter_map(|monster| {
+                    monster
+                        .drops
                         .iter()
-                        .map(|material_uri| {
-                            data.guide
-                                .items
-                                .items
-                                .iter()
-                                .find(|item| item.codex_uri == *material_uri)
-                                .unwrap_or_else(|| {
-                                    panic!("Failed to find material with uri {}", material_uri)
-                                })
-                        })
-                        .map(|item| item.id)
-                        .collect();
+                        .find(|id| **id == guide_item.id)
+                        .map(|_| monster)
+                })
+                // Filter out entries without a codex_uri.
+                // This should remove Vulcan and The Fools entries.
+                .filter(|monster| !monster.codex_uri.is_empty())
+                // Map them to their codex_uris.
+                .map(|monster| monster.codex_uri.as_str())
+                .sorted()
+                .collect::<Vec<_>>();
+            let codex_dropped_by_uris = codex_item
+                .dropped_by
+                .iter()
+                .map(|dropped_by| dropped_by.uri.as_str())
+                .sorted()
+                .collect::<Vec<_>>();
+            check.debug(
+                "dropped_by",
+                &guide_dropped_by_uris,
+                &codex_dropped_by_uris,
+                |item, dropped_by| {
+                    fix_vec_field(
+                        item,
+                        |_| Ok(&guide_dropped_by_uris),
+                        dropped_by,
+                        |_, uris| {
+                            // For each monster that is missing a drop.
+                            for uri in uris.iter() {
+                                // Fetch the monster.
+                                let id = data.guide.monsters.get_match_for_codex_uri(uri)?.id;
+                                let mut monster = guide.admin_retrieve_monster_by_id(id)?;
+                                // Check whether the drop was not just missing from the cache.
+                                if !monster.drops.contains(&guide_item.id) {
+                                    // Add the drop to the monster and save it.
+                                    monster.drops.push(guide_item.id);
+                                    guide.admin_save_monster(monster)?;
+                                    guide.admin_retrieve_monster_by_id(id)?;
+                                }
+                            }
+                            Ok(())
+                        },
+                        |_, uris| {
+                            // For each monster thet has one too much a drop.
+                            for uri in uris.iter() {
+                                // Fetch the monster.
+                                let id = data.guide.monsters.get_match_for_codex_uri(uri)?.id;
+                                let mut monster = guide.admin_retrieve_monster_by_id(id)?;
+                                // Check whether the drop was not just present in the cache.
+                                if monster.drops.contains(&guide_item.id) {
+                                    // Remove the drop from the monster and save it.
+                                    monster.drops.retain(|id| *id != guide_item.id);
+                                    guide.admin_save_monster(monster)?;
+                                    guide.admin_retrieve_monster_by_id(id)?;
+                                }
+                            }
+                            Ok(())
+                        },
+                    )
                 },
-                guide,
+            )?;
+
+            // Upgrade Materials
+            let guide_upgrade_materials = guide_item
+                .materials
+                .iter()
+                .map(|material_id| {
+                    data.guide
+                        .items
+                        .items
+                        .iter()
+                        .find(|item| item.id == *material_id)
+                        .unwrap_or_else(|| panic!("Failed to find guide material {}", material_id))
+                        .codex_uri
+                        .as_str()
+                })
+                .sorted()
+                .collect::<Vec<_>>();
+            let codex_upgrade_materials = codex_item
+                .upgrade_materials
+                .iter()
+                .map(|material| material.uri.as_str())
+                .sorted()
+                .collect::<Vec<_>>();
+            check.debug(
+                "upgrade materials",
+                &guide_upgrade_materials,
+                &codex_upgrade_materials,
+                |item, materials| {
+                    fix_vec_id_field(
+                        "upgrade_materials",
+                        item,
+                        &guide_upgrade_materials,
+                        materials,
+                        |item| &mut item.materials,
+                        |id| Ok(&data.guide.items.get_item_by_id(id)?.codex_uri),
+                        |uri| Ok(data.guide.items.get_item_by_uri(uri)?.id),
+                    )
+                },
             )?;
         }
     }

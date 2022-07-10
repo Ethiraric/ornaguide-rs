@@ -16,7 +16,7 @@ mod r#static;
 
 pub use r#static::{
     Element, EquippedBy, ItemCategory, ItemType, MonsterFamily, SkillType, Spawn, Static,
-    StatusEffect,
+    StatusEffect, VecElements,
 };
 
 /// A skill "row" when listing the skills from the admin guide. It does not contain much details.

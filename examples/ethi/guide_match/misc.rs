@@ -4,6 +4,29 @@ use ornaguide_rs::error::Error;
 
 use crate::{misc::diff_sorted_slices, output::OrnaData};
 
+/// Compare the option in a field and fix it to what is expected.
+/// The conversion function is used to translate from the codex to the guide.
+pub fn fix_option_field<'a, AdminEntity, AdminToOption, T: 'a, U, FnConvert>(
+    admin: &'a mut AdminEntity,
+    admin_to_option: AdminToOption,
+    expected_option: &Option<U>,
+    fn_convert: FnConvert,
+) -> Result<(), Error>
+where
+    AdminToOption: FnOnce(&'a mut AdminEntity) -> Result<&'a mut Option<T>, Error>,
+    T: std::cmp::Ord + std::fmt::Debug,
+    FnConvert: FnOnce(&U) -> Result<T, Error>,
+{
+    let admin_option = admin_to_option(admin)?;
+    match expected_option {
+        Some(expected) => {
+            *admin_option = Some(fn_convert(expected)?);
+        }
+        None => *admin_option = None,
+    }
+    Ok(())
+}
+
 /// Compare the list of elements in a field and remove or add depending on what is expected.
 /// Need to be able to convert to a common type (usually `String`).
 pub fn fix_vec_field<'a, AdminEntity, AdminToVec, T: 'a, FnRemove, FnAdd>(
@@ -41,6 +64,55 @@ where
     Ok(())
 }
 
+/// Compare a list of ids to their matching URIs on the codex.
+/// Converts ids to URIs thanks to the conversion function provided, and URIs can be converted back
+/// to ids thanks to the other conversion function.
+/// The comparison is made when everything is converted to URIs.
+pub fn fix_vec_id_field<'a, AdminEntity, EntityIdsGetter, IdToUriConverter, UriToIdConverter>(
+    id_kind: &str,
+    entity: &mut AdminEntity,
+    entity_uris: &Vec<&str>,
+    expected_uris: &[&str],
+    entity_ids_getter: EntityIdsGetter,
+    id_to_uri: IdToUriConverter,
+    uri_to_id: UriToIdConverter,
+) -> Result<(), Error>
+where
+    EntityIdsGetter: Fn(&mut AdminEntity) -> &mut Vec<u32>,
+    IdToUriConverter: Fn(u32) -> Result<&'a str, Error>,
+    UriToIdConverter: Fn(&str) -> Result<u32, Error>,
+{
+    fix_vec_field(
+        entity,
+        |_| -> Result<&Vec<&str>, Error> { Ok(entity_uris) },
+        expected_uris,
+        |entity, to_remove| {
+            // Retain only ids that do not match any URI in `to_remove`.
+            entity_ids_getter(entity).retain(|id| {
+                id_to_uri(*id)
+                    // If a matching URI is found, remove it if it is within `to_remove`.
+                    .map(|id_uri| !to_remove.iter().any(|uri| **uri == id_uri))
+                    // If a matching URI is not found, panic (this shouldn't happen).
+                    .unwrap_or_else(|err| {
+                        panic!("An entity has an invalid {} id #{}: {}", id_kind, id, err)
+                    })
+            });
+            Ok(())
+        },
+        |entity, to_add| {
+            // Convert URIs to ids.
+            let ids_to_add = to_add.iter().map(|uri| uri_to_id(uri));
+
+            // Push ids into entity.
+            let entity_ids = entity_ids_getter(entity);
+            for id in ids_to_add {
+                entity_ids.push(id?);
+            }
+            Ok(())
+        },
+    )
+}
+
 /// Compare the list of abilities registered on the guide to those on the codex.
 /// The match is made based on the codex_uri (that which is registered on the admin skill, and that
 /// which is indicated on the codex).
@@ -54,42 +126,70 @@ pub fn fix_abilities_field<AdminEntity, EntitySkillsGetter>(
 where
     EntitySkillsGetter: Fn(&mut AdminEntity) -> &mut Vec<u32>,
 {
-    fix_vec_field(
+    fix_vec_id_field(
+        "abilities",
         entity,
-        |_| -> Result<&Vec<&str>, Error> { Ok(entity_uris) },
+        entity_uris,
         expected_skills_uris,
-        |entity, to_remove| {
-            // Retain only skills that do not match any URI in `to_remove`.
-            entity_skills_getter(entity).retain(|skill_id| {
-                data.guide
-                    .skills
-                    .find_skill_by_id(*skill_id)
-                    // If a matching skill is found, remove it if its URI is within `to_remove`.
-                    .map(|skill| !to_remove.iter().any(|uri| **uri == skill.codex_uri))
-                    // If a matching skill is not found, panic (this shouldn't happen).
-                    .unwrap_or_else(|err| {
-                        panic!("An entity has invalid skill id #{}: {}", skill_id, err)
-                    })
-            });
-            Ok(())
+        entity_skills_getter,
+        // Id to URI
+        |id| {
+            data.guide
+                .skills
+                .find_skill_by_id(id)
+                .map(|skill| skill.codex_uri.as_str())
         },
-        |entity, to_add| {
-            // Convert URIs to ids.
-            let ids_to_add = to_add.iter().filter_map(|skill_codex_uri| {
-                data.guide
-                    .skills
-                    .find_skill_by_codex_uri(skill_codex_uri)
-                    .map(|skill| skill.id)
-                    .map_err(|err| println!("{}", err))
-                    .ok()
-            });
+        // URI to id
+        |uri| {
+            data.guide
+                .skills
+                .find_skill_by_codex_uri(uri)
+                .map(|skill| skill.id)
+        },
+    )
+}
 
-            // Push ids into entity.
-            let entity_skills = entity_skills_getter(entity);
-            for skill_id in ids_to_add {
-                entity_skills.push(skill_id);
-            }
-            Ok(())
+/// Compare the list of status effects registered on the guide to those on the codex.
+/// The match is made based on the status name. The names given in `expected_names` have to be
+/// those from the guide, not from the codex.
+pub fn fix_staus_effects_field<AdminEntity, EntityStatusEffectsGetter>(
+    status_effect_name: &str,
+    entity: &mut AdminEntity,
+    entity_names: &Vec<&str>,
+    data: &OrnaData,
+    expected_names: &[&str],
+    entity_skills_getter: EntityStatusEffectsGetter,
+) -> Result<(), Error>
+where
+    EntityStatusEffectsGetter: Fn(&mut AdminEntity) -> &mut Vec<u32>,
+{
+    fix_vec_id_field(
+        status_effect_name,
+        entity,
+        entity_names,
+        expected_names,
+        entity_skills_getter,
+        // Id to name
+        |id| {
+            data.guide
+                .static_
+                .status_effects
+                .iter()
+                .find(|status| status.id == id)
+                .map(|status| status.name.as_str())
+                .ok_or_else(|| Error::Misc(format!("Failed to find status effect #{}", id)))
+        },
+        // Name to id
+        |name| {
+            data.guide
+                .static_
+                .status_effects
+                .iter()
+                .find(|cause| cause.name == *name)
+                .map(|cause| cause.id)
+                .ok_or_else(|| {
+                    Error::Misc(format!("Failed to find a status effect named {}", name))
+                })
         },
     )
 }

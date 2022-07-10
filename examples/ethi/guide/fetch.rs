@@ -9,7 +9,7 @@ use ornaguide_rs::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::misc::bar;
+use crate::misc::{bar, sanitize_guide_name};
 
 /// Collection of items from the guide's admin view.
 #[derive(Serialize, Deserialize)]
@@ -42,6 +42,7 @@ pub struct AdminPets {
 impl<'a> AdminItems {
     /// Find the admin item associated with the given codex item.
     /// If there is no match, return an `Err`.
+    // TODO(ethiraric, 10/07/2022): Return an option?
     pub fn find_match_for_codex_item(&'a self, needle: &CodexItem) -> Result<&'a AdminItem, Error> {
         self.items
             .iter()
@@ -50,6 +51,46 @@ impl<'a> AdminItems {
                     && item.codex_uri["/codex/items/".len()..].trim_end_matches('/') == needle.slug
             })
             .ok_or_else(|| Error::Misc(format!("No match for codex item '{}'", needle.slug)))
+    }
+
+    /// Find the admin item associated with the given id.
+    pub fn find_item_by_id(&'a self, needle: u32) -> Option<&'a AdminItem> {
+        self.items.iter().find(|item| item.id == needle)
+    }
+
+    /// Find the admin item associated with the given id.
+    /// If there is no match, return an `Err`.
+    pub fn get_item_by_id(&'a self, needle: u32) -> Result<&'a AdminItem, Error> {
+        self.find_item_by_id(needle)
+            .ok_or_else(|| Error::Misc(format!("No item with id {}", needle)))
+    }
+
+    /// Find the admin item associated with the given uri.
+    pub fn find_item_by_uri(&'a self, needle: &str) -> Option<&'a AdminItem> {
+        self.items.iter().find(|item| &item.codex_uri == needle)
+    }
+
+    /// Find the admin item associated with the given uri.
+    /// If there is no match, return an `Err`.
+    pub fn get_item_by_uri(&'a self, needle: &str) -> Result<&'a AdminItem, Error> {
+        self.find_item_by_uri(needle)
+            .ok_or_else(|| Error::Misc(format!("No item with uri {}", needle)))
+    }
+}
+
+impl<'a> AdminMonsters {
+    /// Find the monster with the given codex uri.
+    pub fn find_match_for_codex_uri(&'a self, needle: &str) -> Option<&'a AdminMonster> {
+        self.monsters
+            .iter()
+            .find(|monster| monster.codex_uri == needle)
+    }
+
+    /// Find the monster with the given codex uri.
+    /// If there is no match, return an `Err`.
+    pub fn get_match_for_codex_uri(&'a self, needle: &str) -> Result<&'a AdminMonster, Error> {
+        self.find_match_for_codex_uri(needle)
+            .ok_or_else(|| Error::Misc(format!("No monster with codex uri '{}'", needle)))
     }
 }
 
@@ -91,6 +132,20 @@ impl<'a> AdminSkills {
                     needle
                 ))
             })
+    }
+
+    /// Find the admin offhand skill with the given name.
+    pub fn find_offhand_skill_from_name(&'a self, needle: &str) -> Option<&'a AdminSkill> {
+        self.skills
+            .iter()
+            .find(|skill| sanitize_guide_name(&skill.name) == needle && skill.offhand)
+    }
+
+    /// Find the admin offhand skill with the given name.
+    /// If there is no match, return an `Err`.
+    pub fn get_offhand_skill_from_name(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
+        self.find_offhand_skill_from_name(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for codex skill '{}'", needle)))
     }
 }
 

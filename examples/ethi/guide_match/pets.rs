@@ -6,7 +6,7 @@ use ornaguide_rs::{
 };
 
 use crate::{
-    guide_match::misc::{check_field, check_field_debug, fix_abilities_field},
+    guide_match::misc::{fix_abilities_field, Checker},
     misc::VecSkillIds,
     output::OrnaData,
 };
@@ -62,35 +62,33 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
 fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     for follower in data.codex.followers.followers.iter() {
         if let Ok(pet) = data.guide.pets.find_match_for_codex_follower(follower) {
+            let check = Checker {
+                entity_name: &pet.name,
+                entity_id: pet.id,
+                fix,
+                golden: |id| guide.admin_retrieve_pet_by_id(id),
+                saver: |pet| guide.admin_save_pet(pet),
+            };
+
             // Name
-            check_field(
+            check.display(
                 "name",
                 &pet.name,
-                pet.id,
-                &pet.name,
                 &follower.name,
-                fix,
                 |pet: &mut AdminPet, name| {
                     pet.name = name.clone();
                     Ok(())
                 },
-                |id| guide.admin_retrieve_pet_by_id(id),
-                |pet| guide.admin_save_pet(pet),
             )?;
             // Image name
-            check_field(
+            check.display(
                 "image_name",
-                &pet.name,
-                pet.id,
                 &pet.image_name,
                 &follower.icon,
-                fix,
                 |pet: &mut AdminPet, image_name| {
                     pet.image_name = image_name.clone();
                     Ok(())
                 },
-                |id| guide.admin_retrieve_pet_by_id(id),
-                |pet| guide.admin_save_pet(pet),
             )?;
             // Description
             let follower_description = if !follower.description.is_empty() {
@@ -98,34 +96,24 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
             } else {
                 ".".to_string()
             };
-            check_field(
+            check.display(
                 "description",
-                &pet.name,
-                pet.id,
                 &pet.description,
                 &follower_description,
-                fix,
                 |pet: &mut AdminPet, description| {
                     pet.description = description.to_string();
                     Ok(())
                 },
-                |id| guide.admin_retrieve_pet_by_id(id),
-                |pet| guide.admin_save_pet(pet),
             )?;
             // Tier
-            check_field(
+            check.display(
                 "tier",
-                &pet.name,
-                pet.id,
                 &pet.tier,
                 &follower.tier,
-                fix,
                 |skill: &mut AdminPet, tier| {
                     skill.tier = *tier;
                     Ok(())
                 },
-                |id| guide.admin_retrieve_pet_by_id(id),
-                |pet| guide.admin_save_pet(pet),
             )?;
             // Abilities
             let expected_skills_uris = follower
@@ -135,20 +123,15 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 .sorted()
                 .collect::<Vec<_>>();
             let pet_skills_uris = pet.skills.guide_skill_ids_to_codex_uri(data);
-            check_field_debug(
+            check.debug(
                 "abilities",
-                &pet.name,
-                pet.id,
                 &pet_skills_uris,
                 &expected_skills_uris,
-                fix,
                 |pet: &mut AdminPet, _| {
                     fix_abilities_field(pet, &pet_skills_uris, data, &expected_skills_uris, |pet| {
                         &mut pet.skills
                     })
                 },
-                |id| guide.admin_retrieve_pet_by_id(id),
-                |pet| guide.admin_save_pet(pet),
             )?;
         }
     }

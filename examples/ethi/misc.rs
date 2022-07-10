@@ -66,6 +66,7 @@ pub fn diff_sorted_slices<'a, T: PartialEq + PartialOrd>(
 /// Use with caution, as this should only be used on `Vec`s that hold `u32`s representing skill
 /// ids.
 pub trait VecSkillIds {
+    /// Convert the `Vec` of skill ids to a sorted `Vec` of codex URIs for the skills.
     fn guide_skill_ids_to_codex_uri<'a>(&self, data: &'a OrnaData) -> Vec<&'a str>;
 }
 
@@ -80,6 +81,33 @@ impl VecSkillIds for Vec<u32> {
                     .find(|skill| skill.id == *id)
                     .map(|skill| skill.codex_uri.as_str())
                     .filter(|uri| !uri.is_empty())
+            })
+            .sorted()
+            .collect()
+    }
+}
+
+/// A trait to extend `Vec<u32>` specifically.
+/// Use with caution, as this should only be used on `Vec`s that hold `u32`s representing status
+/// effect ids.
+pub trait VecStatusEffectIds {
+    /// Convert the `Vec` of status effect ids to a sorted `Vec` of codex URIs for the status
+    /// effects.
+    fn guide_status_effect_ids_to_guide_names<'a>(&self, data: &'a OrnaData) -> Vec<&'a str>;
+}
+
+impl VecStatusEffectIds for Vec<u32> {
+    fn guide_status_effect_ids_to_guide_names<'a>(&self, data: &'a OrnaData) -> Vec<&'a str> {
+        self.iter()
+            .map(|id| {
+                data.guide
+                    .static_
+                    .status_effects
+                    .iter()
+                    .find(|status| status.id == *id)
+                    .unwrap_or_else(|| panic!("Failed to find status effect {}", id))
+                    .name
+                    .as_str()
             })
             .sorted()
             .collect()

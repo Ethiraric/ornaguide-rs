@@ -172,7 +172,7 @@ pub trait ItemStatusEffects {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide status_effect ids.
     fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error>;
     /// Convert the list of status effects to a list of effect names, matching those of the guide.
-    fn to_guide_names(&self) -> Vec<String>;
+    fn to_guide_names(&self) -> Vec<&str>;
 }
 
 impl ItemStatusEffects for Vec<Cause> {
@@ -184,9 +184,9 @@ impl ItemStatusEffects for Vec<Cause> {
         .collect::<Result<Vec<_>, Error>>()
     }
 
-    fn to_guide_names(&self) -> Vec<String> {
+    fn to_guide_names(&self) -> Vec<&str> {
         self.iter()
-            .map(|cause| codex_effect_name_to_guide_name(&cause.name).to_string())
+            .map(|cause| codex_effect_name_to_guide_name(&cause.name))
             .sorted()
             .collect()
     }
@@ -201,9 +201,9 @@ impl ItemStatusEffects for Vec<Give> {
         .collect::<Result<Vec<_>, Error>>()
     }
 
-    fn to_guide_names(&self) -> Vec<String> {
+    fn to_guide_names(&self) -> Vec<&str> {
         self.iter()
-            .map(|cause| codex_effect_name_to_guide_name(&cause.name).to_string())
+            .map(|cause| codex_effect_name_to_guide_name(&cause.name))
             .sorted()
             .collect()
     }
@@ -218,9 +218,9 @@ impl ItemStatusEffects for Vec<Cure> {
         .collect::<Result<Vec<_>, Error>>()
     }
 
-    fn to_guide_names(&self) -> Vec<String> {
+    fn to_guide_names(&self) -> Vec<&str> {
         self.iter()
-            .map(|cause| codex_effect_name_to_guide_name(&cause.name).to_string())
+            .map(|cause| codex_effect_name_to_guide_name(&cause.name))
             .sorted()
             .collect()
     }
@@ -235,9 +235,9 @@ impl ItemStatusEffects for Vec<Immunity> {
         .collect::<Result<Vec<_>, Error>>()
     }
 
-    fn to_guide_names(&self) -> Vec<String> {
+    fn to_guide_names(&self) -> Vec<&str> {
         self.iter()
-            .map(|cause| codex_effect_name_to_guide_name(&cause.name).to_string())
+            .map(|cause| codex_effect_name_to_guide_name(&cause.name))
             .sorted()
             .collect()
     }
