@@ -28,7 +28,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
                 .find_match_for_codex_follower(*follower)
                 .is_err()
         })
-        .collect::<Vec<_>>();
+        .collect_vec();
 
     let not_on_codex = data
         .guide
@@ -36,7 +36,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .pets
         .iter()
         .filter(|pet| data.codex.followers.find_match_for_admin_pet(pet).is_err())
-        .collect::<Vec<_>>();
+        .collect_vec();
 
     if !missing_on_guide.is_empty() {
         println!("Followers missing on guide:");
@@ -81,6 +81,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                     Ok(())
                 },
             )?;
+
             // Image name
             check.display(
                 "image_name",
@@ -91,6 +92,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                     Ok(())
                 },
             )?;
+
             // Description
             let follower_description = if !follower.description.is_empty() {
                 follower.description.clone()
@@ -106,6 +108,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                     Ok(())
                 },
             )?;
+
             // Tier
             check.display(
                 "tier",
@@ -116,15 +119,16 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                     Ok(())
                 },
             )?;
+
             // Abilities
-            let pet_skills_ids = pet.skills.iter().cloned().sorted().collect::<Vec<_>>();
+            let pet_skills_ids = pet.skills.iter().cloned().sorted().collect_vec();
             let expected_skills_ids = follower
                 .abilities
                 .try_to_guide_ids(&data.guide.skills)?
                 .into_iter()
                 .sorted()
-                .collect::<Vec<_>>();
-            check.debug(
+                .collect_vec();
+            check.skill_id_vec(
                 "abilities",
                 &pet_skills_ids,
                 &expected_skills_ids,
@@ -133,6 +137,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                         &mut pet.skills
                     })
                 },
+                data,
             )?;
         }
     }

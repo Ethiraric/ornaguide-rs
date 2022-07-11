@@ -34,7 +34,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
                 && item.slug != "super-exp-potion"
         })
         .filter(|item| data.guide.items.find_match_for_codex_item(item).is_err())
-        .collect::<Vec<_>>();
+        .collect_vec();
 
     let not_on_codex = data
         .guide
@@ -44,7 +44,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         // Filter out the old Spellcaster's Ring.
         .filter(|item| item.name != "Mage's Ring")
         .filter(|item| data.codex.items.find_match_for_admin_item(item).is_err())
-        .collect::<Vec<_>>();
+        .collect_vec();
 
     if !missing_on_guide.is_empty() {
         println!("Items missing on guide:");
@@ -356,12 +356,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
 
             // Causes
-            let guide_causes = guide_item
-                .causes
-                .iter()
-                .cloned()
-                .sorted()
-                .collect::<Vec<_>>();
+            let guide_causes = guide_item.causes.iter().cloned().sorted().collect_vec();
             let codex_causes = codex_item
                 .causes
                 .try_to_guide_ids(&data.guide.static_)?
@@ -384,14 +379,14 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                             .map(|effect| effect.id)
                             .unwrap()
                     })
-                    .collect::<Vec<_>>()
+                    .collect_vec()
                     .into_iter()
                 } else {
                     Vec::<u32>::new().into_iter()
                 })
                 .sorted()
                 .dedup()
-                .collect::<Vec<_>>();
+                .collect_vec();
             check.status_effect_id_vec(
                 "causes",
                 &guide_causes,
@@ -405,18 +400,13 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
 
             // Cures
-            let guide_cures = guide_item
-                .cures
-                .iter()
-                .cloned()
-                .sorted()
-                .collect::<Vec<_>>();
+            let guide_cures = guide_item.cures.iter().cloned().sorted().collect_vec();
             let codex_cures = codex_item
                 .cures
                 .try_to_guide_ids(&data.guide.static_)?
                 .into_iter()
                 .sorted()
-                .collect::<Vec<_>>();
+                .collect_vec();
             check.status_effect_id_vec(
                 "cures",
                 &guide_cures,
@@ -430,18 +420,13 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
 
             // Gives
-            let guide_gives = guide_item
-                .gives
-                .iter()
-                .cloned()
-                .sorted()
-                .collect::<Vec<_>>();
+            let guide_gives = guide_item.gives.iter().cloned().sorted().collect_vec();
             let codex_gives = codex_item
                 .gives
                 .try_to_guide_ids(&data.guide.static_)?
                 .into_iter()
                 .sorted()
-                .collect::<Vec<_>>();
+                .collect_vec();
             check.status_effect_id_vec(
                 "gives",
                 &guide_gives,
@@ -455,18 +440,13 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
 
             // Immunities
-            let guide_immunities = guide_item
-                .prevents
-                .iter()
-                .cloned()
-                .sorted()
-                .collect::<Vec<_>>();
+            let guide_immunities = guide_item.prevents.iter().cloned().sorted().collect_vec();
             let codex_immunities = codex_item
                 .immunities
                 .try_to_guide_ids(&data.guide.static_)?
                 .into_iter()
                 .sorted()
-                .collect::<Vec<_>>();
+                .collect_vec();
             check.status_effect_id_vec(
                 "immunities",
                 &guide_immunities,
@@ -502,13 +482,13 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 // Map them to their ids.
                 .map(|monster| monster.id)
                 .sorted()
-                .collect::<Vec<_>>();
+                .collect_vec();
             let codex_dropped_by_ids = codex_item
                 .dropped_by
                 .try_to_guide_ids(&data.guide.monsters)?
                 .into_iter()
                 .sorted()
-                .collect::<Vec<_>>();
+                .collect_vec();
             check.monster_id_vec(
                 "dropped_by",
                 &guide_dropped_by_ids,
@@ -555,18 +535,14 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
 
             // Upgrade Materials
-            let guide_upgrade_materials = guide_item
-                .materials
-                .iter()
-                .cloned()
-                .sorted()
-                .collect::<Vec<_>>();
+            let guide_upgrade_materials =
+                guide_item.materials.iter().cloned().sorted().collect_vec();
             let codex_upgrade_materials = codex_item
                 .upgrade_materials
                 .try_to_guide_ids(&data.guide.items)?
                 .into_iter()
                 .sorted()
-                .collect::<Vec<_>>();
+                .collect_vec();
             check.item_id_vec(
                 "upgrade materials",
                 &guide_upgrade_materials,

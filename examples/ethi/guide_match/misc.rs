@@ -443,16 +443,11 @@ where
     where
         Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
     {
-        check_field_vec_formatter(
+        self.vec(
             field_name,
-            self.entity_name,
-            self.entity_id,
             admin_field,
             codex_field,
-            self.fix,
             fixer,
-            &self.golden,
-            &self.saver,
             |id| &data.guide.skills.find_skill_by_id(*id).unwrap().name,
             |id| &data.guide.skills.find_skill_by_id(*id).unwrap().name,
         )
@@ -470,16 +465,11 @@ where
     where
         Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
     {
-        check_field_vec_formatter(
+        self.vec(
             field_name,
-            self.entity_name,
-            self.entity_id,
             admin_field,
             codex_field,
-            self.fix,
             fixer,
-            &self.golden,
-            &self.saver,
             |id| &data.guide.items.find_item_by_id(*id).unwrap().name,
             |id| &data.guide.items.find_item_by_id(*id).unwrap().name,
         )
@@ -497,16 +487,11 @@ where
     where
         Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
     {
-        check_field_vec_formatter(
+        self.vec(
             field_name,
-            self.entity_name,
-            self.entity_id,
             admin_field,
             codex_field,
-            self.fix,
             fixer,
-            &self.golden,
-            &self.saver,
             |id| &data.guide.monsters.find_match_for_id(*id).unwrap().name,
             |id| &data.guide.monsters.find_match_for_id(*id).unwrap().name,
         )
@@ -524,16 +509,11 @@ where
     where
         Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
     {
-        check_field_vec_formatter(
+        self.vec(
             field_name,
-            self.entity_name,
-            self.entity_id,
             admin_field,
             codex_field,
-            self.fix,
             fixer,
-            &self.golden,
-            &self.saver,
             |id| {
                 &data
                     .guide

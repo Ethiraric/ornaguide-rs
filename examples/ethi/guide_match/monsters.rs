@@ -6,7 +6,7 @@ use ornaguide_rs::{
 };
 
 use crate::{
-    guide_match::misc::{fix_abilities_field, Checker, CodexAbilities},
+    guide_match::misc::{fix_abilities_field, fix_option_field, Checker, CodexAbilities},
     misc::diff_sorted_slices,
     output::{CodexGenericMonster, OrnaData},
 };
@@ -210,26 +210,25 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 &admin_family,
                 &codex_monster.family(),
                 |monster: &mut AdminMonster, name| {
-                    if name.is_none() {
-                        monster.family = None;
-                        Ok(())
-                    } else if let Some(family) = data
-                        .guide
-                        .static_
-                        .monster_families
-                        .iter()
-                        .find(|family| family.name == **name.as_ref().unwrap())
-                    {
-                        monster.family = Some(family.id);
-                        Ok(())
-                    } else {
-                        Err(Error::Misc(format!(
-                            "Failed to find family {} for monster {} (#{})",
-                            name.as_ref().unwrap(),
-                            admin_monster.name,
-                            admin_monster.id
-                        )))
-                    }
+                    fix_option_field(
+                        monster,
+                        |monster| Ok(&mut monster.family),
+                        name,
+                        |name| {
+                            data.guide
+                                .static_
+                                .monster_families
+                                .iter()
+                                .find(|family| family.name == **name)
+                                .map(|family| family.id)
+                                .ok_or_else(|| {
+                                    Error::Misc(format!(
+                                        "Failed to find family {} for monster {} (#{})",
+                                        name, admin_monster.name, admin_monster.id
+                                    ))
+                                })
+                        },
+                    )
                 },
             )?;
 
