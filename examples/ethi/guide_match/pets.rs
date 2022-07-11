@@ -6,7 +6,7 @@ use ornaguide_rs::{
 };
 
 use crate::{
-    guide_match::misc::{fix_abilities_field, Checker},
+    guide_match::checker::{fix_abilities_field, Checker},
     output::OrnaData,
 };
 

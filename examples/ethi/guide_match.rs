@@ -1,3 +1,4 @@
+pub mod checker;
 pub mod items;
 pub mod misc;
 pub mod monsters;

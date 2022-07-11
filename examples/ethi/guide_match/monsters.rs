@@ -6,7 +6,10 @@ use ornaguide_rs::{
 };
 
 use crate::{
-    guide_match::misc::{fix_abilities_field, fix_option_field, Checker, CodexAbilities},
+    guide_match::{
+        checker::{fix_abilities_field, fix_option_field, Checker},
+        misc::CodexAbilities,
+    },
     misc::diff_sorted_slices,
     output::{CodexGenericMonster, OrnaData},
 };

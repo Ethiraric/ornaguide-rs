@@ -6,7 +6,7 @@ use ornaguide_rs::{
 };
 
 use crate::{
-    guide_match::misc::{fix_status_effects_field, Checker},
+    guide_match::checker::{fix_status_effects_field, Checker},
     output::OrnaData,
 };
 

@@ -6,9 +6,11 @@ use ornaguide_rs::{
 };
 
 use crate::{
-    guide_match::misc::{
-        fix_option_field, fix_status_effects_field, fix_vec_field, fix_vec_id_field, Checker,
-        ItemDroppedBys, ItemUpgradeMaterials,
+    guide_match::{
+        checker::{
+            fix_option_field, fix_status_effects_field, fix_vec_field, fix_vec_id_field, Checker,
+        },
+        misc::{ItemDroppedBys, ItemUpgradeMaterials},
     },
     misc::sanitize_guide_name,
     output::OrnaData,
