@@ -121,7 +121,22 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
             )?;
 
             // Abilities
-            let pet_skills_ids = pet.skills.iter().cloned().sorted().collect_vec();
+            let pet_skills_ids = pet
+                .skills
+                .iter()
+                .cloned()
+                // TODO(ethiraric, 11/07/2022): Remove filter when the codex fixes Bind and Bite.
+                .filter(|id| {
+                    !data
+                        .guide
+                        .skills
+                        .find_skill_by_id(*id)
+                        .unwrap()
+                        .codex_uri
+                        .is_empty()
+                })
+                .sorted()
+                .collect_vec();
             let expected_skills_ids = follower
                 .abilities
                 .try_to_guide_ids(&data.guide.skills)?
