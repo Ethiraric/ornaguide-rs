@@ -35,7 +35,7 @@ pub struct AdminItem {
     pub foresight: i8,
     pub view_distance: u32,
     pub follower_stats: u32,
-    pub follower_act: u32,
+    pub follower_act: i32,
     pub status_infliction: u32,
     pub status_protection: u32,
     pub mana_saver: i8,
