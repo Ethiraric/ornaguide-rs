@@ -29,12 +29,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .skills
         .skills
         .iter()
-        .filter(|skill| {
-            data.guide
-                .skills
-                .find_match_for_codex_skill(*skill)
-                .is_err()
-        })
+        .filter(|skill| data.guide.skills.get_match_for_codex_skill(*skill).is_err())
         .collect_vec();
 
     let not_on_codex = data
@@ -74,7 +69,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
 /// Attempt to fix discrepancies.
 fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     for codex_skill in data.codex.skills.skills.iter() {
-        if let Ok(admin_skill) = data.guide.skills.find_match_for_codex_skill(codex_skill) {
+        if let Ok(admin_skill) = data.guide.skills.get_match_for_codex_skill(codex_skill) {
             let check = Checker {
                 entity_name: &admin_skill.name,
                 entity_id: admin_skill.id,

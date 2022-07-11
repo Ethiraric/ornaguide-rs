@@ -35,7 +35,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
                 && item.slug != "steadfast-charm"
                 && item.slug != "super-exp-potion"
         })
-        .filter(|item| data.guide.items.find_match_for_codex_item(item).is_err())
+        .filter(|item| data.guide.items.get_match_for_codex_item(item).is_err())
         .collect_vec();
 
     let not_on_codex = data
@@ -97,7 +97,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
         .unwrap()
         .id;
     for codex_item in data.codex.items.items.iter() {
-        if let Ok(guide_item) = data.guide.items.find_match_for_codex_item(codex_item) {
+        if let Ok(guide_item) = data.guide.items.get_match_for_codex_item(codex_item) {
             let check = Checker {
                 entity_name: &guide_item.name,
                 entity_id: guide_item.id,
@@ -350,7 +350,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                         |ability_name| {
                             data.guide
                                 .skills
-                                .get_offhand_skill_from_name(ability_name)
+                                .get_offhand_from_name(ability_name)
                                 .map(|skill| skill.id)
                         },
                     )
@@ -530,7 +530,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                             }
                             Ok(())
                         },
-                        |id| data.guide.monsters.get_match_for_id(*id),
+                        |id| data.guide.monsters.get_by_id(*id),
                     )
                 },
                 data,
@@ -555,7 +555,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                         &guide_upgrade_materials,
                         materials,
                         |item| &mut item.materials,
-                        |id| data.guide.items.get_item_by_id(*id).map(|item| &item.name),
+                        |id| data.guide.items.get_by_id(*id).map(|item| &item.name),
                     )
                 },
                 data,

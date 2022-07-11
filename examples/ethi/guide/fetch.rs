@@ -41,46 +41,48 @@ pub struct AdminPets {
 
 impl<'a> AdminItems {
     /// Find the admin item associated with the given codex item.
+    pub fn find_match_for_codex_item(&'a self, needle: &CodexItem) -> Option<&'a AdminItem> {
+        self.items.iter().find(|item| {
+            !item.codex_uri.is_empty()
+                && item.codex_uri["/codex/items/".len()..].trim_end_matches('/') == needle.slug
+        })
+    }
+
+    /// Find the admin item associated with the given codex item.
     /// If there is no match, return an `Err`.
-    // TODO(ethiraric, 10/07/2022): Return an option?
-    pub fn find_match_for_codex_item(&'a self, needle: &CodexItem) -> Result<&'a AdminItem, Error> {
-        self.items
-            .iter()
-            .find(|item| {
-                !item.codex_uri.is_empty()
-                    && item.codex_uri["/codex/items/".len()..].trim_end_matches('/') == needle.slug
-            })
+    pub fn get_match_for_codex_item(&'a self, needle: &CodexItem) -> Result<&'a AdminItem, Error> {
+        self.find_match_for_codex_item(needle)
             .ok_or_else(|| Error::Misc(format!("No match for codex item '{}'", needle.slug)))
     }
 
     /// Find the admin item associated with the given id.
-    pub fn find_item_by_id(&'a self, needle: u32) -> Option<&'a AdminItem> {
+    pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminItem> {
         self.items.iter().find(|item| item.id == needle)
     }
 
     /// Find the admin item associated with the given id.
     /// If there is no match, return an `Err`.
-    pub fn get_item_by_id(&'a self, needle: u32) -> Result<&'a AdminItem, Error> {
-        self.find_item_by_id(needle)
+    pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminItem, Error> {
+        self.find_by_id(needle)
             .ok_or_else(|| Error::Misc(format!("No item with id {}", needle)))
     }
 
     /// Find the admin item associated with the given uri.
-    pub fn find_item_by_uri(&'a self, needle: &str) -> Option<&'a AdminItem> {
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminItem> {
         self.items.iter().find(|item| &item.codex_uri == needle)
     }
 
     /// Find the admin item associated with the given uri.
     /// If there is no match, return an `Err`.
-    pub fn get_item_by_uri(&'a self, needle: &str) -> Result<&'a AdminItem, Error> {
-        self.find_item_by_uri(needle)
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminItem, Error> {
+        self.find_by_uri(needle)
             .ok_or_else(|| Error::Misc(format!("No item with uri {}", needle)))
     }
 }
 
 impl<'a> AdminMonsters {
     /// Find the monster with the given codex uri.
-    pub fn find_match_for_codex_uri(&'a self, needle: &str) -> Option<&'a AdminMonster> {
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminMonster> {
         self.monsters
             .iter()
             .find(|monster| monster.codex_uri == needle)
@@ -88,66 +90,73 @@ impl<'a> AdminMonsters {
 
     /// Find the monster with the given codex uri.
     /// If there is no match, return an `Err`.
-    pub fn get_match_for_codex_uri(&'a self, needle: &str) -> Result<&'a AdminMonster, Error> {
-        self.find_match_for_codex_uri(needle)
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminMonster, Error> {
+        self.find_by_uri(needle)
             .ok_or_else(|| Error::Misc(format!("No monster with codex uri '{}'", needle)))
     }
 
     /// Find the monster with the given id.
-    pub fn find_match_for_id(&'a self, needle: u32) -> Option<&'a AdminMonster> {
+    pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminMonster> {
         self.monsters.iter().find(|monster| monster.id == needle)
     }
 
     /// Find the monster with the given id
     /// If there is no match, return an `Err`.
-    pub fn get_match_for_id(&'a self, needle: u32) -> Result<&'a AdminMonster, Error> {
-        self.find_match_for_id(needle)
+    pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminMonster, Error> {
+        self.find_by_id(needle)
             .ok_or_else(|| Error::Misc(format!("No monster with id {}", needle)))
     }
 }
 
 impl<'a> AdminSkills {
     /// Find the admin skill associated with the given codex skill.
+    pub fn find_match_for_codex_skill(&'a self, needle: &CodexSkill) -> Option<&'a AdminSkill> {
+        self.skills.iter().find(|skill| {
+            !skill.codex_uri.is_empty()
+                && skill.codex_uri["/codex/spells/".len()..].trim_end_matches('/') == needle.slug
+        })
+    }
+
+    /// Find the admin skill associated with the given codex skill.
     /// If there is no match, return an `Err`.
-    pub fn find_match_for_codex_skill(
+    pub fn get_match_for_codex_skill(
         &'a self,
         needle: &CodexSkill,
     ) -> Result<&'a AdminSkill, Error> {
-        self.skills
-            .iter()
-            .find(|skill| {
-                !skill.codex_uri.is_empty()
-                    && skill.codex_uri["/codex/spells/".len()..].trim_end_matches('/')
-                        == needle.slug
-            })
+        self.find_match_for_codex_skill(needle)
             .ok_or_else(|| Error::Misc(format!("No match for codex skill '{}'", needle.slug)))
     }
 
     /// Find the admin skill corresponding to the given id.
+    pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminSkill> {
+        self.skills.iter().find(|skill| skill.id == needle)
+    }
+
+    /// Find the admin skill corresponding to the given id.
     /// If there is no match, return an `Err`.
-    pub fn find_skill_by_id(&'a self, needle: u32) -> Result<&'a AdminSkill, Error> {
-        self.skills
-            .iter()
-            .find(|skill| skill.id == needle)
+    pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminSkill, Error> {
+        self.find_by_id(needle)
             .ok_or_else(|| Error::Misc(format!("No match for admin skill with id #{}", needle)))
     }
 
     /// Find the admin skill corresponding to the given codex URI.
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminSkill> {
+        self.skills.iter().find(|skill| skill.codex_uri == needle)
+    }
+
+    /// Find the admin skill corresponding to the given codex URI.
     /// If there is no match, return an `Err`.
-    pub fn find_skill_by_codex_uri(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
-        self.skills
-            .iter()
-            .find(|skill| skill.codex_uri == needle)
-            .ok_or_else(|| {
-                Error::Misc(format!(
-                    "No match for admin skill with codex_uri #{}",
-                    needle
-                ))
-            })
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
+        self.find_by_uri(needle).ok_or_else(|| {
+            Error::Misc(format!(
+                "No match for admin skill with codex_uri #{}",
+                needle
+            ))
+        })
     }
 
     /// Find the admin offhand skill with the given name.
-    pub fn find_offhand_skill_from_name(&'a self, needle: &str) -> Option<&'a AdminSkill> {
+    pub fn find_offhand_from_name(&'a self, needle: &str) -> Option<&'a AdminSkill> {
         self.skills
             .iter()
             .find(|skill| sanitize_guide_name(&skill.name) == needle && skill.offhand)
@@ -155,26 +164,28 @@ impl<'a> AdminSkills {
 
     /// Find the admin offhand skill with the given name.
     /// If there is no match, return an `Err`.
-    pub fn get_offhand_skill_from_name(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
-        self.find_offhand_skill_from_name(needle)
+    pub fn get_offhand_from_name(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
+        self.find_offhand_from_name(needle)
             .ok_or_else(|| Error::Misc(format!("No match for codex skill '{}'", needle)))
     }
 }
 
 impl<'a> AdminPets {
     /// Find the admin pet associated with the given codex follower.
+    pub fn find_match_for_codex_follower(&'a self, needle: &CodexFollower) -> Option<&'a AdminPet> {
+        self.pets.iter().find(|pet| {
+            !pet.codex_uri.is_empty()
+                && pet.codex_uri["/codex/followers/".len()..].trim_end_matches('/') == needle.slug
+        })
+    }
+
+    /// Find the admin pet associated with the given codex follower.
     /// If there is no match, return an `Err`.
-    pub fn find_match_for_codex_follower(
+    pub fn get_match_for_codex_follower(
         &'a self,
         needle: &CodexFollower,
     ) -> Result<&'a AdminPet, Error> {
-        self.pets
-            .iter()
-            .find(|pet| {
-                !pet.codex_uri.is_empty()
-                    && pet.codex_uri["/codex/followers/".len()..].trim_end_matches('/')
-                        == needle.slug
-            })
+        self.find_match_for_codex_follower(needle)
             .ok_or_else(|| Error::Misc(format!("No match for codex follower '{}'", needle.slug)))
     }
 }

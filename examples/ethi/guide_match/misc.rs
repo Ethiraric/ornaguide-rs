@@ -16,7 +16,7 @@ impl ItemDroppedBys for Vec<ItemDroppedBy> {
         self.iter()
             .map(|dropped_by| {
                 monsters
-                    .get_match_for_codex_uri(&dropped_by.uri)
+                    .get_by_uri(&dropped_by.uri)
                     .map(|monster| monster.id)
             })
             .collect()
@@ -32,7 +32,7 @@ pub trait ItemUpgradeMaterials {
 impl ItemUpgradeMaterials for Vec<ItemUpgradeMaterial> {
     fn try_to_guide_ids(&self, items: &AdminItems) -> Result<Vec<u32>, Error> {
         self.iter()
-            .map(|dropped_by| items.get_item_by_uri(&dropped_by.uri).map(|item| item.id))
+            .map(|dropped_by| items.get_by_uri(&dropped_by.uri).map(|item| item.id))
             .collect()
     }
 }
@@ -46,11 +46,7 @@ pub trait CodexAbilities {
 impl CodexAbilities for Vec<FollowerAbility> {
     fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error> {
         self.iter()
-            .map(|ability| {
-                skills
-                    .find_skill_by_codex_uri(&ability.uri)
-                    .map(|skill| skill.id)
-            })
+            .map(|ability| skills.get_by_uri(&ability.uri).map(|skill| skill.id))
             .collect()
     }
 }
@@ -58,11 +54,7 @@ impl CodexAbilities for Vec<FollowerAbility> {
 impl CodexAbilities for Vec<MonsterAbility> {
     fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error> {
         self.iter()
-            .map(|ability| {
-                skills
-                    .find_skill_by_codex_uri(&ability.uri)
-                    .map(|skill| skill.id)
-            })
+            .map(|ability| skills.get_by_uri(&ability.uri).map(|skill| skill.id))
             .collect()
     }
 }

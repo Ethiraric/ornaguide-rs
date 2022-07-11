@@ -294,7 +294,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                     !data
                         .guide
                         .skills
-                        .find_skill_by_id(*id)
+                        .get_by_id(*id)
                         .unwrap()
                         .codex_uri
                         .is_empty()

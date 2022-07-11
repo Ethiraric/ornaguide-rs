@@ -135,12 +135,7 @@ where
         expected_skills_ids,
         entity_skills_getter,
         // Id to debuggable
-        |id| {
-            data.guide
-                .skills
-                .find_skill_by_id(*id)
-                .map(|skill| &skill.name)
-        },
+        |id| data.guide.skills.get_by_id(*id).map(|skill| &skill.name),
     )
 }
 
@@ -441,8 +436,8 @@ where
             admin_field,
             codex_field,
             fixer,
-            |id| &data.guide.skills.find_skill_by_id(*id).unwrap().name,
-            |id| &data.guide.skills.find_skill_by_id(*id).unwrap().name,
+            |id| &data.guide.skills.get_by_id(*id).unwrap().name,
+            |id| &data.guide.skills.get_by_id(*id).unwrap().name,
         )
     }
 
@@ -463,8 +458,8 @@ where
             admin_field,
             codex_field,
             fixer,
-            |id| &data.guide.items.find_item_by_id(*id).unwrap().name,
-            |id| &data.guide.items.find_item_by_id(*id).unwrap().name,
+            |id| &data.guide.items.find_by_id(*id).unwrap().name,
+            |id| &data.guide.items.find_by_id(*id).unwrap().name,
         )
     }
 
@@ -485,8 +480,8 @@ where
             admin_field,
             codex_field,
             fixer,
-            |id| &data.guide.monsters.find_match_for_id(*id).unwrap().name,
-            |id| &data.guide.monsters.find_match_for_id(*id).unwrap().name,
+            |id| &data.guide.monsters.find_by_id(*id).unwrap().name,
+            |id| &data.guide.monsters.find_by_id(*id).unwrap().name,
         )
     }
 
@@ -517,7 +512,7 @@ where
                     .unwrap()
                     .name
             },
-            |id| &data.guide.items.find_item_by_id(*id).unwrap().name,
+            |id| &data.guide.items.find_by_id(*id).unwrap().name,
         )
     }
 }
