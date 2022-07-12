@@ -5,6 +5,7 @@ use crate::{error::Error, guide::html_form_parser::ParsedForm};
 /// A skill fetched from the admin panel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdminSkill {
+    #[serde(skip)]
     pub(crate) csrfmiddlewaretoken: String,
     pub id: u32,
     pub codex_uri: String,

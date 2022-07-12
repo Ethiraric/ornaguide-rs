@@ -10,6 +10,7 @@ use crate::{
 /// An item fetched from the admin panel.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AdminMonster {
+    #[serde(skip)]
     pub(crate) csrfmiddlewaretoken: String,
     pub id: u32,
     pub codex_uri: String,

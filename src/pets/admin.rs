@@ -12,6 +12,7 @@ pub enum CostType {
 /// An item fetched from the admin panel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdminPet {
+    #[serde(skip)]
     pub(crate) csrfmiddlewaretoken: String,
     pub id: u32,
     pub codex_uri: String,

@@ -5,6 +5,7 @@ use crate::{error::Error, guide::html_form_parser::ParsedForm};
 /// An item fetched from the admin panel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdminItem {
+    #[serde(skip)]
     pub(crate) csrfmiddlewaretoken: String,
     pub id: u32,
     pub codex_uri: String,
