@@ -22,9 +22,10 @@ mod output;
 #[allow(unused_variables, unused_mut)]
 /// Danger zone. Where I test my code.
 fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
-    // guide_match::items::perform(&data, true, guide)?;
-    guide_match::monsters::perform(&mut data, false, guide)?;
-    guide_match::skills::perform(&mut data, false, guide)?;
+    guide_match::items::perform(&data, true, guide)?;
+    guide_match::monsters::perform(&mut data, true, guide)?;
+    guide_match::skills::perform(&mut data, true, guide)?;
+    guide_match::pets::perform(&mut data, true, guide)?;
 
     // let monster_id = 442;
     // let mut monster = guide.admin_retrieve_monster_by_id(monster_id)?;
@@ -50,6 +51,8 @@ fn main2() -> Result<(), Error> {
         [_, "match", "monsters", "--fix"] => {
             guide_match::monsters::perform(&mut data()?, true, &guide)
         }
+        [_, "match", "pets"] => guide_match::pets::perform(&mut data()?, false, &guide),
+        [_, "match", "pets", "--fix"] => guide_match::pets::perform(&mut data()?, true, &guide),
         [_, "match", "skills"] => guide_match::skills::perform(&mut data()?, false, &guide),
         [_, "match", "skills", "--fix"] => guide_match::skills::perform(&mut data()?, true, &guide),
         [_] => ethi(&guide, data()?),
