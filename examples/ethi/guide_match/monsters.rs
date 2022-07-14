@@ -1,16 +1,15 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     error::Error,
-    guide::{AdminGuide, OrnaAdminGuide, Static},
+    guide::{AdminGuide, OrnaAdminGuide},
     monsters::admin::AdminMonster,
 };
 
 use crate::{
     guide_match::{
-        checker::{fix_abilities_field, fix_option_field, Checker},
-        misc::CodexAbilities,
+        checker::{fix_abilities_field, fix_option_field, fix_spawn_field, Checker},
+        misc::{CodexAbilities, EventsNames},
     },
-    misc::diff_sorted_slices,
     output::{CodexGenericMonster, OrnaData},
 };
 
@@ -86,83 +85,6 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
     Ok(())
 }
 
-fn fix_monster_event_spawns(
-    monster: &mut AdminMonster,
-    static_: &mut Static,
-    expected_events: &[String],
-    guide: &OrnaAdminGuide,
-) -> Result<(), Error> {
-    // Start by listing which events should be added and which removed.
-    let mut admin_events = monster.get_events(&static_.spawns);
-    admin_events.sort_by_cached_key(|event_name| {
-        // Either `Event:` or `Past Event:`.
-        if event_name.starts_with("Event:") {
-            event_name[7..].to_string()
-        } else {
-            event_name[12..].to_string()
-        }
-    });
-    let (to_add, to_remove) = diff_sorted_slices(expected_events, &admin_events);
-    if !to_add.is_empty() {
-        println!("\x1B[0;32mSuggest adding: {:?}\x1B[0m", to_add);
-    }
-    if !to_remove.is_empty() {
-        println!("\x1B[0;31mSuggest removing: {:?}\x1B[0m", to_remove);
-    }
-
-    // Remove unneeded events by filtering the `Vec`.
-    if !to_remove.is_empty() {
-        monster.spawns.retain(|spawn_id| {
-            if let Some(spawn) = static_.spawns.iter().find(|spawn| spawn.id == *spawn_id) {
-                !to_remove.iter().any(|name| **name == spawn.event_name())
-            } else {
-                false
-            }
-        });
-    }
-
-    // Add the new events.
-    if !to_add.is_empty() {
-        // Split into 2 `Vec`s: Those that are already on the guide, and brand new events.
-        let (ids_to_add, unknown_events): (Vec<_>, Vec<_>) = to_add
-            .iter()
-            .map(|event_name| {
-                if let Some(spawn) = static_
-                    .iter_events()
-                    .find(|spawn| spawn.event_name() == **event_name)
-                {
-                    (Some(spawn.id), None)
-                } else {
-                    (None, Some(*event_name))
-                }
-            })
-            .unzip();
-
-        // For events we already know, push the ids in the monster.
-        for spawn_id in ids_to_add.into_iter().flatten() {
-            monster.spawns.push(spawn_id);
-        }
-
-        // For the others, create the events on the guide.
-        if !unknown_events.is_empty() {
-            for event_name in unknown_events.iter().flatten() {
-                guide.admin_add_spawn(&format!("Past Event: {}", event_name))?;
-            }
-            static_.spawns = guide.admin_retrieve_spawns_list()?;
-        }
-        // Then add them to the monster.
-        for spawn in unknown_events.iter().flatten().filter_map(|name| {
-            static_
-                .spawns
-                .iter()
-                .find(|spawn| spawn.event_name() == **name)
-        }) {
-            monster.spawns.push(spawn.id);
-        }
-    }
-    Ok(())
-}
-
 fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     for codex_monster in data.codex.iter_all_monsters() {
         if let Ok(admin_monster) = data
@@ -190,13 +112,40 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
             )?;
 
             // Event
-            check.debug(
+            let admin_events = admin_monster
+                .get_event_ids(&data.guide.static_.spawns)
+                .into_iter()
+                .sorted()
+                .collect_vec();
+            static RISE_OF_KERB_STR: &str = "Rise of Kerberos";
+            let codex_events = codex_monster
+                .events()
+                .iter()
+                .map(|s| s.as_str())
+                // TODO(ethiraric, 14/07/2022): Remove this once codex is updated.
+                .chain({
+                    if admin_monster.name.contains("Kerberos") {
+                        vec![RISE_OF_KERB_STR].into_iter()
+                    } else {
+                        vec![].into_iter()
+                    }
+                })
+                .collect_vec()
+                .try_to_guide_ids(&data.guide.static_)?
+                .into_iter()
+                .sorted()
+                .dedup()
+                .collect_vec();
+            check.spawn_id_vec(
                 "events",
-                &admin_monster.get_events(&data.guide.static_.spawns),
-                codex_monster.events(),
+                &admin_events,
+                &codex_events,
                 |monster, events| {
-                    fix_monster_event_spawns(monster, &mut data.guide.static_, events, guide)
+                    fix_spawn_field(monster, &admin_events, data, events, |monster| {
+                        &mut monster.spawns
+                    })
                 },
+                data,
             )?;
 
             // Family

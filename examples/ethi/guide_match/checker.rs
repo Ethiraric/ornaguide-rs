@@ -117,8 +117,8 @@ where
 }
 
 /// Compare the list of abilities registered on the guide to those on the codex.
-/// The match is made based on the codex_uri (that which is registered on the admin skill, and that
-/// which is indicated on the codex).
+/// Data from the codex has to be converted to guide ids before calling this function.
+/// The "id -> debuggable" conversion is used only for displaying purposes.
 pub fn fix_abilities_field<AdminEntity, EntitySkillsGetter>(
     entity: &mut AdminEntity,
     entity_ids: &Vec<u32>,
@@ -140,8 +140,8 @@ where
 }
 
 /// Compare the list of status effects registered on the guide to those on the codex.
-/// The match is made based on the status name. The names given in `expected_names` have to be
-/// those from the guide, not from the codex.
+/// Data from the codex has to be converted to guide ids before calling this function.
+/// The "id -> debuggable" conversion is used only for displaying purposes.
 pub fn fix_status_effects_field<AdminEntity, EntityStatusEffectsGetter>(
     entity: &mut AdminEntity,
     entity_ids: &Vec<u32>,
@@ -166,6 +166,37 @@ where
                 .find(|status| status.id == *id)
                 .map(|status| status.name.as_str())
                 .ok_or_else(|| Error::Misc(format!("Failed to find status effect #{}", id)))
+        },
+    )
+}
+
+/// Compare the list of spawns registered on the guide to those on the codex.
+/// Data from the codex has to be converted to guide ids before calling this function.
+/// The "id -> debuggable" conversion is used only for displaying purposes.
+pub fn fix_spawn_field<AdminEntity, EntityStatusEffectsGetter>(
+    entity: &mut AdminEntity,
+    entity_ids: &Vec<u32>,
+    data: &OrnaData,
+    expected_ids: &[u32],
+    entity_skills_getter: EntityStatusEffectsGetter,
+) -> Result<(), Error>
+where
+    EntityStatusEffectsGetter: Fn(&mut AdminEntity) -> &mut Vec<u32>,
+{
+    fix_vec_id_field(
+        entity,
+        entity_ids,
+        expected_ids,
+        entity_skills_getter,
+        // Id to debuggable
+        |id| {
+            data.guide
+                .static_
+                .spawns
+                .iter()
+                .find(|spawn| spawn.id == *id)
+                .map(|spawn| spawn.name.as_str())
+                .ok_or_else(|| Error::Misc(format!("Failed to find spawn #{}", id)))
         },
     )
 }
@@ -497,22 +528,55 @@ where
     where
         Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
     {
+        let formatter = |id: &u32| -> &str {
+            &data
+                .guide
+                .static_
+                .status_effects
+                .iter()
+                .find(|effect| effect.id == *id)
+                .unwrap()
+                .name
+        };
         self.vec(
             field_name,
             admin_field,
             codex_field,
             fixer,
-            |id| {
-                &data
-                    .guide
-                    .static_
-                    .status_effects
-                    .iter()
-                    .find(|effect| effect.id == *id)
-                    .unwrap()
-                    .name
-            },
-            |id| &data.guide.items.find_by_id(*id).unwrap().name,
+            formatter,
+            formatter,
+        )
+    }
+
+    /// Check a field containing guide spawn ids.
+    pub fn spawn_id_vec<Fixer>(
+        &'a self,
+        field_name: &str,
+        admin_field: &Vec<u32>,
+        codex_field: &Vec<u32>,
+        fixer: Fixer,
+        data: &OrnaData,
+    ) -> Result<bool, Error>
+    where
+        Fixer: FnOnce(&mut AdminEntity, &Vec<u32>) -> Result<(), Error>,
+    {
+        let formatter = |id: &u32| -> &str {
+            &data
+                .guide
+                .static_
+                .spawns
+                .iter()
+                .find(|effect| effect.id == *id)
+                .unwrap()
+                .name
+        };
+        self.vec(
+            field_name,
+            admin_field,
+            codex_field,
+            fixer,
+            formatter,
+            formatter,
         )
     }
 }

@@ -1,6 +1,7 @@
 use ornaguide_rs::{
     codex::{FollowerAbility, ItemDroppedBy, ItemUpgradeMaterial, MonsterAbility},
     error::Error,
+    guide::Static,
 };
 
 use crate::guide::fetch::{AdminItems, AdminMonsters, AdminSkills};
@@ -55,6 +56,26 @@ impl CodexAbilities for Vec<MonsterAbility> {
     fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error> {
         self.iter()
             .map(|ability| skills.get_by_uri(&ability.uri).map(|skill| skill.id))
+            .collect()
+    }
+}
+
+/// A trait to extend `Vec`s of event names.
+pub trait EventsNames {
+    /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide event ids.
+    fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error>;
+}
+
+impl EventsNames for Vec<&str> {
+    fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error> {
+        self.iter()
+            .map(|event| {
+                static_
+                    .iter_events()
+                    .find(|spawn| spawn.event_name() == *event)
+                    .map(|spawn| spawn.id)
+                    .ok_or_else(|| Error::Misc(format!("Failed to find event {}", event)))
+            })
             .collect()
     }
 }

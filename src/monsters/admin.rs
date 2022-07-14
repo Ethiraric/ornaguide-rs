@@ -199,7 +199,7 @@ impl AdminMonster {
 
     // List the events to which the monster belongs.
     // The events returned won't have the `Event:` or `Past Event` prefix.
-    pub fn get_events(&self, guide_spawns: &[Spawn]) -> Vec<String> {
+    pub fn get_events<'a>(&self, guide_spawns: &'a [Spawn]) -> Vec<&'a str> {
         self.spawns
             .iter()
             .filter_map(|spawn_id| guide_spawns.iter().find(|spawn| *spawn_id == spawn.id))
@@ -213,7 +213,21 @@ impl AdminMonster {
                     None
                 }
             })
-            .map(|spawn| spawn.to_string())
+            .collect()
+    }
+
+    // List the events IDs to which the monster belongs.
+    pub fn get_event_ids(&self, guide_spawns: &[Spawn]) -> Vec<u32> {
+        self.spawns
+            .iter()
+            .filter_map(|spawn_id| guide_spawns.iter().find(|spawn| *spawn_id == spawn.id))
+            .filter_map(|spawn| {
+                if spawn.name.starts_with("Event:") || spawn.name.starts_with("Past Event:") {
+                    Some(spawn.id)
+                } else {
+                    None
+                }
+            })
             .collect()
     }
 
