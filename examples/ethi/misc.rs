@@ -113,3 +113,16 @@ impl VecStatusEffectIds for Vec<u32> {
             .collect()
     }
 }
+
+/// Run the given expression, and retry it once if it returns an `Err`.
+/// This macro cannot be called if the given expression moves a variable, as there would be no way
+/// of re-trying.
+#[macro_export]
+macro_rules! retry_once {
+    ($expr:expr) => {
+        match $expr {
+            Ok(x) => Ok(x),
+            Err(_) => $expr,
+        }
+    };
+}

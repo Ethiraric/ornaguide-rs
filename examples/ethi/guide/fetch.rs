@@ -9,7 +9,10 @@ use ornaguide_rs::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::misc::{bar, sanitize_guide_name};
+use crate::{
+    misc::{bar, sanitize_guide_name},
+    retry_once,
+};
 
 /// Collection of items from the guide's admin view.
 #[derive(Serialize, Deserialize)]
@@ -69,7 +72,7 @@ impl<'a> AdminItems {
 
     /// Find the admin item associated with the given uri.
     pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminItem> {
-        self.items.iter().find(|item| &item.codex_uri == needle)
+        self.items.iter().find(|item| item.codex_uri == needle)
     }
 
     /// Find the admin item associated with the given uri.
@@ -196,7 +199,7 @@ pub fn items(guide: &OrnaAdminGuide) -> Result<AdminItems, Error> {
     let bar = bar(items.len() as u64);
     for item in items.iter() {
         bar.set_message(item.name.clone());
-        ret.push(guide.admin_retrieve_item_by_id(item.id)?);
+        ret.push(retry_once!(guide.admin_retrieve_item_by_id(item.id))?);
         bar.inc(1);
     }
     bar.finish_with_message("AItems  fetched");
@@ -209,7 +212,7 @@ pub fn monsters(guide: &OrnaAdminGuide) -> Result<AdminMonsters, Error> {
     let bar = bar(monsters.len() as u64);
     for monster in monsters.iter() {
         bar.set_message(monster.name.clone());
-        ret.push(guide.admin_retrieve_monster_by_id(monster.id)?);
+        ret.push(retry_once!(guide.admin_retrieve_monster_by_id(monster.id))?);
         bar.inc(1);
     }
     bar.finish_with_message("AMnstrs fetched");
@@ -222,7 +225,7 @@ pub fn skills(guide: &OrnaAdminGuide) -> Result<AdminSkills, Error> {
     let bar = bar(skills.len() as u64);
     for skill in skills.iter() {
         bar.set_message(skill.name.clone());
-        ret.push(guide.admin_retrieve_skill_by_id(skill.id)?);
+        ret.push(retry_once!(guide.admin_retrieve_skill_by_id(skill.id))?);
         bar.inc(1);
     }
     bar.finish_with_message("ASkills fetched");
@@ -235,7 +238,7 @@ pub fn pets(guide: &OrnaAdminGuide) -> Result<AdminPets, Error> {
     let bar = bar(pets.len() as u64);
     for pet in pets.iter() {
         bar.set_message(pet.name.clone());
-        ret.push(guide.admin_retrieve_pet_by_id(pet.id)?);
+        ret.push(retry_once!(guide.admin_retrieve_pet_by_id(pet.id))?);
         bar.inc(1);
     }
     bar.finish_with_message("APets   fetched");
