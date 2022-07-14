@@ -42,6 +42,13 @@ pub struct AdminItem {
     pub mana_saver: i8,
     pub has_slots: bool,
     pub base_adornment_slots: u8,
+    /// Rarity of the item (based on the background of the item at common quality).
+    /// Rarity can be either:
+    ///   - `NO`: None
+    ///   - `CO`: Common
+    ///   - `SP`: Superior (green)
+    ///   - `FM`: Famed (blue)
+    ///   - `LG`: Legendary (purple)
     pub rarity: String,
     pub element: Option<u32>,
     pub equipped_by: Vec<u32>,

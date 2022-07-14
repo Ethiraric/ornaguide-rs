@@ -1,16 +1,18 @@
+#![allow(unused_imports)]
+
 use std::time::Instant;
 
 use dotenv::dotenv;
 
-#[allow(unused_imports)]
+use itertools::Itertools;
 use ornaguide_rs::{
     codex::{Codex, CodexItem},
     error::Error,
     guide::{AdminGuide, Guide, OrnaAdminGuide},
 };
 use output::{refresh, OrnaData};
+use serde::Deserialize;
 
-#[allow(unused_imports)]
 use crate::misc::diff_sorted_slices;
 
 mod codex;
@@ -18,21 +20,15 @@ mod guide;
 mod guide_match;
 mod misc;
 mod output;
+mod sirscor;
 
 #[allow(unused_variables, unused_mut)]
 /// Danger zone. Where I test my code.
 fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
-    guide_match::items::perform(&data, true, guide)?;
-    guide_match::monsters::perform(&mut data, true, guide)?;
-    guide_match::skills::perform(&mut data, true, guide)?;
-    guide_match::pets::perform(&mut data, true, guide)?;
-
-    // let monster_id = 442;
-    // let mut monster = guide.admin_retrieve_monster_by_id(monster_id)?;
-    // assert_eq!(monster.name, "Medea");
-    // monster.name = "Medea, Arisen Queen".to_string();
-    // guide.admin_save_monster(monster)?;
-    // guide.admin_retrieve_monster_by_id(monster_id)?;
+    guide_match::items::perform(&data, false, guide)?;
+    guide_match::monsters::perform(&mut data, false, guide)?;
+    guide_match::skills::perform(&mut data, false, guide)?;
+    guide_match::pets::perform(&mut data, false, guide)?;
     Ok(())
 }
 
@@ -55,6 +51,7 @@ fn main2() -> Result<(), Error> {
         [_, "match", "pets", "--fix"] => guide_match::pets::perform(&mut data()?, true, &guide),
         [_, "match", "skills"] => guide_match::skills::perform(&mut data()?, false, &guide),
         [_, "match", "skills", "--fix"] => guide_match::skills::perform(&mut data()?, true, &guide),
+        [_, "sirscor", "rarity", file] => sirscor::push_rarity(file, &data()?, &guide),
         [_] => ethi(&guide, data()?),
         _ => Err(Error::Misc("Invalid CLI arguments".to_string())),
     }
