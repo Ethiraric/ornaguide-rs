@@ -105,6 +105,17 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 },
             )?;
 
+            // Bought at arcanist
+            check.display(
+                "bought",
+                &admin_skill.bought,
+                &codex_skill.bought_at_arcanist(),
+                |skill, bought| {
+                    skill.bought = *bought;
+                    Ok(())
+                },
+            )?;
+
             // Causes
             let admin_causes = admin_skill.causes.iter().cloned().sorted().collect_vec();
             let codex_causes = codex_skill
