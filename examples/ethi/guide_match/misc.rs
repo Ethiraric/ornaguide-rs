@@ -2,9 +2,10 @@ use ornaguide_rs::{
     codex::{FollowerAbility, ItemDroppedBy, ItemUpgradeMaterial, MonsterAbility},
     error::Error,
     guide::Static,
+    items::admin::AdminItems,
+    monsters::admin::AdminMonsters,
+    skills::admin::AdminSkills,
 };
-
-use crate::guide::fetch::{AdminItems, AdminMonsters, AdminSkills};
 
 /// A trait to extend `Vec<ItemDroppedBy>` specifically.
 pub trait ItemDroppedBys {

@@ -9,27 +9,46 @@ pub enum CostType {
     Gold,
 }
 
-/// An item fetched from the admin panel.
+/// A pet fetched from the admin panel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdminPet {
+    /// The CSRF token that was given on the page where the pet was fetched.
     #[serde(skip)]
     pub(crate) csrfmiddlewaretoken: String,
+    /// Id of the pet on the guide.
     pub id: u32,
+    /// The URI of the pet on the codex.
+    /// URI matches `/codex/followers/{slug}/` with the trailing slash.
     pub codex_uri: String,
+    /// The name of the pet on the guide.
     pub name: String,
+    /// The tier of the pet.
     pub tier: u8,
+    /// Path to the image of the pet.
     pub image_name: String,
+    /// In-game description of the pet.
     pub description: String,
+    /// Pet attack chance (%).
     pub attack: u8,
+    /// Pet heal chance (%).
     pub heal: u8,
+    /// Pet buff chance (%).
     pub buff: u8,
+    /// Pet debuff chance (%).
     pub debuff: u8,
+    /// Pet spell chance (%).
     pub spell: u8,
+    /// Pet protect chance (%).
     pub protect: u8,
+    /// Pet cost.
     pub cost: u64,
+    /// Pet cost type (Orns or Gold).
     pub cost_type: CostType,
+    /// Whether the pet is limited (i.e.: tied to an event).
     pub limited: bool,
+    /// Handwritten note from the guide team on availability.
     pub limited_details: String,
+    /// Ids of skills the pet knows.
     pub skills: Vec<u32>,
 }
 
@@ -138,5 +157,33 @@ impl From<AdminPet> for ParsedForm {
         }
 
         form
+    }
+}
+
+/// Collection of pets from the guide's admin view.
+#[derive(Serialize, Deserialize)]
+pub struct AdminPets {
+    /// Pets from the guide's admin view.
+    pub pets: Vec<AdminPet>,
+}
+
+impl<'a> AdminPets {
+    /// Find the admin pet associated with the given slug.
+    pub fn find_by_slug(&'a self, needle: &str) -> Option<&'a AdminPet> {
+        self.pets.iter().find(|pet| {
+            !pet.codex_uri.is_empty()
+                && pet.codex_uri["/codex/followers/".len()..].trim_end_matches('/') == needle
+        })
+    }
+
+    /// Find the admin pet associated with the given codex follower.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a AdminPet, Error> {
+        self.find_by_slug(needle).ok_or_else(|| {
+            Error::Misc(format!(
+                "No match for admin pet with codex slug '{}'",
+                needle
+            ))
+        })
     }
 }

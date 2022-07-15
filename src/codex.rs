@@ -10,15 +10,22 @@ pub(crate) mod item;
 pub(crate) mod monster;
 pub(crate) mod skill;
 
-pub use follower::{Ability as FollowerAbility, Follower as CodexFollower};
+pub mod fetch;
+
+pub use follower::{
+    Ability as FollowerAbility, Follower as CodexFollower, Followers as CodexFollowers,
+};
 pub use item::{
     Ability as ItemAbility, DroppedBy as ItemDroppedBy, Element as CodexElement, Item as CodexItem,
-    ItemStatusEffects, Stats as ItemStats, UpgradeMaterial as ItemUpgradeMaterial,
+    ItemStatusEffects, Items as CodexItems, Stats as ItemStats,
+    UpgradeMaterial as ItemUpgradeMaterial,
 };
 pub use monster::{
-    Ability as MonsterAbility, CodexBoss, CodexMonster, CodexRaid, Drop as MonsterDrop, Tag,
+    Ability as MonsterAbility, Boss as CodexBoss, Bosses as CodexBosses, Drop as MonsterDrop,
+    Monster as CodexMonster, Monsters as CodexMonsters, Raid as CodexRaid, Raids as CodexRaids,
+    Tag,
 };
-pub use skill::{CodexSkill, SkillStatusEffect, SkillStatusEffects};
+pub use skill::{CodexSkill, CodexSkills, SkillStatusEffect, SkillStatusEffects};
 
 #[derive(Debug)]
 pub struct SkillEntry {

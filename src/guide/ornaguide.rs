@@ -1,8 +1,9 @@
 use crate::{
     codex::{
-        BossEntry as CodexBossEntry, Codex, CodexSkill, FollowerEntry as CodexFollowerEntry,
-        ItemEntry as CodexItemEntry, MonsterEntry as CodexMonsterEntry,
-        RaidEntry as CodexRaidEntry, SkillEntry as CodexSkillEntry,
+        BossEntry as CodexBossEntry, Codex, CodexMonster, CodexSkill,
+        FollowerEntry as CodexFollowerEntry, ItemEntry as CodexItemEntry,
+        MonsterEntry as CodexMonsterEntry, RaidEntry as CodexRaidEntry,
+        SkillEntry as CodexSkillEntry,
     },
     error::Error,
     guide::{
@@ -425,7 +426,7 @@ impl Codex for OrnaAdminGuide {
             .collect()
     }
 
-    fn codex_fetch_monster(&self, monster_name: &str) -> Result<crate::codex::CodexMonster, Error> {
+    fn codex_fetch_monster(&self, monster_name: &str) -> Result<CodexMonster, Error> {
         self.guide.http().codex_retrieve_monster(monster_name)
     }
 

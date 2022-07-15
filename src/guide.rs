@@ -14,6 +14,8 @@ mod http;
 mod ornaguide;
 mod r#static;
 
+pub mod fetch;
+
 pub use r#static::{
     Element, EquippedBy, ItemCategory, ItemType, MonsterFamily, SkillType, Spawn, Static,
     StatusEffect, VecElements,

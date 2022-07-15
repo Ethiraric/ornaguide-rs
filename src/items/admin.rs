@@ -5,42 +5,85 @@ use crate::{error::Error, guide::html_form_parser::ParsedForm};
 /// An item fetched from the admin panel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdminItem {
+    /// The CSRF token that was given on the page where the item was fetched.
     #[serde(skip)]
     pub(crate) csrfmiddlewaretoken: String,
+    /// Id of the item on the guide.
     pub id: u32,
+    /// The URI of the item on the codex.
+    /// URI matches `/codex/items/{slug}/` with the trailing slash.
     pub codex_uri: String,
+    /// The name of the item on the guide.
     pub name: String,
+    /// The tier of the item.
     pub tier: u8,
+    /// The id of the type of the item (Curative, Weapon, Head, Material, ...).
     pub type_: u32,
+    /// Path to the image of the item.
     pub image_name: String,
+    /// In-game description of the item.
     pub description: String,
+    /// Handwritten notes from the guide team on the item.
     pub notes: String,
+    /// How much HP the item gives, if equippable.
     pub hp: i16,
+    /// Whether HP scales with the quality of the item.
     pub hp_affected_by_quality: bool,
+    /// How much mana the item gives, if equippable.
     pub mana: i16,
+    /// Whether mana scales with the quality of the item.
     pub mana_affected_by_quality: bool,
+    /// How much attack the item gives, if equippable.
     pub attack: i16,
+    /// Whether attack scales with the quality of the item.
     pub attack_affected_by_quality: bool,
+    /// How much magic the item gives, if equippable.
     pub magic: i16,
+    /// Whether magic scales with the quality of the item.
     pub magic_affected_by_quality: bool,
+    /// How much defense the item gives, if equippable.
     pub defense: i16,
+    /// Whether defense scales with the quality of the item.
     pub defense_affected_by_quality: bool,
+    /// How much resistance the item gives, if equippable.
     pub resistance: i16,
+    /// Whether resistance scales with the quality of the item.
     pub resistance_affected_by_quality: bool,
+    /// How much dexterity the item gives, if equippable.
     pub dexterity: i16,
+    /// Whether dexterity scales with the quality of the item.
     pub dexterity_affected_by_quality: bool,
+    /// How much ward the item gives, if equippable (%).
     pub ward: i8,
+    /// Whether ward scales with the quality of the item.
     pub ward_affected_by_quality: bool,
+    /// How much crit the item gives, if equippable.
     pub crit: u8,
+    /// Whether crit scales with the quality of the item.
     pub crit_affected_by_quality: bool,
+    /// How much foresight the item gives, if equippable.
     pub foresight: i8,
+    /// How much view distance the item gives (%).
     pub view_distance: u32,
+    /// How much the item increases the stats of your follower (%).
     pub follower_stats: u32,
+    /// How much the item increases the action rate of your follower (%).
     pub follower_act: i32,
+    /// How much the item increases your status infliction rate (%).
     pub status_infliction: u32,
+    /// How much the item increases your status protection rate (%).
     pub status_protection: u32,
+    /// How much mana you save with this item, if equippable (%).
     pub mana_saver: i8,
+    /// Whether the item has adornment slots, if equippable.
     pub has_slots: bool,
+    /// The number of adornment slots of the item at common quality level 10.
+    /// Bonus slots are added (assuming level 10+, relative to the base adorn slots):
+    ///   * 1 at legendary quality
+    ///   * 2 at ornate quality
+    ///   * 3 when Masterforged
+    ///   * 4 when Godforged
+    /// Meaning the maximum adorns that an item can have is this + 4.
     pub base_adornment_slots: u8,
     /// Rarity of the item (based on the background of the item at common quality).
     /// Rarity can be either:
@@ -50,23 +93,41 @@ pub struct AdminItem {
     ///   - `FM`: Famed (blue)
     ///   - `LG`: Legendary (purple)
     pub rarity: String,
+    /// Id of the element of the item, if equippable.
     pub element: Option<u32>,
+    /// Ids of class categories who can equip the item, if equippable.
     pub equipped_by: Vec<u32>,
+    /// Whether the item is two handed, if a weapon.
     pub two_handed: bool,
+    /// How much more Orns you gain with this item (%).
     pub orn_bonus: f32,
+    /// How much more Gold you gain with this item (%).
     pub gold_bonus: f32,
+    /// How much more luck you have with this item (%).
     pub drop_bonus: f32,
+    /// How much more spawns there are with this item (%).
     pub spawn_bonus: f32,
+    /// How much more experience you gain with this item (%).
     pub exp_bonus: Vec<f32>,
+    /// Whether this item is a boss item (affects scaling and assessing).
     pub boss: bool,
+    /// Whether this item is in the arena pool.
     pub arena: bool,
+    /// Id of the category of the item, if a weapon (Staffs, Daggers, Polearms, ...).
     pub category: Option<u32>,
+    /// Ids of statuses the item can inflict, if equippable.
     pub causes: Vec<u32>,
+    /// Ids of statuses the item cures.
     pub cures: Vec<u32>,
+    /// Ids of statuses the item gives.
     pub gives: Vec<u32>,
+    /// Ids of statuses the item grants immunity to, if equippable.
     pub prevents: Vec<u32>,
+    /// Ids of materials the item needs to be upgraded, if upgradable.
     pub materials: Vec<u32>,
+    /// Price of the item, if it can be bought from shops.
     pub price: u32,
+    /// Off-hand ability, if a weapon.
     pub ability: Option<u32>,
 }
 
@@ -355,5 +416,58 @@ impl From<AdminItem> for ParsedForm {
         }
 
         form
+    }
+}
+
+/// Collection of items from the guide's admin view.
+#[derive(Serialize, Deserialize)]
+pub struct AdminItems {
+    /// Items from the guide's admin view.
+    pub items: Vec<AdminItem>,
+}
+
+impl<'a> AdminItems {
+    /// Find the admin item associated with the given id.
+    pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminItem> {
+        self.items.iter().find(|item| item.id == needle)
+    }
+
+    /// Find the admin item associated with the given id.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminItem, Error> {
+        self.find_by_id(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for admin item with id {}", needle)))
+    }
+
+    /// Find the admin item associated with the given uri.
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminItem> {
+        self.items.iter().find(|item| item.codex_uri == needle)
+    }
+
+    /// Find the admin item associated with the given uri.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminItem, Error> {
+        self.find_by_uri(needle).ok_or_else(|| {
+            Error::Misc(format!("No match for admin item with codex_uri {}", needle))
+        })
+    }
+
+    /// Find the admin item associated with the given slug.
+    pub fn find_by_slug(&'a self, needle: &str) -> Option<&'a AdminItem> {
+        self.items.iter().find(|item| {
+            !item.codex_uri.is_empty()
+                && item.codex_uri["/codex/items/".len()..].trim_end_matches('/') == needle
+        })
+    }
+
+    /// Find the admin item associated with the given slug.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a AdminItem, Error> {
+        self.find_by_slug(needle).ok_or_else(|| {
+            Error::Misc(format!(
+                "No match for admin item with codex slug {}",
+                needle
+            ))
+        })
     }
 }

@@ -1,32 +1,56 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, guide::html_form_parser::ParsedForm};
+use crate::{error::Error, guide::html_form_parser::ParsedForm, misc::sanitize_guide_name};
 
 /// A skill fetched from the admin panel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AdminSkill {
+    /// The CSRF token that was given on the page where the skill was fetched.
     #[serde(skip)]
     pub(crate) csrfmiddlewaretoken: String,
+    /// Id of the skill on the guide.
     pub id: u32,
+    /// The URI of the skill on the codex.
+    /// URI matches `/codex/spells/{slug}/` with the trailing slash.
     pub codex_uri: String,
+    /// The name of the skill on the guide.
     pub name: String,
+    /// The tier of the skill.
     pub tier: u8,
+    /// The id of the type of the skill (Buff, Attack, AoE Debuff, ...).
     pub type_: u32,
+    /// Whether the skill is a magic one.
     pub is_magic: bool,
+    /// The mana cost of the skill.
     pub mana_cost: u32,
+    /// The in-game description of the skill.
     pub description: String,
+    /// ID of the element of the skill.
     pub element: Option<u32>,
+    /// Whether the skill is an off-hand skill.
+    /// Off-hand skills have their own entry, that is distinct from the non-off-hand ones.
     pub offhand: bool,
+    /// The gold cost of the skill if it can be bought at the arcanist.
     pub cost: u64,
+    /// Whether the skill can be bought at an arcanist.
     pub bought: bool,
+    /// M1 of the skill.
     pub skill_power: f32,
+    /// Number of times the skill strikes.
     pub strikes: u8,
+    /// Min M2 of the skill.
     pub modifier_min: f32,
+    /// Max M2 of the skill.
     pub modifier_max: f32,
+    /// Handwritten notes from the guide team on the item.
     pub extra: String,
+    /// Ids of monsters who buff this skill (if a passive that requires kills).
     pub buffed_by: Vec<u32>,
+    /// Ids of status effects the skill inflicts.
     pub causes: Vec<u32>,
+    /// Ids of status effects the skill cures.
     pub cures: Vec<u32>,
+    /// Ids of status effects the skill gives.
     pub gives: Vec<u32>,
 }
 
@@ -152,5 +176,79 @@ impl From<AdminSkill> for ParsedForm {
         }
 
         form
+    }
+}
+
+/// Collection of skills from the guide's admin view.
+#[derive(Serialize, Deserialize)]
+pub struct AdminSkills {
+    /// Skills from the guide's admin view.
+    pub skills: Vec<AdminSkill>,
+}
+
+impl<'a> AdminSkills {
+    /// Find the admin skill corresponding to the given id.
+    pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminSkill> {
+        self.skills.iter().find(|skill| skill.id == needle)
+    }
+
+    /// Find the admin skill corresponding to the given id.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminSkill, Error> {
+        self.find_by_id(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for admin skill with id #{}", needle)))
+    }
+
+    /// Find the admin skill corresponding to the given codex URI.
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminSkill> {
+        self.skills.iter().find(|skill| skill.codex_uri == needle)
+    }
+
+    /// Find the admin skill corresponding to the given codex URI.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
+        self.find_by_uri(needle).ok_or_else(|| {
+            Error::Misc(format!(
+                "No match for admin skill with codex_uri #{}",
+                needle
+            ))
+        })
+    }
+
+    /// Find the admin skill associated with the given slug
+    pub fn find_by_slug(&'a self, needle: &str) -> Option<&'a AdminSkill> {
+        self.skills.iter().find(|skill| {
+            !skill.codex_uri.is_empty()
+                && skill.codex_uri["/codex/spells/".len()..].trim_end_matches('/') == needle
+        })
+    }
+
+    /// Find the admin skill associated with the given slug.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
+        self.find_by_slug(needle).ok_or_else(|| {
+            Error::Misc(format!(
+                "No match for admin skill with codex slug '{}'",
+                needle
+            ))
+        })
+    }
+
+    /// Find the admin offhand skill with the given name.
+    pub fn find_offhand_from_name(&'a self, needle: &str) -> Option<&'a AdminSkill> {
+        self.skills
+            .iter()
+            .find(|skill| sanitize_guide_name(&skill.name) == needle && skill.offhand)
+    }
+
+    /// Find the admin offhand skill with the given name.
+    /// If there is no match, return an `Err`.
+    pub fn get_offhand_from_name(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
+        self.find_offhand_from_name(needle).ok_or_else(|| {
+            Error::Misc(format!(
+                "No match for offhand admin skill with name '{}'",
+                needle
+            ))
+        })
     }
 }

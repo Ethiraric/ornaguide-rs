@@ -35,7 +35,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
                 && item.slug != "steadfast-charm"
                 && item.slug != "super-exp-potion"
         })
-        .filter(|item| data.guide.items.get_match_for_codex_item(item).is_err())
+        .filter(|item| data.guide.items.get_by_slug(&item.slug).is_err())
         .collect_vec();
 
     let not_on_codex = data
@@ -45,7 +45,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .iter()
         // Filter out the old Spellcaster's Ring.
         .filter(|item| item.name != "Mage's Ring")
-        .filter(|item| data.codex.items.find_match_for_admin_item(item).is_err())
+        .filter(|item| data.codex.items.get_by_uri(&item.codex_uri).is_err())
         .collect_vec();
 
     if !missing_on_guide.is_empty() {
@@ -97,7 +97,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
         .unwrap()
         .id;
     for codex_item in data.codex.items.items.iter() {
-        if let Ok(guide_item) = data.guide.items.get_match_for_codex_item(codex_item) {
+        if let Ok(guide_item) = data.guide.items.get_by_slug(&codex_item.slug) {
             let check = Checker {
                 entity_name: &guide_item.name,
                 entity_id: guide_item.id,

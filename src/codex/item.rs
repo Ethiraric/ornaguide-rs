@@ -242,3 +242,30 @@ impl ItemStatusEffects for Vec<Immunity> {
             .collect()
     }
 }
+
+/// Collection of items from the codex.
+#[derive(Serialize, Deserialize)]
+pub struct Items {
+    /// Items from the codex.
+    pub items: Vec<Item>,
+}
+
+impl<'a> Items {
+    /// Find the codex item associated with the given uri.
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a Item> {
+        static URI_START: &str = "/codex/items/";
+        if !needle.starts_with(URI_START) {
+            return None;
+        }
+
+        let slug = &needle[URI_START.len()..needle.len() - 1];
+        self.items.iter().find(|item| item.slug == slug)
+    }
+
+    /// Find the codex item associated with the given uri.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Item, Error> {
+        self.find_by_uri(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for codex item with uri '{}'", needle)))
+    }
+}

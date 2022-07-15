@@ -26,7 +26,7 @@ pub struct Drop {
 
 /// A monster on the codex.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CodexMonster {
+pub struct Monster {
     /// The slug of the monster (`https://playorna.com/codex/monsters/{slug}`).
     pub slug: String,
     /// The name of the monster.
@@ -51,7 +51,7 @@ pub struct CodexMonster {
 
 /// A boss on the codex.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CodexBoss {
+pub struct Boss {
     /// The slug of the boss (`https://playorna.com/codex/bosses/{slug}`).
     pub slug: String,
     /// The name of the boss.
@@ -76,7 +76,7 @@ pub struct CodexBoss {
 
 /// A raid on the codex.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CodexRaid {
+pub struct Raid {
     /// The slug of the raid (`https://playorna.com/codex/raids/{slug}`).
     pub slug: String,
     /// The name of the raid.
@@ -95,4 +95,25 @@ pub struct CodexRaid {
     pub abilities: Vec<Ability>,
     /// The items the raid drops.
     pub drops: Vec<Drop>,
+}
+
+/// Collection of monsters from the codex.
+#[derive(Serialize, Deserialize)]
+pub struct Monsters {
+    /// Monsters from the codex.
+    pub monsters: Vec<Monster>,
+}
+
+/// Collection of bosses from the codex.
+#[derive(Serialize, Deserialize)]
+pub struct Bosses {
+    /// Bosses from the codex.
+    pub bosses: Vec<Boss>,
+}
+
+/// Collection of raids from the codex.
+#[derive(Serialize, Deserialize)]
+pub struct Raids {
+    /// Raids from the codex.
+    pub raids: Vec<Raid>,
 }

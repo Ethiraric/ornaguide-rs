@@ -5,24 +5,25 @@ use std::{
 
 use itertools::Itertools;
 use ornaguide_rs::{
-    codex::{Codex, CodexBoss, CodexMonster, CodexRaid, MonsterAbility, MonsterDrop, Tag},
+    codex::{
+        Codex, CodexBoss, CodexBosses, CodexFollowers, CodexItems, CodexMonster, CodexMonsters,
+        CodexRaid, CodexRaids, CodexSkills, MonsterAbility, MonsterDrop, Tag,
+    },
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide, Static},
-    monsters::admin::AdminMonster,
+    items::admin::AdminItems,
+    monsters::admin::{AdminMonster, AdminMonsters},
+    pets::admin::AdminPets,
+    skills::admin::AdminSkills,
 };
 
-use crate::{
-    codex::fetch::{
-        CodexBosses, CodexFollowers, CodexItems, CodexMonsters, CodexRaids, CodexSkills,
-    },
-    guide::fetch::{AdminItems, AdminMonsters, AdminPets, AdminSkills},
-    misc::bar,
-};
+use crate::misc::bar;
 
 /// Add unlisted monsters / bosses / raids to the data.
 /// Walks through item drops and lists monsters in those drops we couldn't find.
+/// Also adds event monsters that have no drops.
 /// Modifies `data` in-place.
-pub fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<(), Error> {
+fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<(), Error> {
     // Monsters that are not necessarily listed (i.e.: belong to an event) and that have no drops.
     // These won't show up when listing through item drops.
     let unlisted_without_drops = &["/codex/monsters/elite-balor-flame/".to_string()];
@@ -88,7 +89,7 @@ pub fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Res
 
 /// Add unlisted followers to the data.
 /// Modifies `data` in-place.
-pub fn add_event_followers(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<(), Error> {
+fn add_event_followers(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<(), Error> {
     // List of event pet slugs. Those may or may not appear in the follower list, depending on the
     // time of the year.
     let event_pets = &[
@@ -169,7 +170,9 @@ pub fn add_event_followers(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Resul
     Ok(())
 }
 
-pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
+/// Refresh all output jsons. Fetches all codex and guide entities.
+/// Adds unlisted event monsters, bosses, raids and followers.
+pub fn refresh(guide: &OrnaAdminGuide) -> Result<OrnaData, Error> {
     let mut data = OrnaData {
         codex: CodexData {
             items: crate::codex::fetch::items(guide)?,
@@ -267,9 +270,10 @@ pub fn refresh(guide: &OrnaAdminGuide) -> Result<(), Error> {
         &data.guide.static_.skill_types,
     )?;
 
-    Ok(())
+    Ok(data)
 }
 
+/// Aggregate for codex data.
 pub struct CodexData {
     pub items: CodexItems,
     pub raids: CodexRaids,
@@ -290,6 +294,7 @@ pub enum CodexGenericMonster<'a> {
     Raid(&'a CodexRaid),
 }
 
+/// Aggregate for guide data.
 pub struct GuideData {
     pub items: AdminItems,
     pub monsters: AdminMonsters,
@@ -298,6 +303,7 @@ pub struct GuideData {
     pub static_: Static,
 }
 
+/// Aggregate for both the codex and the guide data.
 pub struct OrnaData {
     pub codex: CodexData,
     pub guide: GuideData,

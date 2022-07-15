@@ -1,19 +1,16 @@
-#![allow(unused_imports)]
-
 use std::time::Instant;
 
 use dotenv::dotenv;
 
+#[allow(unused_imports)]
 use itertools::Itertools;
+#[allow(unused_imports)]
 use ornaguide_rs::{
     codex::{Codex, CodexItem},
     error::Error,
     guide::{AdminGuide, Guide, OrnaAdminGuide},
 };
-use output::{refresh, OrnaData};
-use serde::Deserialize;
-
-use crate::misc::diff_sorted_slices;
+use output::OrnaData;
 
 mod codex;
 mod guide;
@@ -26,10 +23,7 @@ mod sirscor;
 #[allow(unused_variables, unused_mut)]
 /// Danger zone. Where I test my code.
 fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
-    guide_match::items::perform(&data, false, guide)?;
-    guide_match::monsters::perform(&mut data, false, guide)?;
-    guide_match::skills::perform(&mut data, false, guide)?;
-    guide_match::pets::perform(&mut data, false, guide)?;
+    guide_match::all(&mut data, false, guide)?;
 
     Ok(())
 }
@@ -42,7 +36,9 @@ fn main2() -> Result<(), Error> {
 
     let args = std::env::args().collect::<Vec<_>>();
     match args.iter().map(|s| s.as_str()).collect::<Vec<_>>()[..] {
-        [_, "json", "refresh"] => refresh(&guide),
+        [_, "json", "refresh"] => output::refresh(&guide).map(|_| ()),
+        [_, "match", "all"] => guide_match::all(&mut data()?, false, &guide),
+        [_, "match", "all", "--fix"] => guide_match::all(&mut data()?, true, &guide),
         [_, "match", "items"] => guide_match::items::perform(&data()?, false, &guide),
         [_, "match", "items", "--fix"] => guide_match::items::perform(&data()?, true, &guide),
         [_, "match", "monsters"] => guide_match::monsters::perform(&mut data()?, false, &guide),

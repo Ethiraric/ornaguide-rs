@@ -29,7 +29,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .skills
         .skills
         .iter()
-        .filter(|skill| data.guide.skills.get_match_for_codex_skill(*skill).is_err())
+        .filter(|skill| data.guide.skills.get_by_slug(&skill.slug).is_err())
         .collect_vec();
 
     let not_on_codex = data
@@ -39,7 +39,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .iter()
         // Passive skills are not on the codex.
         .filter(|skill| skill.type_ != guide_passive_id)
-        .filter(|skill| data.codex.skills.find_match_for_admin_skill(skill).is_err())
+        .filter(|skill| data.codex.skills.get_by_uri(&skill.codex_uri).is_err())
         .collect_vec();
 
     if !missing_on_guide.is_empty() {
@@ -69,7 +69,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
 /// Attempt to fix discrepancies.
 fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     for codex_skill in data.codex.skills.skills.iter() {
-        if let Ok(admin_skill) = data.guide.skills.get_match_for_codex_skill(codex_skill) {
+        if let Ok(admin_skill) = data.guide.skills.get_by_slug(&codex_skill.slug) {
             let check = Checker {
                 entity_name: &admin_skill.name,
                 entity_id: admin_skill.id,

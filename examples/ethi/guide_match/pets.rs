@@ -22,12 +22,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .followers
         .followers
         .iter()
-        .filter(|follower| {
-            data.guide
-                .pets
-                .get_match_for_codex_follower(*follower)
-                .is_err()
-        })
+        .filter(|follower| data.guide.pets.get_by_slug(&follower.slug).is_err())
         .collect_vec();
 
     let not_on_codex = data
@@ -35,7 +30,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .pets
         .pets
         .iter()
-        .filter(|pet| data.codex.followers.find_match_for_admin_pet(pet).is_err())
+        .filter(|pet| data.codex.followers.get_by_uri(&pet.codex_uri).is_err())
         .collect_vec();
 
     if !missing_on_guide.is_empty() {
@@ -62,7 +57,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
 /// Attempt to fix discrepancies.
 fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     for follower in data.codex.followers.followers.iter() {
-        if let Ok(pet) = data.guide.pets.get_match_for_codex_follower(follower) {
+        if let Ok(pet) = data.guide.pets.get_by_slug(&follower.slug) {
             let check = Checker {
                 entity_name: &pet.name,
                 entity_id: pet.id,

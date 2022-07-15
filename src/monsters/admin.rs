@@ -10,25 +10,49 @@ use crate::{
 /// An item fetched from the admin panel.
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct AdminMonster {
+    /// The CSRF token that was given on the page where the monster was fetched.
     #[serde(skip)]
     pub(crate) csrfmiddlewaretoken: String,
+    /// Id of the monster on the guide.
     pub id: u32,
+    /// The URI of the monster on the codex.
+    /// URI matches `/codex/{entity}/{slug}/` with the trailing slash.
+    /// `entity` is either `monsters`, `bosses` or `raids`.
     pub codex_uri: String,
+    /// The name of the monster on the guide.
     pub name: String,
+    /// The tier of the monster.
     pub tier: u8,
+    /// The family to which the monster belongs.
     pub family: Option<u32>,
+    /// Path to the image of the monster.
     pub image_name: String,
+    /// Whether the monster is a boss (WRB & KRB included).
     pub boss: bool,
+    /// The HP of the monster, if specifyable.
+    /// This should be set for raids and bosses.
     pub hp: u32,
+    /// The level at which the monster is encountered.
+    /// This should be set for raids and bosses.
     pub level: u32,
+    /// Handwritten notes from the guide team on the monster.
     pub notes: String,
+    /// Ids of where the monster spawns.
     pub spawns: Vec<u32>,
+    /// Ids of elements to which the monster is weak.
     pub weak_to: Vec<u32>,
+    /// Ids of elements to which the monster is resistant.
     pub resistant_to: Vec<u32>,
+    /// Ids of elements to which the monster is immune.
     pub immune_to: Vec<u32>,
+    /// Ids of statuses to which the monster is immune.
     pub immune_to_status: Vec<u32>,
+    /// Ids of statuses to which the monster is vulnerable.
+    /// This field is likely to disappear.
     pub vulnerable_to_status: Vec<u32>,
+    /// Ids of items the monster drops.
     pub drops: Vec<u32>,
+    /// Ids of skills the monster uses.
     pub skills: Vec<u32>,
 }
 
@@ -131,10 +155,6 @@ impl From<AdminMonster> for ParsedForm {
     }
 }
 
-fn slugify_name(name: &str) -> String {
-    sanitize_guide_name(name).to_lowercase().replace(' ', "-")
-}
-
 impl AdminMonster {
     /// Returns true if the monster is a regular one (not a boss, nor a raid).
     pub fn is_regular_monster(&self) -> bool {
@@ -169,19 +189,6 @@ impl AdminMonster {
                 })
     }
 
-    /// Try to guess what the codex URI for the monster is.
-    /// Returns something like `/codex/monsters/ghost/`.
-    pub fn codex_uri(&self, guide_spawns: &[Spawn]) -> String {
-        let slug = slugify_name(&self.name);
-        if self.is_regular_monster() {
-            format!("/codex/monsters/{}/", slug)
-        } else if self.is_boss(guide_spawns) {
-            format!("/codex/bosses/{}/", slug)
-        } else {
-            format!("/codex/raids/{}/", slug)
-        }
-    }
-
     /// Try to guess what the codex name for the monster is.
     pub fn codex_name(&self) -> String {
         let monster_name = if self.is_regular_monster() {
@@ -197,8 +204,8 @@ impl AdminMonster {
         sanitize_guide_name(&monster_name).to_string()
     }
 
-    // List the events to which the monster belongs.
-    // The events returned won't have the `Event:` or `Past Event` prefix.
+    /// List the events to which the monster belongs.
+    /// The events returned won't have the `Event:` or `Past Event` prefix.
     pub fn get_events<'a>(&self, guide_spawns: &'a [Spawn]) -> Vec<&'a str> {
         self.spawns
             .iter()
@@ -216,7 +223,7 @@ impl AdminMonster {
             .collect()
     }
 
-    // List the events IDs to which the monster belongs.
+    /// List the events IDs to which the monster belongs.
     pub fn get_event_ids(&self, guide_spawns: &[Spawn]) -> Vec<u32> {
         self.spawns
             .iter()
@@ -231,8 +238,8 @@ impl AdminMonster {
             .collect()
     }
 
-    // List the raid spawns associated to the monster.
-    // The spawns are either "Kingdom Raid" or "World Raid" (may be inclusive).
+    /// List the raid spawns associated to the monster.
+    /// The spawns are either "Kingdom Raid" or "World Raid" (may be inclusive).
     pub fn get_raid_spawns<'a>(&self, guide_spawns: &'a [Spawn]) -> Vec<&'a str> {
         self.spawns
             .iter()
@@ -246,5 +253,44 @@ impl AdminMonster {
             .map(|spawn| spawn.name.as_str())
             .sorted()
             .collect::<Vec<_>>()
+    }
+}
+
+/// Collection of monsters from the guide's admin view.
+#[derive(Serialize, Deserialize)]
+pub struct AdminMonsters {
+    /// Monsters from the guide's admin view.
+    pub monsters: Vec<AdminMonster>,
+}
+
+impl<'a> AdminMonsters {
+    /// Find the monster with the given id.
+    pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminMonster> {
+        self.monsters.iter().find(|monster| monster.id == needle)
+    }
+
+    /// Find the monster with the given id
+    /// If there is no match, return an `Err`.
+    pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminMonster, Error> {
+        self.find_by_id(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for admin monster with id {}", needle)))
+    }
+
+    /// Find the monster with the given codex uri.
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminMonster> {
+        self.monsters
+            .iter()
+            .find(|monster| monster.codex_uri == needle)
+    }
+
+    /// Find the monster with the given codex uri.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminMonster, Error> {
+        self.find_by_uri(needle).ok_or_else(|| {
+            Error::Misc(format!(
+                "No match for admin monster with codex_uri '{}'",
+                needle
+            ))
+        })
     }
 }

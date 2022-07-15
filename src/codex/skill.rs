@@ -93,3 +93,30 @@ impl CodexSkill {
         })
     }
 }
+
+/// Collection of skills from the codex.
+#[derive(Serialize, Deserialize)]
+pub struct CodexSkills {
+    /// Skills from the codex.
+    pub skills: Vec<CodexSkill>,
+}
+
+impl<'a> CodexSkills {
+    /// Find the codex skill associated with the given URI.
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a CodexSkill> {
+        static URI_START: &str = "/codex/spells/";
+        if !needle.starts_with(URI_START) {
+            return None;
+        }
+
+        let slug = &needle[URI_START.len()..needle.len() - 1];
+        self.skills.iter().find(|skill| skill.slug == slug)
+    }
+
+    /// Find the codex skill associated with the given URI.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a CodexSkill, Error> {
+        self.find_by_uri(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for codex skill with uri '{}'", needle)))
+    }
+}
