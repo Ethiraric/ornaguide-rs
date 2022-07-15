@@ -20,6 +20,7 @@ mod guide;
 mod guide_match;
 mod misc;
 mod output;
+mod ratakor;
 mod sirscor;
 
 #[allow(unused_variables, unused_mut)]
@@ -29,6 +30,7 @@ fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
     guide_match::monsters::perform(&mut data, false, guide)?;
     guide_match::skills::perform(&mut data, false, guide)?;
     guide_match::pets::perform(&mut data, false, guide)?;
+
     Ok(())
 }
 
@@ -52,6 +54,7 @@ fn main2() -> Result<(), Error> {
         [_, "match", "skills"] => guide_match::skills::perform(&mut data()?, false, &guide),
         [_, "match", "skills", "--fix"] => guide_match::skills::perform(&mut data()?, true, &guide),
         [_, "sirscor", "rarity", file] => sirscor::push_rarity(file, &data()?, &guide),
+        [_, "ratakor", "raid-hp", file] => ratakor::push_raid_hp(file, &data()?, &guide),
         [_] => ethi(&guide, data()?),
         _ => Err(Error::Misc("Invalid CLI arguments".to_string())),
     }
