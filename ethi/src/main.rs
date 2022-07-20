@@ -52,7 +52,7 @@ fn main2() -> Result<(), Error> {
         [_, "sirscor", "rarity", file] => sirscor::push_rarity(file, &data()?, &guide),
         [_, "ratakor", "raid-hp", file] => ratakor::push_raid_hp(file, &data()?, &guide),
         [_] => ethi(&guide, data()?),
-        _ => Err(Error::Misc("Invalid CLI arguments".to_string())),
+        _ => Err(Error::Misc(format!("Invalid CLI arguments: {:?}", &args))),
     }
 }
 
