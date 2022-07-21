@@ -16,16 +16,16 @@ use crate::{data::DATA, filter::Filter};
 /// All the filters applicable on an item.
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct ItemFilters {
+pub struct ItemFilters<'a> {
     /// Filter by id.
-    pub id: Filter<u32>,
-    /// Filter by codex_uri,
-    pub codex_uri: Filter<String>,
+    pub id: Filter<'a, u32>,
+    /// Filter by codex_uri.
+    pub codex_uri: Filter<'a, String>,
     /// Filter by attack.
-    pub attack: Filter<i16>,
+    pub attack: Filter<'a, i16>,
 }
 
-impl ItemFilters {
+impl<'a> ItemFilters<'a> {
     /// Compile all filters within `self`.
     pub fn compiled(self) -> Result<Self, Error> {
         Ok(Self {

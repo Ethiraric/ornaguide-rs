@@ -3,29 +3,12 @@ use std::str::FromStr;
 use ornaguide_rs::error::Error;
 use serde::{Deserialize, Serialize};
 
-/// Captures a value and compares another value to it.
-/// The function used to perform the comparison is stored alongside the value.
-///
-/// I failed to properly instruct the compiler how lifetimes would work with a closure.
-pub struct Comparer<T: std::cmp::PartialEq> {
-    /// The reference value to compare against.
-    pub value: T,
-    /// The function used to compare a value to the reference.
-    /// The stored value is the second argument to this function.
-    pub comparer: Box<dyn Fn(&T, &T) -> bool>,
-}
-
-impl<T: std::cmp::PartialEq> Comparer<T> {
-    /// Compare the given value to that stored in `self` using the comparer.
-    pub fn compare(&self, t: &T) -> bool {
-        (self.comparer)(t, &self.value)
-    }
-}
-
 /// A field in a request which allows filtering the results.
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-pub enum Filter<T: std::cmp::PartialEq> {
+pub enum Filter<'a, T> {
+    /// No filter. Will always allow any item through.
+    None,
     /// A value to which to compare for equality.
     Value(T),
     /// An expression. Must start with an operator (`==`, `!=`, `>`, `<`, `>=`, `<=`) and be
@@ -33,18 +16,19 @@ pub enum Filter<T: std::cmp::PartialEq> {
     Expr(String),
     /// Parsed version of an expression string.
     #[serde(skip)]
-    Compiled(Comparer<T>),
-    /// No filter. Will always allow any item through.
-    None,
+    Compiled(Box<dyn Fn(&T) -> bool + 'a>),
 }
 
-impl<T: std::cmp::PartialEq> Default for Filter<T> {
+impl<'a, T> Default for Filter<'a, T> {
     fn default() -> Self {
         Self::None
     }
 }
 
-impl<T: std::cmp::PartialOrd + FromStr> Filter<T> {
+impl<'a, T> Filter<'a, T>
+where
+    T: std::str::FromStr + std::cmp::PartialOrd + 'a,
+{
     /// Run the filter with the given value.
     /// Returns true if the filter validates the value, false otherwise.
     pub fn filter(&self, value: &T) -> bool {
@@ -54,7 +38,7 @@ impl<T: std::cmp::PartialOrd + FromStr> Filter<T> {
                 warn!("Uncompiled filter '{}'", str);
                 true
             }
-            Filter::Compiled(f) => f.compare(value),
+            Filter::Compiled(f) => f(value),
             Filter::None => true,
         }
     }
@@ -78,22 +62,10 @@ impl<T: std::cmp::PartialOrd + FromStr> Filter<T> {
 
                     // Match the first char and create a closure accordingly.
                     match str.chars().next() {
-                        Some('=') => Ok(Filter::Compiled(Comparer {
-                            value: expected_value,
-                            comparer: Box::new(|a, b| *a == *b),
-                        })),
-                        Some('!') => Ok(Filter::Compiled(Comparer {
-                            value: expected_value,
-                            comparer: Box::new(|a, b| *a != *b),
-                        })),
-                        Some('>') => Ok(Filter::Compiled(Comparer {
-                            value: expected_value,
-                            comparer: Box::new(|a, b| *a >= *b),
-                        })),
-                        Some('<') => Ok(Filter::Compiled(Comparer {
-                            value: expected_value,
-                            comparer: Box::new(|a, b| *a <= *b),
-                        })),
+                        Some('=') => Ok(Filter::Compiled(Box::new(move |a| *a == expected_value))),
+                        Some('!') => Ok(Filter::Compiled(Box::new(move |a| *a != expected_value))),
+                        Some('>') => Ok(Filter::Compiled(Box::new(move |a| *a >= expected_value))),
+                        Some('<') => Ok(Filter::Compiled(Box::new(move |a| *a <= expected_value))),
                         // Error on weird operators (`,=` would be one).
                         Some(_) => Err(Error::Misc(format!(
                             "Invalid operator in expression: {}",
@@ -112,14 +84,8 @@ impl<T: std::cmp::PartialOrd + FromStr> Filter<T> {
 
                     // Match the first char and create a closure accordingly.
                     match str.chars().next() {
-                        Some('>') => Ok(Filter::Compiled(Comparer {
-                            value: expected_value,
-                            comparer: Box::new(|a, b| *a > *b),
-                        })),
-                        Some('<') => Ok(Filter::Compiled(Comparer {
-                            value: expected_value,
-                            comparer: Box::new(|a, b| *a < *b),
-                        })),
+                        Some('>') => Ok(Filter::Compiled(Box::new(move |a| *a > expected_value))),
+                        Some('<') => Ok(Filter::Compiled(Box::new(move |a| *a < expected_value))),
                         // Error on weird operators (`,` would be one).
                         Some(_) => Err(Error::Misc(format!(
                             "Invalid operator in expression: {}",
