@@ -29,14 +29,18 @@ impl<'a, T> Filter<'a, T>
 where
     T: std::str::FromStr + std::cmp::PartialOrd + 'a,
 {
+    /// Check whether the filter is `Filter::None`.
+    pub fn is_none(&self) -> bool {
+        matches!(self, Filter::None)
+    }
+
     /// Run the filter with the given value.
     /// Returns true if the filter validates the value, false otherwise.
     pub fn filter(&self, value: &T) -> bool {
         match self {
             Filter::Value(x) => value == x,
             Filter::Expr(str) => {
-                warn!("Uncompiled filter '{}'", str);
-                true
+                panic!("Uncompiled filter '{}'", str);
             }
             Filter::Compiled(f) => f(value),
             Filter::None => true,
