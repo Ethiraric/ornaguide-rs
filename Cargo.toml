@@ -2,5 +2,6 @@
 
 members = [
   "ornaguide-rs",
+  "api",
   "ethi",
 ]

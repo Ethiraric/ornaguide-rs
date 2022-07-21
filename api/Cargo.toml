@@ -1,0 +1,11 @@
+[package]
+name = "api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
+serde = { version = "1.0.133", features = ["derive"] }
+ornaguide-rs = { path = "../ornaguide-rs" }
+lazy_static = "1.4.0"
+itertools = "0.10.3"
