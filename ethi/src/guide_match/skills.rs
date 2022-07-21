@@ -1,14 +1,13 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     codex::SkillStatusEffects,
+    data::OrnaData,
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
+    skills::admin::AdminSkill,
 };
 
-use crate::{
-    guide_match::checker::{fix_status_effects_field, Checker},
-    output::OrnaData,
-};
+use crate::guide_match::checker::{fix_status_effects_field, Checker};
 
 /// List skills that are either:
 ///   - On the guide, but missing on the codex.
@@ -128,7 +127,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 "causes",
                 &admin_causes,
                 &codex_causes,
-                |skill, _| {
+                |skill: &mut AdminSkill, _| {
                     fix_status_effects_field(skill, &admin_causes, data, &codex_causes, |skill| {
                         &mut skill.causes
                     })

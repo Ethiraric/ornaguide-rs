@@ -4,13 +4,13 @@ use dotenv::dotenv;
 
 #[allow(unused_imports)]
 use itertools::Itertools;
+use ornaguide_rs::data::OrnaData;
 #[allow(unused_imports)]
 use ornaguide_rs::{
     codex::{Codex, CodexItem},
     error::Error,
     guide::{AdminGuide, Guide, OrnaAdminGuide},
 };
-use output::OrnaData;
 
 mod codex;
 mod guide;

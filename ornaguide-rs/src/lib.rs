@@ -1,4 +1,5 @@
 pub mod codex;
+pub mod data;
 pub mod error;
 pub mod guide;
 pub mod items;

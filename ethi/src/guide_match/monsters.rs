@@ -1,16 +1,14 @@
 use itertools::Itertools;
 use ornaguide_rs::{
+    data::{CodexGenericMonster, OrnaData},
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
     monsters::admin::AdminMonster,
 };
 
-use crate::{
-    guide_match::{
-        checker::{fix_abilities_field, fix_option_field, fix_spawn_field, Checker},
-        misc::{CodexAbilities, EventsNames},
-    },
-    output::{CodexGenericMonster, OrnaData},
+use crate::guide_match::{
+    checker::{fix_abilities_field, fix_option_field, fix_spawn_field, Checker},
+    misc::{CodexAbilities, EventsNames},
 };
 
 /// List monsters that are either:

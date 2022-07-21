@@ -1,11 +1,12 @@
 use itertools::Itertools;
 use ornaguide_rs::{
+    data::OrnaData,
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
 };
 use serde::Deserialize;
 
-use crate::{output::OrnaData, retry_once};
+use crate::retry_once;
 
 #[derive(Debug, Deserialize)]
 struct Record {

@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     codex::{CodexElement, ItemStatusEffects},
+    data::OrnaData,
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide, VecElements},
 };
@@ -13,7 +14,6 @@ use crate::{
         misc::{ItemDroppedBys, ItemUpgradeMaterials},
     },
     misc::sanitize_guide_name,
-    output::OrnaData,
 };
 
 /// List items that are on the guide and not the codex, or on the codex and not on the guide.

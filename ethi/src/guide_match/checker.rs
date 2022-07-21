@@ -1,8 +1,8 @@
-use ornaguide_rs::error::Error;
+use ornaguide_rs::{data::OrnaData, error::Error};
 
 use std::fmt::{Debug, Display};
 
-use crate::{misc::diff_sorted_slices, output::OrnaData};
+use crate::misc::diff_sorted_slices;
 
 /// Compare the option in a field and fix it to what is expected.
 /// The conversion function is used to translate from the codex to the guide.

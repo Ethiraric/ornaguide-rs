@@ -1,7 +1,6 @@
 use indicatif::{ProgressBar, ProgressStyle};
 use itertools::Itertools;
-
-use crate::output::OrnaData;
+use ornaguide_rs::data::OrnaData;
 
 pub fn bar(len: u64) -> ProgressBar {
     let bar = ProgressBar::new(len);

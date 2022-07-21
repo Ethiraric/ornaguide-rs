@@ -1,14 +1,12 @@
 use itertools::Itertools;
 use ornaguide_rs::{
+    data::OrnaData,
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
     pets::admin::AdminPet,
 };
 
-use crate::{
-    guide_match::checker::{fix_abilities_field, Checker},
-    output::OrnaData,
-};
+use crate::guide_match::checker::{fix_abilities_field, Checker};
 
 use super::misc::CodexAbilities;
 
