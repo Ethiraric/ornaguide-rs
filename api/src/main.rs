@@ -97,8 +97,8 @@ pub struct ItemFilters<'a> {
     pub rarity: Filter<'a, String>,
     /// Filter by element.
     pub element: Filter<'a, Option<u32>>,
-    // /// Filter by equipped_by.
-    // pub equipped_by: Filter<'a, Vec<u32>>,
+    /// Filter by equipped_by.
+    pub equipped_by: Filter<'a, Vec<u32>>,
     /// Filter by two_handed.
     pub two_handed: Filter<'a, bool>,
     /// Filter by orn_bonus.
@@ -109,24 +109,24 @@ pub struct ItemFilters<'a> {
     pub drop_bonus: Filter<'a, f32>,
     /// Filter by spawn_bonus.
     pub spawn_bonus: Filter<'a, f32>,
-    // /// Filter by exp_bonus.
-    // pub exp_bonus: Filter<'a, Vec<f32>>,
-    /// Filter by boss.
+    /// Filter by exp_bonus.
+    pub exp_bonus: Filter<'a, Vec<f32>>,
+    // Filter by boss.
     pub boss: Filter<'a, bool>,
     /// Filter by arena.
     pub arena: Filter<'a, bool>,
     /// Filter by category.
     pub category: Filter<'a, Option<u32>>,
-    // /// Filter by causes.
-    // pub causes: Filter<'a, Vec<u32>>,
-    // /// Filter by cures.
-    // pub cures: Filter<'a, Vec<u32>>,
-    // /// Filter by gives.
-    // pub gives: Filter<'a, Vec<u32>>,
-    // /// Filter by prevents.
-    // pub prevents: Filter<'a, Vec<u32>>,
-    // /// Filter by materials.
-    // pub materials: Filter<'a, Vec<u32>>,
+    /// Filter by causes.
+    pub causes: Filter<'a, Vec<u32>>,
+    /// Filter by cures.
+    pub cures: Filter<'a, Vec<u32>>,
+    /// Filter by gives.
+    pub gives: Filter<'a, Vec<u32>>,
+    /// Filter by prevents.
+    pub prevents: Filter<'a, Vec<u32>>,
+    /// Filter by materials.
+    pub materials: Filter<'a, Vec<u32>>,
     /// Filter by price.
     pub price: Filter<'a, u32>,
     /// Filter by ability.
@@ -174,21 +174,21 @@ impl<'a> ItemFilters<'a> {
             base_adornment_slots: self.base_adornment_slots.compiled()?,
             rarity: self.rarity.compiled()?,
             element: self.element.compiled()?,
-            // equipped_by: self.equipped_by.compiled()?,
+            equipped_by: self.equipped_by.compiled()?,
             two_handed: self.two_handed.compiled()?,
             orn_bonus: self.orn_bonus.compiled()?,
             gold_bonus: self.gold_bonus.compiled()?,
             drop_bonus: self.drop_bonus.compiled()?,
             spawn_bonus: self.spawn_bonus.compiled()?,
-            // exp_bonus: self.exp_bonus.compiled()?,
+            exp_bonus: self.exp_bonus.compiled()?,
             boss: self.boss.compiled()?,
             arena: self.arena.compiled()?,
             category: self.category.compiled()?,
-            // causes: self.causes.compiled()?,
-            // cures: self.cures.compiled()?,
-            // gives: self.gives.compiled()?,
-            // prevents: self.prevents.compiled()?,
-            // materials: self.materials.compiled()?,
+            causes: self.causes.compiled()?,
+            cures: self.cures.compiled()?,
+            gives: self.gives.compiled()?,
+            prevents: self.prevents.compiled()?,
+            materials: self.materials.compiled()?,
             price: self.price.compiled()?,
             ability: self.ability.compiled()?,
         })
@@ -196,118 +196,136 @@ impl<'a> ItemFilters<'a> {
 
     // Run an item through all filters to see if it matches it.
     pub fn filter(&self, item: &AdminItem) -> bool {
-        self.id.filter(&item.id) &&
-            self.codex_uri.filter(&item.codex_uri) &&
-            self.attack.filter(&item.attack) &&
-            self.name.filter(&item.name) &&
-            self.tier.filter(&item.tier) &&
-            self.type_.filter(&item.type_) &&
-            self.image_name.filter(&item.image_name) &&
-            self.description.filter(&item.description) &&
-            self.notes.filter(&item.notes) &&
-            self.hp.filter(&item.hp) &&
-            self.hp_affected_by_quality.filter(&item.hp_affected_by_quality) &&
-            self.mana.filter(&item.mana) &&
-            self.mana_affected_by_quality.filter(&item.mana_affected_by_quality) &&
-            self.attack_affected_by_quality.filter(&item.attack_affected_by_quality) &&
-            self.magic.filter(&item.magic) &&
-            self.magic_affected_by_quality.filter(&item.magic_affected_by_quality) &&
-            self.defense.filter(&item.defense) &&
-            self.defense_affected_by_quality.filter(&item.defense_affected_by_quality) &&
-            self.resistance.filter(&item.resistance) &&
-            self.resistance_affected_by_quality.filter(&item.resistance_affected_by_quality) &&
-            self.dexterity.filter(&item.dexterity) &&
-            self.dexterity_affected_by_quality.filter(&item.dexterity_affected_by_quality) &&
-            self.ward.filter(&item.ward) &&
-            self.ward_affected_by_quality.filter(&item.ward_affected_by_quality) &&
-            self.crit.filter(&item.crit) &&
-            self.crit_affected_by_quality.filter(&item.crit_affected_by_quality) &&
-            self.foresight.filter(&item.foresight) &&
-            self.view_distance.filter(&item.view_distance) &&
-            self.follower_stats.filter(&item.follower_stats) &&
-            self.follower_act.filter(&item.follower_act) &&
-            self.status_infliction.filter(&item.status_infliction) &&
-            self.status_protection.filter(&item.status_protection) &&
-            self.mana_saver.filter(&item.mana_saver) &&
-            self.has_slots.filter(&item.has_slots) &&
-            self.base_adornment_slots.filter(&item.base_adornment_slots) &&
-            self.rarity.filter(&item.rarity) &&
-            self.element.filter(&item.element) &&
-            // self.equipped_by.filter(&item.equipped_by) &&
-            self.two_handed.filter(&item.two_handed) &&
-            self.orn_bonus.filter(&item.orn_bonus) &&
-            self.gold_bonus.filter(&item.gold_bonus) &&
-            self.drop_bonus.filter(&item.drop_bonus) &&
-            self.spawn_bonus.filter(&item.spawn_bonus) &&
-            // self.exp_bonus.filter(&item.exp_bonus) &&
-            self.boss.filter(&item.boss) &&
-            self.arena.filter(&item.arena) &&
-            self.category.filter(&item.category) &&
-            // self.causes.filter(&item.causes) &&
-            // self.cures.filter(&item.cures) &&
-            // self.gives.filter(&item.gives) &&
-            // self.prevents.filter(&item.prevents) &&
-            // self.materials.filter(&item.materials) &&
-            self.price.filter(&item.price) &&
-            self.ability.filter(&item.ability)
+        self.id.filter(&item.id)
+            && self.codex_uri.filter(&item.codex_uri)
+            && self.attack.filter(&item.attack)
+            && self.name.filter(&item.name)
+            && self.tier.filter(&item.tier)
+            && self.type_.filter(&item.type_)
+            && self.image_name.filter(&item.image_name)
+            && self.description.filter(&item.description)
+            && self.notes.filter(&item.notes)
+            && self.hp.filter(&item.hp)
+            && self
+                .hp_affected_by_quality
+                .filter(&item.hp_affected_by_quality)
+            && self.mana.filter(&item.mana)
+            && self
+                .mana_affected_by_quality
+                .filter(&item.mana_affected_by_quality)
+            && self
+                .attack_affected_by_quality
+                .filter(&item.attack_affected_by_quality)
+            && self.magic.filter(&item.magic)
+            && self
+                .magic_affected_by_quality
+                .filter(&item.magic_affected_by_quality)
+            && self.defense.filter(&item.defense)
+            && self
+                .defense_affected_by_quality
+                .filter(&item.defense_affected_by_quality)
+            && self.resistance.filter(&item.resistance)
+            && self
+                .resistance_affected_by_quality
+                .filter(&item.resistance_affected_by_quality)
+            && self.dexterity.filter(&item.dexterity)
+            && self
+                .dexterity_affected_by_quality
+                .filter(&item.dexterity_affected_by_quality)
+            && self.ward.filter(&item.ward)
+            && self
+                .ward_affected_by_quality
+                .filter(&item.ward_affected_by_quality)
+            && self.crit.filter(&item.crit)
+            && self
+                .crit_affected_by_quality
+                .filter(&item.crit_affected_by_quality)
+            && self.foresight.filter(&item.foresight)
+            && self.view_distance.filter(&item.view_distance)
+            && self.follower_stats.filter(&item.follower_stats)
+            && self.follower_act.filter(&item.follower_act)
+            && self.status_infliction.filter(&item.status_infliction)
+            && self.status_protection.filter(&item.status_protection)
+            && self.mana_saver.filter(&item.mana_saver)
+            && self.has_slots.filter(&item.has_slots)
+            && self.base_adornment_slots.filter(&item.base_adornment_slots)
+            && self.rarity.filter(&item.rarity)
+            && self.element.filter(&item.element)
+            && self.equipped_by.filter(&item.equipped_by)
+            && self.two_handed.filter(&item.two_handed)
+            && self.orn_bonus.filter(&item.orn_bonus)
+            && self.gold_bonus.filter(&item.gold_bonus)
+            && self.drop_bonus.filter(&item.drop_bonus)
+            && self.spawn_bonus.filter(&item.spawn_bonus)
+            && self.exp_bonus.filter(&item.exp_bonus)
+            && self.boss.filter(&item.boss)
+            && self.arena.filter(&item.arena)
+            && self.category.filter(&item.category)
+            && self.causes.filter(&item.causes)
+            && self.cures.filter(&item.cures)
+            && self.gives.filter(&item.gives)
+            && self.prevents.filter(&item.prevents)
+            && self.materials.filter(&item.materials)
+            && self.price.filter(&item.price)
+            && self.ability.filter(&item.ability)
     }
 
     /// Check whether all filters are set to `Filter::None`.
     pub fn is_none(&self) -> bool {
-        self.id.is_none() &&
-            self.codex_uri.is_none() &&
-            self.attack.is_none() &&
-            self.name.is_none() &&
-            self.tier.is_none() &&
-            self.type_.is_none() &&
-            self.image_name.is_none() &&
-            self.description.is_none() &&
-            self.notes.is_none() &&
-            self.hp.is_none() &&
-            self.hp_affected_by_quality.is_none() &&
-            self.mana.is_none() &&
-            self.mana_affected_by_quality.is_none() &&
-            self.attack_affected_by_quality.is_none() &&
-            self.magic.is_none() &&
-            self.magic_affected_by_quality.is_none() &&
-            self.defense.is_none() &&
-            self.defense_affected_by_quality.is_none() &&
-            self.resistance.is_none() &&
-            self.resistance_affected_by_quality.is_none() &&
-            self.dexterity.is_none() &&
-            self.dexterity_affected_by_quality.is_none() &&
-            self.ward.is_none() &&
-            self.ward_affected_by_quality.is_none() &&
-            self.crit.is_none() &&
-            self.crit_affected_by_quality.is_none() &&
-            self.foresight.is_none() &&
-            self.view_distance.is_none() &&
-            self.follower_stats.is_none() &&
-            self.follower_act.is_none() &&
-            self.status_infliction.is_none() &&
-            self.status_protection.is_none() &&
-            self.mana_saver.is_none() &&
-            self.has_slots.is_none() &&
-            self.base_adornment_slots.is_none() &&
-            self.rarity.is_none() &&
-            self.element.is_none() &&
-            // self.equipped_by.is_none() &&
-            self.two_handed.is_none() &&
-            self.orn_bonus.is_none() &&
-            self.gold_bonus.is_none() &&
-            self.drop_bonus.is_none() &&
-            self.spawn_bonus.is_none() &&
-            // self.exp_bonus.is_none() &&
-            self.boss.is_none() &&
-            self.arena.is_none() &&
-            self.category.is_none() &&
-            // self.causes.is_none() &&
-            // self.cures.is_none() &&
-            // self.gives.is_none() &&
-            // self.prevents.is_none() &&
-            // self.materials.is_none() &&
-            self.price.is_none() &&
-            self.ability.is_none()
+        self.id.is_none()
+            && self.codex_uri.is_none()
+            && self.attack.is_none()
+            && self.name.is_none()
+            && self.tier.is_none()
+            && self.type_.is_none()
+            && self.image_name.is_none()
+            && self.description.is_none()
+            && self.notes.is_none()
+            && self.hp.is_none()
+            && self.hp_affected_by_quality.is_none()
+            && self.mana.is_none()
+            && self.mana_affected_by_quality.is_none()
+            && self.attack_affected_by_quality.is_none()
+            && self.magic.is_none()
+            && self.magic_affected_by_quality.is_none()
+            && self.defense.is_none()
+            && self.defense_affected_by_quality.is_none()
+            && self.resistance.is_none()
+            && self.resistance_affected_by_quality.is_none()
+            && self.dexterity.is_none()
+            && self.dexterity_affected_by_quality.is_none()
+            && self.ward.is_none()
+            && self.ward_affected_by_quality.is_none()
+            && self.crit.is_none()
+            && self.crit_affected_by_quality.is_none()
+            && self.foresight.is_none()
+            && self.view_distance.is_none()
+            && self.follower_stats.is_none()
+            && self.follower_act.is_none()
+            && self.status_infliction.is_none()
+            && self.status_protection.is_none()
+            && self.mana_saver.is_none()
+            && self.has_slots.is_none()
+            && self.base_adornment_slots.is_none()
+            && self.rarity.is_none()
+            && self.element.is_none()
+            && self.equipped_by.is_none()
+            && self.two_handed.is_none()
+            && self.orn_bonus.is_none()
+            && self.gold_bonus.is_none()
+            && self.drop_bonus.is_none()
+            && self.spawn_bonus.is_none()
+            && self.exp_bonus.is_none()
+            && self.boss.is_none()
+            && self.arena.is_none()
+            && self.category.is_none()
+            && self.causes.is_none()
+            && self.cures.is_none()
+            && self.gives.is_none()
+            && self.prevents.is_none()
+            && self.materials.is_none()
+            && self.price.is_none()
+            && self.ability.is_none()
     }
 }
 

@@ -176,6 +176,80 @@ compilable_option!(f32);
 compilable_option!(f64);
 compilable_option!(String);
 
+enum VecMatch {
+    Exact,
+    All,
+    OneOf,
+    None,
+}
+
+macro_rules! compilable_vec {
+    ($ty:ident) => {
+        impl<'a> Compilable<'a, Vec<$ty>> for Filter<'a, Vec<$ty>> {
+            fn compiled(self) -> Result<Filter<'a, Vec<$ty>>, Error> {
+                match self {
+                    // If we have an expression, rewrite it.
+                    Filter::Expr(str) => {
+                        // Retrieve match style. Default is Exact.
+                        let mut match_style = VecMatch::Exact;
+                        let str = if let Some(str) = str.strip_prefix('&') {
+                            match_style = VecMatch::All;
+                            str
+                        } else if let Some(str) = str.strip_prefix('|') {
+                            match_style = VecMatch::OneOf;
+                            str
+                        } else if let Some(str) = str.strip_prefix('!') {
+                            match_style = VecMatch::None;
+                            str
+                        } else {
+                            &str
+                        };
+
+                        if !str.starts_with('[') || !str.ends_with(']') {
+                            return Err(Error::Misc(format!("Vec filter missing square brackets")));
+                        }
+                        let str = &str[1..str.len() - 1];
+
+                        // Convert a string of comma-separated values to a `Vec<$ty>`.
+                        let values = str
+                            .split(',')
+                            .map(str::trim)
+                            .map($ty::from_str)
+                            .collect::<Result<Vec<_>, _>>()
+                            .map_err(|e| Error::Misc(e.to_string()))?
+                            .into_iter()
+                            .sorted_by(|a, b| a.partial_cmp(b).unwrap())
+                            .dedup()
+                            .collect_vec();
+
+                        match match_style {
+                            VecMatch::Exact => Ok(Filter::Compiled(Box::new(move |a| {
+                                a.len() == values.len()
+                                    && values.iter().map(|x| a.contains(x)).all(|x| x)
+                            }))),
+                            VecMatch::All => Ok(Filter::Compiled(Box::new(move |a| {
+                                values.iter().map(|x| a.contains(x)).all(|x| x)
+                            }))),
+                            VecMatch::OneOf => Ok(Filter::Compiled(Box::new(move |a| {
+                                values.iter().map(|x| a.contains(x)).any(|x| x)
+                            }))),
+                            VecMatch::None => Ok(Filter::Compiled(Box::new(move |a| {
+                                !values.iter().map(|x| a.contains(x)).any(|x| x)
+                            }))),
+                        }
+                    }
+                    // If we don't have an expression, we don't need to transform `self`.
+                    _ => Ok(self),
+                }
+            }
+        }
+    };
+}
+
+compilable_vec!(u32);
+compilable_vec!(f32);
+compilable_vec!(String);
+
 /// Compare 2 strings, one of which is lowercase, case insensitively.
 /// The haystack need not be lowercase. The needle must be lowercase.
 ///
