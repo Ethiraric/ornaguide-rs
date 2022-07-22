@@ -9,3 +9,4 @@ serde = { version = "1.0.133", features = ["derive"] }
 ornaguide-rs = { path = "../ornaguide-rs" }
 lazy_static = "1.4.0"
 itertools = "0.10.3"
+regex = "1.6.0"

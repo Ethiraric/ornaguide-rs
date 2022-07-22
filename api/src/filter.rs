@@ -8,11 +8,11 @@ pub mod compilable;
 pub enum Filter<'a, T> {
     /// No filter. Will always allow any item through.
     None,
-    /// A value to which to compare for equality.
-    Value(T),
     /// An expression. Must start with an operator (`==`, `!=`, `>`, `<`, `>=`, `<=`) and be
     /// immediately followed by a string parseable into `T`.
     Expr(String),
+    /// A value to which to compare for equality.
+    Value(T),
     /// Parsed version of an expression string.
     #[serde(skip)]
     Compiled(Box<dyn Fn(&T) -> bool + 'a>),
