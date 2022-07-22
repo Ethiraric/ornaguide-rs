@@ -12,7 +12,10 @@ use serde::{Deserialize, Serialize};
 mod data;
 mod filter;
 
-use crate::{data::DATA, filter::Filter};
+use crate::{
+    data::DATA,
+    filter::{compilable::Compilable, Filter},
+};
 
 /// All the filters applicable on an item.
 #[derive(Serialize, Deserialize, Default)]
