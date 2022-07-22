@@ -26,7 +26,7 @@ impl<'a, T> Default for Filter<'a, T> {
 
 impl<'a, T> Filter<'a, T>
 where
-    T: std::str::FromStr + std::cmp::PartialOrd + 'a,
+    T: std::cmp::PartialEq + 'a,
 {
     /// Check whether the filter is `Filter::None`.
     pub fn is_none(&self) -> bool {

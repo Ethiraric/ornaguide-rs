@@ -95,8 +95,8 @@ pub struct ItemFilters<'a> {
     pub base_adornment_slots: Filter<'a, u8>,
     /// Filter by rarity.
     pub rarity: Filter<'a, String>,
-    // /// Filter by element.
-    // pub element: Filter<'a, Option<u32>>,
+    /// Filter by element.
+    pub element: Filter<'a, Option<u32>>,
     // /// Filter by equipped_by.
     // pub equipped_by: Filter<'a, Vec<u32>>,
     /// Filter by two_handed.
@@ -116,7 +116,7 @@ pub struct ItemFilters<'a> {
     /// Filter by arena.
     pub arena: Filter<'a, bool>,
     /// Filter by category.
-    // pub category: Filter<'a, Option<u32>>,
+    pub category: Filter<'a, Option<u32>>,
     // /// Filter by causes.
     // pub causes: Filter<'a, Vec<u32>>,
     // /// Filter by cures.
@@ -129,8 +129,8 @@ pub struct ItemFilters<'a> {
     // pub materials: Filter<'a, Vec<u32>>,
     /// Filter by price.
     pub price: Filter<'a, u32>,
-    // /// Filter by ability.
-    // pub ability: Filter<'a, Option<u32>>,
+    /// Filter by ability.
+    pub ability: Filter<'a, Option<u32>>,
 }
 
 impl<'a> ItemFilters<'a> {
@@ -173,7 +173,7 @@ impl<'a> ItemFilters<'a> {
             has_slots: self.has_slots.compiled()?,
             base_adornment_slots: self.base_adornment_slots.compiled()?,
             rarity: self.rarity.compiled()?,
-            // element: self.element.compiled()?,
+            element: self.element.compiled()?,
             // equipped_by: self.equipped_by.compiled()?,
             two_handed: self.two_handed.compiled()?,
             orn_bonus: self.orn_bonus.compiled()?,
@@ -183,14 +183,14 @@ impl<'a> ItemFilters<'a> {
             // exp_bonus: self.exp_bonus.compiled()?,
             boss: self.boss.compiled()?,
             arena: self.arena.compiled()?,
-            // category: self.category.compiled()?,
+            category: self.category.compiled()?,
             // causes: self.causes.compiled()?,
             // cures: self.cures.compiled()?,
             // gives: self.gives.compiled()?,
             // prevents: self.prevents.compiled()?,
             // materials: self.materials.compiled()?,
             price: self.price.compiled()?,
-            // ability: self.ability.compiled()?,
+            ability: self.ability.compiled()?,
         })
     }
 
@@ -232,7 +232,7 @@ impl<'a> ItemFilters<'a> {
             self.has_slots.filter(&item.has_slots) &&
             self.base_adornment_slots.filter(&item.base_adornment_slots) &&
             self.rarity.filter(&item.rarity) &&
-            // self.element.filter(&item.element) &&
+            self.element.filter(&item.element) &&
             // self.equipped_by.filter(&item.equipped_by) &&
             self.two_handed.filter(&item.two_handed) &&
             self.orn_bonus.filter(&item.orn_bonus) &&
@@ -242,14 +242,14 @@ impl<'a> ItemFilters<'a> {
             // self.exp_bonus.filter(&item.exp_bonus) &&
             self.boss.filter(&item.boss) &&
             self.arena.filter(&item.arena) &&
-            // self.category.filter(&item.category) &&
+            self.category.filter(&item.category) &&
             // self.causes.filter(&item.causes) &&
             // self.cures.filter(&item.cures) &&
             // self.gives.filter(&item.gives) &&
             // self.prevents.filter(&item.prevents) &&
             // self.materials.filter(&item.materials) &&
-            self.price.filter(&item.price)
-        // self.ability.filter(&item.ability)
+            self.price.filter(&item.price) &&
+            self.ability.filter(&item.ability)
     }
 
     /// Check whether all filters are set to `Filter::None`.
@@ -290,7 +290,7 @@ impl<'a> ItemFilters<'a> {
             self.has_slots.is_none() &&
             self.base_adornment_slots.is_none() &&
             self.rarity.is_none() &&
-            // self.element.is_none() &&
+            self.element.is_none() &&
             // self.equipped_by.is_none() &&
             self.two_handed.is_none() &&
             self.orn_bonus.is_none() &&
@@ -300,14 +300,14 @@ impl<'a> ItemFilters<'a> {
             // self.exp_bonus.is_none() &&
             self.boss.is_none() &&
             self.arena.is_none() &&
-            // self.category.is_none() &&
+            self.category.is_none() &&
             // self.causes.is_none() &&
             // self.cures.is_none() &&
             // self.gives.is_none() &&
             // self.prevents.is_none() &&
             // self.materials.is_none() &&
-            self.price.is_none()
-        // self.ability.is_none()
+            self.price.is_none() &&
+            self.ability.is_none()
     }
 }
 

@@ -136,6 +136,46 @@ impl<'a> Compilable<'a, String> for Filter<'a, String> {
     }
 }
 
+macro_rules! compilable_option {
+    ($ty:ident) => {
+        impl<'a> Compilable<'a, Option<$ty>> for Filter<'a, Option<$ty>> {
+            fn compiled(self) -> Result<Filter<'a, Option<$ty>>, Error> {
+                match self {
+                    // If we have an expression, rewrite it.
+                    Filter::Expr(str) => {
+                        if &str == "<none>" {
+                            Ok(Filter::Value(None))
+                        } else {
+                            match Filter::<'a, $ty>::Expr(str).compiled()? {
+                                Filter::<'a, $ty>::Compiled(f) => {
+                                    Ok(Filter::Compiled(Box::new(move |a| {
+                                        a.as_ref().map(|x| (f)(x)).unwrap_or(false)
+                                    })))
+                                }
+                                _ => panic!("Option wrappee didn't compile"),
+                            }
+                        }
+                    }
+                    // If we don't have an expression, we don't need to transform `self`.
+                    _ => Ok(self),
+                }
+            }
+        }
+    };
+}
+
+compilable_option!(i8);
+compilable_option!(i16);
+compilable_option!(i32);
+compilable_option!(i64);
+compilable_option!(u8);
+compilable_option!(u16);
+compilable_option!(u32);
+compilable_option!(u64);
+compilable_option!(f32);
+compilable_option!(f64);
+compilable_option!(String);
+
 /// Compare 2 strings, one of which is lowercase, case insensitively.
 /// The haystack need not be lowercase. The needle must be lowercase.
 ///
