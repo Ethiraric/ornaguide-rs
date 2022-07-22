@@ -3,6 +3,8 @@ extern crate rocket;
 
 extern crate lazy_static;
 
+use std::{net::IpAddr, str::FromStr};
+
 use itertools::Itertools;
 use lazy_static::__Deref;
 use ornaguide_rs::{error::Error, items::admin::AdminItem};
@@ -334,6 +336,7 @@ fn post_items(filters: Json<ItemFilters>) -> Json<Vec<AdminItem>> {
 fn rocket() -> _ {
     let config = Config {
         port: 12346,
+        address: IpAddr::from_str("0.0.0.0").unwrap(),
         ..Config::debug_default()
     };
 
