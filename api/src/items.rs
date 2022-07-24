@@ -184,82 +184,6 @@ impl<'a> ItemFilters<'a> {
         })
     }
 
-    // Run an item through all filters to see if it matches it.
-    pub fn filter(&self, item: &AdminItem) -> bool {
-        self.id.filter(&item.id)
-            && self.codex_uri.filter(&item.codex_uri)
-            && self.attack.filter(&item.attack)
-            && self.name.filter(&item.name)
-            && self.tier.filter(&item.tier)
-            && self.type_.filter(&item.type_)
-            && self.image_name.filter(&item.image_name)
-            && self.description.filter(&item.description)
-            && self.notes.filter(&item.notes)
-            && self.hp.filter(&item.hp)
-            && self
-                .hp_affected_by_quality
-                .filter(&item.hp_affected_by_quality)
-            && self.mana.filter(&item.mana)
-            && self
-                .mana_affected_by_quality
-                .filter(&item.mana_affected_by_quality)
-            && self
-                .attack_affected_by_quality
-                .filter(&item.attack_affected_by_quality)
-            && self.magic.filter(&item.magic)
-            && self
-                .magic_affected_by_quality
-                .filter(&item.magic_affected_by_quality)
-            && self.defense.filter(&item.defense)
-            && self
-                .defense_affected_by_quality
-                .filter(&item.defense_affected_by_quality)
-            && self.resistance.filter(&item.resistance)
-            && self
-                .resistance_affected_by_quality
-                .filter(&item.resistance_affected_by_quality)
-            && self.dexterity.filter(&item.dexterity)
-            && self
-                .dexterity_affected_by_quality
-                .filter(&item.dexterity_affected_by_quality)
-            && self.ward.filter(&item.ward)
-            && self
-                .ward_affected_by_quality
-                .filter(&item.ward_affected_by_quality)
-            && self.crit.filter(&item.crit)
-            && self
-                .crit_affected_by_quality
-                .filter(&item.crit_affected_by_quality)
-            && self.foresight.filter(&item.foresight)
-            && self.view_distance.filter(&item.view_distance)
-            && self.follower_stats.filter(&item.follower_stats)
-            && self.follower_act.filter(&item.follower_act)
-            && self.status_infliction.filter(&item.status_infliction)
-            && self.status_protection.filter(&item.status_protection)
-            && self.mana_saver.filter(&item.mana_saver)
-            && self.has_slots.filter(&item.has_slots)
-            && self.base_adornment_slots.filter(&item.base_adornment_slots)
-            && self.rarity.filter(&item.rarity)
-            && self.element.filter(&item.element)
-            && self.equipped_by.filter(&item.equipped_by)
-            && self.two_handed.filter(&item.two_handed)
-            && self.orn_bonus.filter(&item.orn_bonus)
-            && self.gold_bonus.filter(&item.gold_bonus)
-            && self.drop_bonus.filter(&item.drop_bonus)
-            && self.spawn_bonus.filter(&item.spawn_bonus)
-            && self.exp_bonus.filter(&item.exp_bonus)
-            && self.boss.filter(&item.boss)
-            && self.arena.filter(&item.arena)
-            && self.category.filter(&item.category)
-            && self.causes.filter(&item.causes)
-            && self.cures.filter(&item.cures)
-            && self.gives.filter(&item.gives)
-            && self.prevents.filter(&item.prevents)
-            && self.materials.filter(&item.materials)
-            && self.price.filter(&item.price)
-            && self.ability.filter(&item.ability)
-    }
-
     /// Check whether all filters are set to `Filter::None`.
     pub fn is_none(&self) -> bool {
         self.id.is_none()
@@ -317,6 +241,89 @@ impl<'a> ItemFilters<'a> {
             && self.price.is_none()
             && self.ability.is_none()
     }
+
+    /// Return a `Vec` of closures for each non-None filter in `self`.
+    /// Should be faster than invoking each and every filter each time.
+    /// This method must not be called if there are uncompiled filters.
+    pub fn into_fn_vec(self) -> Vec<Box<dyn Fn(&AdminItem) -> bool + 'a>> {
+        [
+            self.id.into_fn(|item: &AdminItem| &item.id),
+            self.codex_uri.into_fn(|item: &AdminItem| &item.codex_uri),
+            self.attack.into_fn(|item: &AdminItem| &item.attack),
+            self.name.into_fn(|item: &AdminItem| &item.name),
+            self.tier.into_fn(|item: &AdminItem| &item.tier),
+            self.type_.into_fn(|item: &AdminItem| &item.type_),
+            self.image_name.into_fn(|item: &AdminItem| &item.image_name),
+            self.description
+                .into_fn(|item: &AdminItem| &item.description),
+            self.notes.into_fn(|item: &AdminItem| &item.notes),
+            self.hp.into_fn(|item: &AdminItem| &item.hp),
+            self.hp_affected_by_quality
+                .into_fn(|item: &AdminItem| &item.hp_affected_by_quality),
+            self.mana.into_fn(|item: &AdminItem| &item.mana),
+            self.mana_affected_by_quality
+                .into_fn(|item: &AdminItem| &item.mana_affected_by_quality),
+            self.attack_affected_by_quality
+                .into_fn(|item: &AdminItem| &item.attack_affected_by_quality),
+            self.magic.into_fn(|item: &AdminItem| &item.magic),
+            self.magic_affected_by_quality
+                .into_fn(|item: &AdminItem| &item.magic_affected_by_quality),
+            self.defense.into_fn(|item: &AdminItem| &item.defense),
+            self.defense_affected_by_quality
+                .into_fn(|item: &AdminItem| &item.defense_affected_by_quality),
+            self.resistance.into_fn(|item: &AdminItem| &item.resistance),
+            self.resistance_affected_by_quality
+                .into_fn(|item: &AdminItem| &item.resistance_affected_by_quality),
+            self.dexterity.into_fn(|item: &AdminItem| &item.dexterity),
+            self.dexterity_affected_by_quality
+                .into_fn(|item: &AdminItem| &item.dexterity_affected_by_quality),
+            self.ward.into_fn(|item: &AdminItem| &item.ward),
+            self.ward_affected_by_quality
+                .into_fn(|item: &AdminItem| &item.ward_affected_by_quality),
+            self.crit.into_fn(|item: &AdminItem| &item.crit),
+            self.crit_affected_by_quality
+                .into_fn(|item: &AdminItem| &item.crit_affected_by_quality),
+            self.foresight.into_fn(|item: &AdminItem| &item.foresight),
+            self.view_distance
+                .into_fn(|item: &AdminItem| &item.view_distance),
+            self.follower_stats
+                .into_fn(|item: &AdminItem| &item.follower_stats),
+            self.follower_act
+                .into_fn(|item: &AdminItem| &item.follower_act),
+            self.status_infliction
+                .into_fn(|item: &AdminItem| &item.status_infliction),
+            self.status_protection
+                .into_fn(|item: &AdminItem| &item.status_protection),
+            self.mana_saver.into_fn(|item: &AdminItem| &item.mana_saver),
+            self.has_slots.into_fn(|item: &AdminItem| &item.has_slots),
+            self.base_adornment_slots
+                .into_fn(|item: &AdminItem| &item.base_adornment_slots),
+            self.rarity.into_fn(|item: &AdminItem| &item.rarity),
+            self.element.into_fn(|item: &AdminItem| &item.element),
+            self.equipped_by
+                .into_fn(|item: &AdminItem| &item.equipped_by),
+            self.two_handed.into_fn(|item: &AdminItem| &item.two_handed),
+            self.orn_bonus.into_fn(|item: &AdminItem| &item.orn_bonus),
+            self.gold_bonus.into_fn(|item: &AdminItem| &item.gold_bonus),
+            self.drop_bonus.into_fn(|item: &AdminItem| &item.drop_bonus),
+            self.spawn_bonus
+                .into_fn(|item: &AdminItem| &item.spawn_bonus),
+            self.exp_bonus.into_fn(|item: &AdminItem| &item.exp_bonus),
+            self.boss.into_fn(|item: &AdminItem| &item.boss),
+            self.arena.into_fn(|item: &AdminItem| &item.arena),
+            self.category.into_fn(|item: &AdminItem| &item.category),
+            self.causes.into_fn(|item: &AdminItem| &item.causes),
+            self.cures.into_fn(|item: &AdminItem| &item.cures),
+            self.gives.into_fn(|item: &AdminItem| &item.gives),
+            self.prevents.into_fn(|item: &AdminItem| &item.prevents),
+            self.materials.into_fn(|item: &AdminItem| &item.materials),
+            self.price.into_fn(|item: &AdminItem| &item.price),
+            self.ability.into_fn(|item: &AdminItem| &item.ability),
+        ]
+        .into_iter()
+        .flatten()
+        .collect_vec()
+    }
 }
 
 /// Query for items.
@@ -331,13 +338,13 @@ pub fn post(filters: Json<ItemFilters>) -> Json<Vec<AdminItem>> {
     if filters.is_none() {
         Json(data.guide.items.items.clone())
     } else {
-        let filters = filters.into_inner().compiled().unwrap();
+        let filters = filters.into_inner().compiled().unwrap().into_fn_vec();
         Json(
             data.guide
                 .items
                 .items
                 .iter()
-                .filter(|item| filters.filter(item))
+                .filter(|item| filters.iter().map(|f| f(item)).all(|x| x))
                 .cloned()
                 .collect_vec(),
         )

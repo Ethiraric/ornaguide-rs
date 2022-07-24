@@ -45,4 +45,16 @@ where
             Filter::None => true,
         }
     }
+
+    /// Return a closure capturing `self` and whose invocation runs the filter.
+    /// If `self.is_none()` return `None`.
+    pub fn into_fn<U, F>(self, f: F) -> Option<Box<dyn Fn(&U) -> bool + 'a>>
+    where
+        F: Fn(&U) -> &T + 'a,
+    {
+        match &self {
+            Filter::None => None,
+            _ => Some(Box::new(move |entity| self.filter(f(entity)))),
+        }
+    }
 }
