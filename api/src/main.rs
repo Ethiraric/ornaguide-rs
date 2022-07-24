@@ -8,7 +8,13 @@ use std::{net::IpAddr, str::FromStr};
 use itertools::Itertools;
 use lazy_static::__Deref;
 use ornaguide_rs::{error::Error, items::admin::AdminItem};
-use rocket::{routes, serde::json::Json, Config};
+use rocket::{
+    fairing::{Fairing, Info, Kind},
+    http::Header,
+    routes,
+    serde::json::Json,
+    Config, Request, Response,
+};
 use serde::{Deserialize, Serialize};
 
 mod data;
@@ -350,6 +356,30 @@ fn post_items(filters: Json<ItemFilters>) -> Json<Vec<AdminItem>> {
     }
 }
 
+#[options("/items")]
+fn options_items() -> &'static str {
+    ""
+}
+
+pub struct CORS;
+
+#[rocket::async_trait]
+impl Fairing for CORS {
+    fn info(&self) -> Info {
+        Info {
+            name: "Add CORS headers to responses",
+            kind: Kind::Response,
+        }
+    }
+
+    async fn on_response<'r>(&self, _request: &'r Request<'_>, response: &mut Response<'r>) {
+        response.set_header(Header::new("Access-Control-Allow-Origin", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Methods", "POST, OPTIONS"));
+        response.set_header(Header::new("Access-Control-Allow-Headers", "*"));
+        response.set_header(Header::new("Access-Control-Allow-Credentials", "true"));
+    }
+}
+
 #[launch]
 fn rocket() -> _ {
     let config = Config {
@@ -362,5 +392,7 @@ fn rocket() -> _ {
         panic!("{}", e);
     }
 
-    rocket::custom(&config).mount("/api/v0.1", routes![post_items])
+    rocket::custom(&config)
+        .attach(CORS)
+        .mount("/api/v0.1", routes![options_items, post_items])
 }
