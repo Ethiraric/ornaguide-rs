@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use itertools::Itertools;
-use ornaguide_rs::error::Error;
+use ornaguide_rs::{error::Error, pets::admin::CostType};
 
 use crate::filter::Filter;
 
@@ -249,6 +249,21 @@ macro_rules! compilable_vec {
 compilable_vec!(u32);
 compilable_vec!(f32);
 compilable_vec!(String);
+
+impl<'a> Compilable<'a, CostType> for Filter<'a, CostType> {
+    fn compiled(self) -> Result<Filter<'a, CostType>, Error> {
+        match self {
+            Filter::Expr(str) => match str.as_str() {
+                "Orn" => Ok(Filter::Compiled(Box::new(|a| *a == CostType::Orn))),
+                "Gold" => Ok(Filter::Compiled(Box::new(|a| *a == CostType::Gold))),
+                _ => Err(Error::Misc(
+                    "Expected 'Orn' or 'Gold' for 'cost_type' field".to_string(),
+                )),
+            },
+            _ => Ok(self),
+        }
+    }
+}
 
 /// Compare 2 strings, one of which is lowercase, case insensitively.
 /// The haystack need not be lowercase. The needle must be lowercase.

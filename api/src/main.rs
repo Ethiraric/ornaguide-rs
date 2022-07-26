@@ -13,6 +13,9 @@ mod cors;
 mod data;
 mod filter;
 mod items;
+mod monsters;
+mod pets;
+mod skills;
 
 #[launch]
 fn rocket() -> _ {
@@ -26,7 +29,17 @@ fn rocket() -> _ {
         panic!("{}", e);
     }
 
-    rocket::custom(&config)
-        .attach(cors::Cors)
-        .mount("/api/v0.1", routes![items::options, items::post])
+    rocket::custom(&config).attach(cors::Cors).mount(
+        "/api/v0.1",
+        routes![
+            items::options,
+            items::post,
+            monsters::options,
+            monsters::post,
+            pets::options,
+            pets::post,
+            skills::options,
+            skills::post,
+        ],
+    )
 }

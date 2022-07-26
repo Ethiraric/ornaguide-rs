@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{error::Error, guide::html_form_parser::ParsedForm};
 
 /// The kind of currency a pet costs.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum CostType {
     Orn,
     Gold,
