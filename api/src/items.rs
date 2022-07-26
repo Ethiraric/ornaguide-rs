@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use lazy_static::__Deref;
 use ornaguide_rs::{error::Error, items::admin::AdminItem};
+use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +13,7 @@ use crate::{
 /// All the filters applicable on an item.
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
+#[api_filter(AdminItem)]
 pub struct ItemFilters<'a> {
     /// Filter by id.
     pub id: Filter<'a, u32>,
@@ -121,209 +123,6 @@ pub struct ItemFilters<'a> {
     pub price: Filter<'a, u32>,
     /// Filter by ability.
     pub ability: Filter<'a, Option<u32>>,
-}
-
-impl<'a> ItemFilters<'a> {
-    /// Compile all filters within `self`.
-    pub fn compiled(self) -> Result<Self, Error> {
-        Ok(Self {
-            id: self.id.compiled()?,
-            codex_uri: self.codex_uri.compiled()?,
-            attack: self.attack.compiled()?,
-            name: self.name.compiled()?,
-            tier: self.tier.compiled()?,
-            type_: self.type_.compiled()?,
-            image_name: self.image_name.compiled()?,
-            description: self.description.compiled()?,
-            notes: self.notes.compiled()?,
-            hp: self.hp.compiled()?,
-            hp_affected_by_quality: self.hp_affected_by_quality.compiled()?,
-            mana: self.mana.compiled()?,
-            mana_affected_by_quality: self.mana_affected_by_quality.compiled()?,
-            attack_affected_by_quality: self.attack_affected_by_quality.compiled()?,
-            magic: self.magic.compiled()?,
-            magic_affected_by_quality: self.magic_affected_by_quality.compiled()?,
-            defense: self.defense.compiled()?,
-            defense_affected_by_quality: self.defense_affected_by_quality.compiled()?,
-            resistance: self.resistance.compiled()?,
-            resistance_affected_by_quality: self.resistance_affected_by_quality.compiled()?,
-            dexterity: self.dexterity.compiled()?,
-            dexterity_affected_by_quality: self.dexterity_affected_by_quality.compiled()?,
-            ward: self.ward.compiled()?,
-            ward_affected_by_quality: self.ward_affected_by_quality.compiled()?,
-            crit: self.crit.compiled()?,
-            crit_affected_by_quality: self.crit_affected_by_quality.compiled()?,
-            foresight: self.foresight.compiled()?,
-            view_distance: self.view_distance.compiled()?,
-            follower_stats: self.follower_stats.compiled()?,
-            follower_act: self.follower_act.compiled()?,
-            status_infliction: self.status_infliction.compiled()?,
-            status_protection: self.status_protection.compiled()?,
-            mana_saver: self.mana_saver.compiled()?,
-            has_slots: self.has_slots.compiled()?,
-            base_adornment_slots: self.base_adornment_slots.compiled()?,
-            rarity: self.rarity.compiled()?,
-            element: self.element.compiled()?,
-            equipped_by: self.equipped_by.compiled()?,
-            two_handed: self.two_handed.compiled()?,
-            orn_bonus: self.orn_bonus.compiled()?,
-            gold_bonus: self.gold_bonus.compiled()?,
-            drop_bonus: self.drop_bonus.compiled()?,
-            spawn_bonus: self.spawn_bonus.compiled()?,
-            exp_bonus: self.exp_bonus.compiled()?,
-            boss: self.boss.compiled()?,
-            arena: self.arena.compiled()?,
-            category: self.category.compiled()?,
-            causes: self.causes.compiled()?,
-            cures: self.cures.compiled()?,
-            gives: self.gives.compiled()?,
-            prevents: self.prevents.compiled()?,
-            materials: self.materials.compiled()?,
-            price: self.price.compiled()?,
-            ability: self.ability.compiled()?,
-        })
-    }
-
-    /// Check whether all filters are set to `Filter::None`.
-    pub fn is_none(&self) -> bool {
-        self.id.is_none()
-            && self.codex_uri.is_none()
-            && self.attack.is_none()
-            && self.name.is_none()
-            && self.tier.is_none()
-            && self.type_.is_none()
-            && self.image_name.is_none()
-            && self.description.is_none()
-            && self.notes.is_none()
-            && self.hp.is_none()
-            && self.hp_affected_by_quality.is_none()
-            && self.mana.is_none()
-            && self.mana_affected_by_quality.is_none()
-            && self.attack_affected_by_quality.is_none()
-            && self.magic.is_none()
-            && self.magic_affected_by_quality.is_none()
-            && self.defense.is_none()
-            && self.defense_affected_by_quality.is_none()
-            && self.resistance.is_none()
-            && self.resistance_affected_by_quality.is_none()
-            && self.dexterity.is_none()
-            && self.dexterity_affected_by_quality.is_none()
-            && self.ward.is_none()
-            && self.ward_affected_by_quality.is_none()
-            && self.crit.is_none()
-            && self.crit_affected_by_quality.is_none()
-            && self.foresight.is_none()
-            && self.view_distance.is_none()
-            && self.follower_stats.is_none()
-            && self.follower_act.is_none()
-            && self.status_infliction.is_none()
-            && self.status_protection.is_none()
-            && self.mana_saver.is_none()
-            && self.has_slots.is_none()
-            && self.base_adornment_slots.is_none()
-            && self.rarity.is_none()
-            && self.element.is_none()
-            && self.equipped_by.is_none()
-            && self.two_handed.is_none()
-            && self.orn_bonus.is_none()
-            && self.gold_bonus.is_none()
-            && self.drop_bonus.is_none()
-            && self.spawn_bonus.is_none()
-            && self.exp_bonus.is_none()
-            && self.boss.is_none()
-            && self.arena.is_none()
-            && self.category.is_none()
-            && self.causes.is_none()
-            && self.cures.is_none()
-            && self.gives.is_none()
-            && self.prevents.is_none()
-            && self.materials.is_none()
-            && self.price.is_none()
-            && self.ability.is_none()
-    }
-
-    /// Return a `Vec` of closures for each non-None filter in `self`.
-    /// Should be faster than invoking each and every filter each time.
-    /// This method must not be called if there are uncompiled filters.
-    pub fn into_fn_vec(self) -> Vec<Box<dyn Fn(&AdminItem) -> bool + 'a>> {
-        [
-            self.id.into_fn(|item: &AdminItem| &item.id),
-            self.codex_uri.into_fn(|item: &AdminItem| &item.codex_uri),
-            self.attack.into_fn(|item: &AdminItem| &item.attack),
-            self.name.into_fn(|item: &AdminItem| &item.name),
-            self.tier.into_fn(|item: &AdminItem| &item.tier),
-            self.type_.into_fn(|item: &AdminItem| &item.type_),
-            self.image_name.into_fn(|item: &AdminItem| &item.image_name),
-            self.description
-                .into_fn(|item: &AdminItem| &item.description),
-            self.notes.into_fn(|item: &AdminItem| &item.notes),
-            self.hp.into_fn(|item: &AdminItem| &item.hp),
-            self.hp_affected_by_quality
-                .into_fn(|item: &AdminItem| &item.hp_affected_by_quality),
-            self.mana.into_fn(|item: &AdminItem| &item.mana),
-            self.mana_affected_by_quality
-                .into_fn(|item: &AdminItem| &item.mana_affected_by_quality),
-            self.attack_affected_by_quality
-                .into_fn(|item: &AdminItem| &item.attack_affected_by_quality),
-            self.magic.into_fn(|item: &AdminItem| &item.magic),
-            self.magic_affected_by_quality
-                .into_fn(|item: &AdminItem| &item.magic_affected_by_quality),
-            self.defense.into_fn(|item: &AdminItem| &item.defense),
-            self.defense_affected_by_quality
-                .into_fn(|item: &AdminItem| &item.defense_affected_by_quality),
-            self.resistance.into_fn(|item: &AdminItem| &item.resistance),
-            self.resistance_affected_by_quality
-                .into_fn(|item: &AdminItem| &item.resistance_affected_by_quality),
-            self.dexterity.into_fn(|item: &AdminItem| &item.dexterity),
-            self.dexterity_affected_by_quality
-                .into_fn(|item: &AdminItem| &item.dexterity_affected_by_quality),
-            self.ward.into_fn(|item: &AdminItem| &item.ward),
-            self.ward_affected_by_quality
-                .into_fn(|item: &AdminItem| &item.ward_affected_by_quality),
-            self.crit.into_fn(|item: &AdminItem| &item.crit),
-            self.crit_affected_by_quality
-                .into_fn(|item: &AdminItem| &item.crit_affected_by_quality),
-            self.foresight.into_fn(|item: &AdminItem| &item.foresight),
-            self.view_distance
-                .into_fn(|item: &AdminItem| &item.view_distance),
-            self.follower_stats
-                .into_fn(|item: &AdminItem| &item.follower_stats),
-            self.follower_act
-                .into_fn(|item: &AdminItem| &item.follower_act),
-            self.status_infliction
-                .into_fn(|item: &AdminItem| &item.status_infliction),
-            self.status_protection
-                .into_fn(|item: &AdminItem| &item.status_protection),
-            self.mana_saver.into_fn(|item: &AdminItem| &item.mana_saver),
-            self.has_slots.into_fn(|item: &AdminItem| &item.has_slots),
-            self.base_adornment_slots
-                .into_fn(|item: &AdminItem| &item.base_adornment_slots),
-            self.rarity.into_fn(|item: &AdminItem| &item.rarity),
-            self.element.into_fn(|item: &AdminItem| &item.element),
-            self.equipped_by
-                .into_fn(|item: &AdminItem| &item.equipped_by),
-            self.two_handed.into_fn(|item: &AdminItem| &item.two_handed),
-            self.orn_bonus.into_fn(|item: &AdminItem| &item.orn_bonus),
-            self.gold_bonus.into_fn(|item: &AdminItem| &item.gold_bonus),
-            self.drop_bonus.into_fn(|item: &AdminItem| &item.drop_bonus),
-            self.spawn_bonus
-                .into_fn(|item: &AdminItem| &item.spawn_bonus),
-            self.exp_bonus.into_fn(|item: &AdminItem| &item.exp_bonus),
-            self.boss.into_fn(|item: &AdminItem| &item.boss),
-            self.arena.into_fn(|item: &AdminItem| &item.arena),
-            self.category.into_fn(|item: &AdminItem| &item.category),
-            self.causes.into_fn(|item: &AdminItem| &item.causes),
-            self.cures.into_fn(|item: &AdminItem| &item.cures),
-            self.gives.into_fn(|item: &AdminItem| &item.gives),
-            self.prevents.into_fn(|item: &AdminItem| &item.prevents),
-            self.materials.into_fn(|item: &AdminItem| &item.materials),
-            self.price.into_fn(|item: &AdminItem| &item.price),
-            self.ability.into_fn(|item: &AdminItem| &item.ability),
-        ]
-        .into_iter()
-        .flatten()
-        .collect_vec()
-    }
 }
 
 /// Query for items.
