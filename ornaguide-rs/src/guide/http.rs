@@ -24,7 +24,7 @@ use crate::{
     guide::{
         html_form_parser::{
             parse_item_html, parse_monster_html, parse_pet_html, parse_skill_html,
-            parse_spawn_html, ParsedForm,
+            parse_spawn_html, parse_status_effect_html, ParsedForm,
         },
         html_list_parser::{parse_list_html, Entry, ParsedTable},
     },
@@ -439,6 +439,14 @@ impl Http {
         let mut form = parse_spawn_html(&self.http.get(url).send()?.text()?)?;
         form.fields
             .push(("description".to_string(), spawn_name.to_string()));
+        post_forms_to(&self.http, url, form)
+    }
+
+    pub(crate) fn admin_add_status_effect(&self, status_effect_name: &str) -> Result<(), Error> {
+        let url = concat!(BASE_PATH!(), "/admin/orna/statuseffect/add/");
+        let mut form = parse_status_effect_html(&self.http.get(url).send()?.text()?)?;
+        form.fields
+            .push(("name".to_string(), status_effect_name.to_string()));
         post_forms_to(&self.http, url, form)
     }
 

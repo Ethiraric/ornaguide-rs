@@ -179,3 +179,8 @@ pub fn parse_pet_html(contents: &str, field_names: &[&str]) -> Result<ParsedForm
 pub fn parse_spawn_html(contents: &str) -> Result<ParsedForm, Error> {
     parse_html_form(contents, "#spawn_form", &[])
 }
+
+/// Extract given fields from an admin status effect add HTML page.
+pub fn parse_status_effect_html(contents: &str) -> Result<ParsedForm, Error> {
+    parse_html_form(contents, "#statuseffect_form", &[])
+}

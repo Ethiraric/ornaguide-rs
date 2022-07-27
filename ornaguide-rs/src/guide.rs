@@ -152,6 +152,9 @@ pub trait AdminGuide {
     /// Add a new spawn to the guide.
     /// In order to retrieve the id of the new spawn, all spawns have to be queried again.
     fn admin_add_spawn(&self, spawn_name: &str) -> Result<(), Error>;
+    /// Add a new status effect to the guide.
+    /// In order to retrieve the id of the new status effect, all status effects have to be queried again.
+    fn admin_add_status_effect(&self, status_effect_name: &str) -> Result<(), Error>;
 }
 
 pub use cache::CachedGuide;

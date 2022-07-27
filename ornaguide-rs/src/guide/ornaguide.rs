@@ -386,7 +386,14 @@ impl AdminGuide for OrnaAdminGuide {
     fn admin_add_spawn(&self, spawn_name: &str) -> Result<(), Error> {
         self.guide.http().admin_add_spawn(spawn_name)
     }
+
+    fn admin_add_status_effect(&self, status_effect_name: &str) -> Result<(), Error> {
+        self.guide
+            .http()
+            .admin_add_status_effect(status_effect_name)
+    }
 }
+
 impl Codex for OrnaAdminGuide {
     fn codex_fetch_skill_list(&self) -> Result<Vec<CodexSkillEntry>, Error> {
         Ok(self
