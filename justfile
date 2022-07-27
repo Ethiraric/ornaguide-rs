@@ -27,4 +27,10 @@ backup_output_now:
   mv output-`date "+%Y-%m-%dT%k-%M"`.tar.bz2 backups_output
   rm -r output-`date "+%Y-%m-%dT%k-%M"`
 
+backup_htmls_now:
+  cp -r htmls htmls-`date "+%Y-%m-%dT%k-%M"`
+  BZIP2=-9 tar -cjvf htmls-`date "+%Y-%m-%dT%k-%M"`{.tar.bz2,}
+  mv htmls-`date "+%Y-%m-%dT%k-%M"`.tar.bz2 backups_html
+  rm -r htmls-`date "+%Y-%m-%dT%k-%M"`
+
 cron: new_jsons backup_htmls backup_output
