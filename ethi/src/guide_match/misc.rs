@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use ornaguide_rs::{
     codex::{FollowerAbility, ItemDroppedBy, ItemUpgradeMaterial, MonsterAbility},
     error::Error,
@@ -9,55 +10,114 @@ use ornaguide_rs::{
 
 /// A trait to extend `Vec<ItemDroppedBy>` specifically.
 pub trait ItemDroppedBys {
-    /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide monster ids.
+    /// Convert `self` to a `Vec<u32>`, with `u32`s being the guide monster ids.
+    /// Returns `Error::PartialCodexItemDroppedBysConversion` if all fields have not been
+    /// successfully converted.
     fn try_to_guide_ids(&self, monsters: &AdminMonsters) -> Result<Vec<u32>, Error>;
 }
 
 impl ItemDroppedBys for Vec<ItemDroppedBy> {
     fn try_to_guide_ids(&self, monsters: &AdminMonsters) -> Result<Vec<u32>, Error> {
-        self.iter()
+        let (successes, failures): (Vec<_>, Vec<_>) = self
+            .iter()
             .map(|dropped_by| {
                 monsters
                     .get_by_uri(&dropped_by.uri)
                     .map(|monster| monster.id)
+                    .map_err(|_| dropped_by.uri.clone())
             })
-            .collect()
+            .partition_result();
+
+        if failures.is_empty() {
+            Ok(successes)
+        } else {
+            Err(Error::PartialCodexItemDroppedBysConversion(
+                successes, failures,
+            ))
+        }
     }
 }
 
 /// A trait to extend `Vec<ItemUpgradeMaterial>` specifically.
 pub trait ItemUpgradeMaterials {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide item ids.
+    /// Returns `Error::PartialCodexItemDroppedBysConversion` if all fields have not been
+    /// successfully converted.
     fn try_to_guide_ids(&self, items: &AdminItems) -> Result<Vec<u32>, Error>;
 }
 
 impl ItemUpgradeMaterials for Vec<ItemUpgradeMaterial> {
     fn try_to_guide_ids(&self, items: &AdminItems) -> Result<Vec<u32>, Error> {
-        self.iter()
-            .map(|dropped_by| items.get_by_uri(&dropped_by.uri).map(|item| item.id))
-            .collect()
+        let (successes, failures): (Vec<_>, Vec<_>) = self
+            .iter()
+            .map(|dropped_by| {
+                items
+                    .get_by_uri(&dropped_by.uri)
+                    .map(|item| item.id)
+                    .map_err(|_| dropped_by.uri.clone())
+            })
+            .partition_result();
+
+        if failures.is_empty() {
+            Ok(successes)
+        } else {
+            Err(Error::PartialCodexItemUpgradeMaterialsConversion(
+                successes, failures,
+            ))
+        }
     }
 }
 
 /// A trait to extend `Vec`s of codex abilities.
 pub trait CodexAbilities {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide skill ids.
+    /// Returns `Error::PartialCodexFollowerAbilitiesConversion` or
+    /// `Error::PartialCodexMonsterAbilitiesConversion` if all fields have not been successfully
+    /// converted.
     fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error>;
 }
 
 impl CodexAbilities for Vec<FollowerAbility> {
     fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error> {
-        self.iter()
-            .map(|ability| skills.get_by_uri(&ability.uri).map(|skill| skill.id))
-            .collect()
+        let (successes, failures): (Vec<_>, Vec<_>) = self
+            .iter()
+            .map(|ability| {
+                skills
+                    .get_by_uri(&ability.uri)
+                    .map(|skill| skill.id)
+                    .map_err(|_| ability.uri.clone())
+            })
+            .partition_result();
+
+        if failures.is_empty() {
+            Ok(successes)
+        } else {
+            Err(Error::PartialCodexFollowerAbilitiesConversion(
+                successes, failures,
+            ))
+        }
     }
 }
 
 impl CodexAbilities for Vec<MonsterAbility> {
     fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error> {
-        self.iter()
-            .map(|ability| skills.get_by_uri(&ability.uri).map(|skill| skill.id))
-            .collect()
+        let (successes, failures): (Vec<_>, Vec<_>) = self
+            .iter()
+            .map(|ability| {
+                skills
+                    .get_by_uri(&ability.uri)
+                    .map(|skill| skill.id)
+                    .map_err(|_| ability.uri.clone())
+            })
+            .partition_result();
+
+        if failures.is_empty() {
+            Ok(successes)
+        } else {
+            Err(Error::PartialCodexMonsterAbilitiesConversion(
+                successes, failures,
+            ))
+        }
     }
 }
 
@@ -69,14 +129,21 @@ pub trait EventsNames {
 
 impl EventsNames for Vec<&str> {
     fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error> {
-        self.iter()
+        let (successes, failures): (Vec<_>, Vec<_>) = self
+            .iter()
             .map(|event| {
                 static_
                     .iter_events()
                     .find(|spawn| spawn.event_name() == *event)
                     .map(|spawn| spawn.id)
-                    .ok_or_else(|| Error::Misc(format!("Failed to find event {}", event)))
+                    .ok_or_else(|| event.to_string())
             })
-            .collect()
+            .partition_result();
+
+        if failures.is_empty() {
+            Ok(successes)
+        } else {
+            Err(Error::PartialCodexEventsConversion(successes, failures))
+        }
     }
 }

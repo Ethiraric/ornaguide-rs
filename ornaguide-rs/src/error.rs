@@ -36,6 +36,55 @@ pub enum Error {
     ),
     /// There was an error in parsing HTML.
     HTMLParsingError(String),
+    /// A conversion from multiple codex status effects to guide ids did not fully succeed.
+    PartialCodexStatusEffectsConversion(
+        /// The status effects that were successfully converted.
+        Vec<u32>,
+        /// The status effects that were not found on the guide.
+        Vec<String>,
+    ),
+    /// A conversion from multiple codex skills to guide ids did not fully succeed.
+    PartialCodexSkillsConversion(
+        /// The skills that were successfully converted.
+        Vec<u32>,
+        /// The skills codex URIs that were not found on the guide.
+        Vec<String>,
+    ),
+    /// A conversion from multiple codex item dropped_bys to guide ids did not fully succeed.
+    PartialCodexItemDroppedBysConversion(
+        /// The dropped_bys that were successfully converted.
+        Vec<u32>,
+        /// The monster codex URIs that were not found on the guide.
+        Vec<String>,
+    ),
+    /// A conversion from multiple codex item upgrade materials to guide ids did not fully succeed.
+    PartialCodexItemUpgradeMaterialsConversion(
+        /// The upgrade materials that were successfully converted.
+        Vec<u32>,
+        /// The item codex URIs that were not found on the guide.
+        Vec<String>,
+    ),
+    /// A conversion from multiple codex follower abilities to guide ids did not fully succeed.
+    PartialCodexFollowerAbilitiesConversion(
+        /// The abilities that were successfully converted.
+        Vec<u32>,
+        /// The skill codex URIs that were not found on the guide.
+        Vec<String>,
+    ),
+    /// A conversion from multiple codex monster abilities to guide ids did not fully succeed.
+    PartialCodexMonsterAbilitiesConversion(
+        /// The abilities that were successfully converted.
+        Vec<u32>,
+        /// The skill codex URIs that were not found on the guide.
+        Vec<String>,
+    ),
+    /// A conversion from multiple codex events to guide ids did not fully succeed.
+    PartialCodexEventsConversion(
+        /// The events that were successfully converted.
+        Vec<u32>,
+        /// The event names that were not found on the guide.
+        Vec<String>,
+    ),
     /// Miscellaneous error.
     Misc(String),
 }
@@ -68,6 +117,41 @@ impl Display for Error {
             Error::ParseFloatError(err) => write!(f, "{}", err),
             Error::ResponseError(status, err) => write!(f, "HTTP {}: {}", status, err),
             Error::HTMLParsingError(err) => write!(f, "{}", err),
+            Error::PartialCodexStatusEffectsConversion(found, not_found) => write!(
+                f,
+                "Partial codex status effects conversion: OK {:?}, KO {:?}",
+                found, not_found
+            ),
+            Error::PartialCodexSkillsConversion(found, not_found) => write!(
+                f,
+                "Partial codex skills conversion: OK {:?}, KO {:?}",
+                found, not_found
+            ),
+            Error::PartialCodexItemDroppedBysConversion(found, not_found) => write!(
+                f,
+                "Partial codex item dropped_bys conversion: OK {:?}, KO {:?}",
+                found, not_found
+            ),
+            Error::PartialCodexItemUpgradeMaterialsConversion(found, not_found) => write!(
+                f,
+                "Partial codex item upgrade materials conversion: OK {:?}, KO {:?}",
+                found, not_found
+            ),
+            Error::PartialCodexFollowerAbilitiesConversion(found, not_found) => write!(
+                f,
+                "Partial codex follower abilities conversion: OK {:?}, KO {:?}",
+                found, not_found
+            ),
+            Error::PartialCodexMonsterAbilitiesConversion(found, not_found) => write!(
+                f,
+                "Partial codex monster abilities conversion: OK {:?}, KO {:?}",
+                found, not_found
+            ),
+            Error::PartialCodexEventsConversion(found, not_found) => write!(
+                f,
+                "Partial codex events conversion: OK {:?}, KO {:?}",
+                found, not_found
+            ),
             Error::Misc(err) => write!(f, "{}", err),
         }
     }

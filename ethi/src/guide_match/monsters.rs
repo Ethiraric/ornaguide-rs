@@ -250,7 +250,12 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 .collect::<Vec<_>>();
             let expected_ids = codex_monster
                 .abilities()
-                .try_to_guide_ids(&data.guide.skills)?
+                .try_to_guide_ids(&data.guide.skills)
+                // TODO(ethiraric, 27/07/2022): Add diagnostics.
+                .unwrap_or_else(|err| match err {
+                    Error::PartialCodexMonsterAbilitiesConversion(ok, _) => ok,
+                    _ => panic!("try_to_guide_ids returned a weird error"),
+                })
                 .into_iter()
                 .sorted()
                 .collect::<Vec<_>>();

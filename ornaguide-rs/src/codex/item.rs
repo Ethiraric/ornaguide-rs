@@ -170,78 +170,47 @@ impl ToString for Element {
 /// A trait to extend `Vec`s of `Cure`s, `Give`s, ....
 pub trait ItemStatusEffects {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide status_effect ids.
+    /// Returns `Error::PartialCodexStatusEffectConversion` if all fields have not been
+    /// successfully converted.
     fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error>;
     /// Convert the list of status effects to a list of effect names, matching those of the guide.
     fn to_guide_names(&self) -> Vec<&str>;
 }
 
-impl ItemStatusEffects for Vec<Cause> {
-    fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error> {
-        codex_effect_name_iter_to_guide_id_results(
-            self.iter().map(|name| name.name.as_str()),
-            static_,
-        )
-        .collect::<Result<Vec<_>, Error>>()
-    }
+macro_rules! make_impl_for_status_effect_struct_vec {
+    ($type:ty) => {
+        impl ItemStatusEffects for Vec<$type> {
+            fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error> {
+                let (successes, failures): (Vec<_>, Vec<_>) =
+                    codex_effect_name_iter_to_guide_id_results(
+                        self.iter().map(|name| name.name.as_str()),
+                        static_,
+                    )
+                    .partition_result();
 
-    fn to_guide_names(&self) -> Vec<&str> {
-        self.iter()
-            .map(|cause| codex_effect_name_to_guide_name(&cause.name))
-            .sorted()
-            .collect()
-    }
+                if failures.is_empty() {
+                    Ok(successes)
+                } else {
+                    Err(Error::PartialCodexStatusEffectsConversion(
+                        successes, failures,
+                    ))
+                }
+            }
+
+            fn to_guide_names(&self) -> Vec<&str> {
+                self.iter()
+                    .map(|effect| codex_effect_name_to_guide_name(&effect.name))
+                    .sorted()
+                    .collect()
+            }
+        }
+    };
 }
 
-impl ItemStatusEffects for Vec<Give> {
-    fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error> {
-        codex_effect_name_iter_to_guide_id_results(
-            self.iter().map(|name| name.name.as_str()),
-            static_,
-        )
-        .collect::<Result<Vec<_>, Error>>()
-    }
-
-    fn to_guide_names(&self) -> Vec<&str> {
-        self.iter()
-            .map(|cause| codex_effect_name_to_guide_name(&cause.name))
-            .sorted()
-            .collect()
-    }
-}
-
-impl ItemStatusEffects for Vec<Cure> {
-    fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error> {
-        codex_effect_name_iter_to_guide_id_results(
-            self.iter().map(|name| name.name.as_str()),
-            static_,
-        )
-        .collect::<Result<Vec<_>, Error>>()
-    }
-
-    fn to_guide_names(&self) -> Vec<&str> {
-        self.iter()
-            .map(|cause| codex_effect_name_to_guide_name(&cause.name))
-            .sorted()
-            .collect()
-    }
-}
-
-impl ItemStatusEffects for Vec<Immunity> {
-    fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error> {
-        codex_effect_name_iter_to_guide_id_results(
-            self.iter().map(|name| name.name.as_str()),
-            static_,
-        )
-        .collect::<Result<Vec<_>, Error>>()
-    }
-
-    fn to_guide_names(&self) -> Vec<&str> {
-        self.iter()
-            .map(|cause| codex_effect_name_to_guide_name(&cause.name))
-            .sorted()
-            .collect()
-    }
-}
+make_impl_for_status_effect_struct_vec!(Cause);
+make_impl_for_status_effect_struct_vec!(Give);
+make_impl_for_status_effect_struct_vec!(Cure);
+make_impl_for_status_effect_struct_vec!(Immunity);
 
 /// Collection of items from the codex.
 #[derive(Serialize, Deserialize)]

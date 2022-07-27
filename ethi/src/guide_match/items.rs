@@ -361,7 +361,12 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             let guide_causes = guide_item.causes.iter().cloned().sorted().collect_vec();
             let codex_causes = codex_item
                 .causes
-                .try_to_guide_ids(&data.guide.static_)?
+                .try_to_guide_ids(&data.guide.static_)
+                // TODO(ethiraric, 27/07/2022): Add diagnostics.
+                .unwrap_or_else(|err| match err {
+                    Error::PartialCodexStatusEffectsConversion(x, _) => x,
+                    _ => panic!("try_to_guide_ids returned a weird error"),
+                })
                 .into_iter()
                 // TODO(ethiraric, 04/06/2022): Remove this chain and the dedup call below once
                 // the codex fixes elemental statuses for weapons.
@@ -487,7 +492,12 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 .collect_vec();
             let codex_dropped_by_ids = codex_item
                 .dropped_by
-                .try_to_guide_ids(&data.guide.monsters)?
+                .try_to_guide_ids(&data.guide.monsters)
+                // TODO(ethiraric, 27/07/2022): Add diagnostics.
+                .unwrap_or_else(|err| match err {
+                    Error::PartialCodexItemDroppedBysConversion(ok, _) => ok,
+                    _ => panic!("try_to_guide_ids returned a weird error"),
+                })
                 .into_iter()
                 .sorted()
                 .collect_vec();

@@ -1,4 +1,4 @@
-use crate::{error::Error, guide::Static};
+use crate::guide::Static;
 
 /// Remove any added text that may appear in the guide for a name, but not in the game or the
 /// codex.
@@ -33,25 +33,18 @@ pub(crate) fn codex_effect_name_to_guide_name(name: &str) -> &str {
 }
 
 /// Convert an iterator of codex effects to an iterator of result of guide effect id.
-pub(crate) fn codex_effect_name_iter_to_guide_id_results<
-    'a,
-    Iter: 'a + Iterator<Item = &'a str>,
->(
+/// On the right side of `Result` is the name of the effect if it wasn't found.
+pub fn codex_effect_name_iter_to_guide_id_results<'a, Iter: 'a + Iterator<Item = &'a str>>(
     it: Iter,
     static_: &'a Static,
-) -> impl Iterator<Item = Result<u32, Error>> + 'a {
+) -> impl Iterator<Item = Result<u32, String>> + 'a {
     it.map(codex_effect_name_to_guide_name).map(|effect_name| {
         static_
             .status_effects
             .iter()
             .find(|effect| effect.name == *effect_name)
             .map(|effect| effect.id)
-            .ok_or_else(|| {
-                Error::Misc(format!(
-                    "Failed to find a status effect for codex status_effect {}",
-                    effect_name
-                ))
-            })
+            .ok_or_else(|| effect_name.to_string())
     })
 }
 

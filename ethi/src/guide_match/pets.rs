@@ -132,7 +132,12 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 .collect_vec();
             let expected_skills_ids = follower
                 .abilities
-                .try_to_guide_ids(&data.guide.skills)?
+                .try_to_guide_ids(&data.guide.skills)
+                // TODO(ethiraric, 27/07/2022): Add diagnostics.
+                .unwrap_or_else(|err| match err {
+                    Error::PartialCodexFollowerAbilitiesConversion(ok, _) => ok,
+                    _ => panic!("try_to_guide_ids returned a weird error"),
+                })
                 .into_iter()
                 .sorted()
                 .collect_vec();
