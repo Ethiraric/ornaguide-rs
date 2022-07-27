@@ -32,7 +32,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .collect_vec();
 
     if !missing_on_guide.is_empty() {
-        println!("Followers missing on guide:");
+        println!("{} followers missing on guide:", missing_on_guide.len());
         for follower in missing_on_guide.iter() {
             println!(
                 "\t- {} (https://playorna.com/codex/followers/{})",
@@ -42,7 +42,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
     }
 
     if !not_on_codex.is_empty() {
-        println!("Pets not on codex:");
+        println!("{} pets not on codex:", not_on_codex.len());
         for pet in not_on_codex.iter() {
             println!("\t- {} (https://orna.guide/pets?show={})", pet.name, pet.id);
         }

@@ -209,7 +209,7 @@ impl<'a> AdminSkills {
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
             Error::Misc(format!(
-                "No match for admin skill with codex_uri #{}",
+                "No match for admin skill with codex_uri {}",
                 needle
             ))
         })

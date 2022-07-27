@@ -42,7 +42,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .collect_vec();
 
     if !missing_on_guide.is_empty() {
-        println!("Skills missing on guide:");
+        println!("{} skills missing on guide:", missing_on_guide.len());
         for skill in missing_on_guide.iter() {
             println!(
                 "\t- {} (https://playorna.com/codex/spells/{})",
@@ -52,7 +52,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
     }
 
     if !not_on_codex.is_empty() {
-        println!("Skills not on codex:");
+        println!("{} skills not on codex:", not_on_codex.len());
         for skill in not_on_codex.iter() {
             println!(
                 "\t- {} (https://orna.guide/skills?show={})",

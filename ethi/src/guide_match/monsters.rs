@@ -38,7 +38,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .collect::<Vec<_>>();
 
     if !missing_on_guide.is_empty() {
-        println!("Monsters missing on guide:");
+        println!("{} monsters missing on guide:", missing_on_guide.len());
         for monster in missing_on_guide.iter() {
             match monster {
                 CodexGenericMonster::Monster(monster) => {
@@ -64,7 +64,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
     }
 
     if !not_on_codex.is_empty() {
-        println!("Monsters not on codex:");
+        println!("{} monsters not on codex:", not_on_codex.len());
         for monster in not_on_codex.iter() {
             let kind = if monster.is_regular_monster() {
                 "Monster"

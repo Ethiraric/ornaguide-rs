@@ -278,6 +278,7 @@ fn query_all_codex_pages(base_url: &str, http: &Client) -> Result<Vec<CodexListE
 }
 
 impl Http {
+    // --- Misc ---
     pub(crate) fn new() -> Self {
         Self {
             http: Client::new(),
@@ -291,6 +292,8 @@ impl Http {
             http: Client::builder().default_headers(headers).build()?,
         })
     }
+
+    // --- Guide API ---
 
     pub(crate) fn fetch_items(&self) -> Result<Vec<RawItem>, Error> {
         Ok(self
@@ -319,6 +322,9 @@ impl Http {
             .json()?)
     }
 
+    // --- Guide Admin ---
+
+    // Guide Admin Items
     pub(crate) fn admin_retrieve_item_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(concat!(BASE_PATH!(), "/admin/items/item/{}/change/"), id);
         parse_item_html(&get_and_save(&self.http, &url)?, ITEM_FORM_FIELD_NAMES)
@@ -337,6 +343,7 @@ impl Http {
         query_all_pages(url, &self.http)
     }
 
+    // Guide Admin Monsters
     pub(crate) fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(
             concat!(BASE_PATH!(), "/admin/monsters/monster/{}/change/"),
@@ -361,6 +368,7 @@ impl Http {
         query_all_pages(url, &self.http)
     }
 
+    // Guide Admin Skills
     pub(crate) fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(concat!(BASE_PATH!(), "/admin/skills/skill/{}/change/"), id);
         parse_skill_html(&get_and_save(&self.http, &url)?, SKILL_FORM_FIELD_NAMES)
@@ -386,6 +394,7 @@ impl Http {
         post_forms_to(&self.http, url, post_form)
     }
 
+    // Guide Admin Pets
     pub(crate) fn admin_save_pet(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
         post_forms_to(
             &self.http,
@@ -404,6 +413,7 @@ impl Http {
         query_all_pages(url, &self.http)
     }
 
+    // Guide Static data
     pub(crate) fn admin_retrieve_spawns_list(&self) -> Result<Vec<Entry>, Error> {
         let url = concat!(BASE_PATH!(), "/admin/orna/spawn/");
         query_all_pages(url, &self.http)
@@ -450,6 +460,9 @@ impl Http {
         post_forms_to(&self.http, url, form)
     }
 
+    // --- Codex ---
+
+    // Codex Skills
     pub(crate) fn codex_retrieve_skills_list(&self) -> Result<Vec<CodexListEntry>, Error> {
         let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/spells");
         query_all_codex_pages(url, &self.http)
@@ -463,6 +476,7 @@ impl Http {
         parse_html_codex_skill(&get_and_save(&self.http, &url)?, skill_name.to_string())
     }
 
+    // Codex Monsters
     pub(crate) fn codex_retrieve_monsters_list(&self) -> Result<Vec<CodexListEntry>, Error> {
         let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/monsters");
         query_all_codex_pages(url, &self.http)
@@ -476,6 +490,7 @@ impl Http {
         parse_html_codex_monster(&get_and_save(&self.http, &url)?, monster_name.to_string())
     }
 
+    // Codex Bosses
     pub(crate) fn codex_retrieve_bosses_list(&self) -> Result<Vec<CodexListEntry>, Error> {
         let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/bosses");
         query_all_codex_pages(url, &self.http)
@@ -489,6 +504,7 @@ impl Http {
         parse_html_codex_boss(&get_and_save(&self.http, &url)?, boss_name.to_string())
     }
 
+    // Codex Raids
     pub(crate) fn codex_retrieve_raids_list(&self) -> Result<Vec<CodexListEntry>, Error> {
         let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/raids");
         query_all_codex_pages(url, &self.http)
@@ -499,6 +515,7 @@ impl Http {
         parse_html_codex_raid(&get_and_save(&self.http, &url)?, raid_name.to_string())
     }
 
+    // Codex Items
     pub(crate) fn codex_retrieve_items_list(&self) -> Result<Vec<CodexListEntry>, Error> {
         let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/items");
         query_all_codex_pages(url, &self.http)
@@ -509,6 +526,7 @@ impl Http {
         parse_html_codex_item(&get_and_save(&self.http, &url)?, item_name.to_string())
     }
 
+    // Codex Followers
     pub(crate) fn codex_retrieve_followers_list(&self) -> Result<Vec<CodexListEntry>, Error> {
         let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/followers");
         query_all_codex_pages(url, &self.http)

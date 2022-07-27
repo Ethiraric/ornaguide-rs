@@ -49,7 +49,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .collect_vec();
 
     if !missing_on_guide.is_empty() {
-        println!("Items missing on guide:");
+        println!("{} items missing on guide:", missing_on_guide.len());
         for item in missing_on_guide.iter() {
             println!(
                 "\t- {:20} (https://playorna.com/codex/items/{})",
@@ -59,7 +59,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
     }
 
     if !not_on_codex.is_empty() {
-        println!("Items not on codex:");
+        println!("{} items not on codex:", not_on_codex.len());
         for item in not_on_codex.iter() {
             println!(
                 "\t- {:20} (https://orna.guide/items?show={})",
