@@ -29,6 +29,10 @@ pub enum Error {
     ParseFloatError(ParseFloatError),
     /// The request was successfully delivered, but the response indicated there was a failure.
     ResponseError(
+        /// The method that was used on the request..
+        String,
+        /// The URL that was requested.
+        String,
         /// The status code we received.
         u16,
         /// An error message.
@@ -115,7 +119,9 @@ impl Display for Error {
             Error::Reqwest(err) => write!(f, "{}", err),
             Error::ParseIntError(err) => write!(f, "{}", err),
             Error::ParseFloatError(err) => write!(f, "{}", err),
-            Error::ResponseError(status, err) => write!(f, "HTTP {}: {}", status, err),
+            Error::ResponseError(method, url, status, err) => {
+                write!(f, "HTTP {} {} {}: {}", method, url, status, err)
+            }
             Error::HTMLParsingError(err) => write!(f, "{}", err),
             Error::PartialCodexStatusEffectsConversion(found, not_found) => write!(
                 f,

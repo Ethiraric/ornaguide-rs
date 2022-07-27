@@ -4,9 +4,9 @@ use std::{
 };
 
 use reqwest::{
-    blocking::Client,
+    blocking::{Client, Response},
     header::{HeaderMap, HeaderValue},
-    Url,
+    StatusCode, Url,
 };
 
 use crate::{
@@ -194,10 +194,29 @@ fn post_forms_to(http: &Client, url: &str, form: ParsedForm) -> Result<(), Error
         .header("Origin", "orna.guide")
         .body(body)
         .send()?;
+
     if response.status().is_success() {
         Ok(())
     } else {
         Err(Error::ResponseError(
+            "POST".to_string(),
+            url.to_string(),
+            response.status().as_u16(),
+            response.text()?,
+        ))
+    }
+}
+
+/// Send an HTTP GET request and expect that the response will be a 200 OK.
+/// If the response isn't, return an error.
+fn get_expect_200(http: &Client, url: &str) -> Result<Response, Error> {
+    let response = http.get(url).send()?;
+    if response.status() == StatusCode::OK {
+        Ok(response)
+    } else {
+        Err(Error::ResponseError(
+            "GET".to_string(),
+            url.to_string(),
             response.status().as_u16(),
             response.text()?,
         ))
@@ -206,7 +225,8 @@ fn post_forms_to(http: &Client, url: &str, form: ParsedForm) -> Result<(), Error
 
 /// Execute a GET HTTP request and save the output.
 fn get_and_save(http: &Client, url: &str) -> Result<String, Error> {
-    let response = http.get(url).send()?.text()?;
+    let response = get_expect_200(http, url)?;
+    let body = response.text()?;
     let url = Url::parse(url).unwrap();
     if url.host_str().unwrap() != "localhost" {
         let path = url.path().replace('/', "_");
@@ -217,9 +237,9 @@ fn get_and_save(http: &Client, url: &str) -> Result<String, Error> {
         };
         let filename = format!("htmls/{}{}{}.html", url.host_str().unwrap(), path, param);
         let mut writer = BufWriter::new(File::create(filename)?);
-        write!(writer, "{}", response)?;
+        write!(writer, "{}", body)?;
     }
-    Ok(response)
+    Ok(body)
 }
 
 /// Cycles through the different pages of the route and reads each table.
@@ -389,7 +409,7 @@ impl Http {
 
     pub(crate) fn admin_add_skill(&self, form: ParsedForm) -> Result<(), Error> {
         let url = concat!(BASE_PATH!(), "/admin/skills/skill/add/");
-        let mut post_form = parse_skill_html(&self.http.get(url).send()?.text()?, &[])?;
+        let mut post_form = parse_skill_html(&get_and_save(&self.http, url)?, &[])?;
         post_form.fields = form.fields;
         post_forms_to(&self.http, url, post_form)
     }
@@ -446,7 +466,7 @@ impl Http {
 
     pub(crate) fn admin_add_spawn(&self, spawn_name: &str) -> Result<(), Error> {
         let url = concat!(BASE_PATH!(), "/admin/orna/spawn/add/");
-        let mut form = parse_spawn_html(&self.http.get(url).send()?.text()?)?;
+        let mut form = parse_spawn_html(&get_and_save(&self.http, url)?)?;
         form.fields
             .push(("description".to_string(), spawn_name.to_string()));
         post_forms_to(&self.http, url, form)
@@ -454,7 +474,7 @@ impl Http {
 
     pub(crate) fn admin_add_status_effect(&self, status_effect_name: &str) -> Result<(), Error> {
         let url = concat!(BASE_PATH!(), "/admin/orna/statuseffect/add/");
-        let mut form = parse_status_effect_html(&self.http.get(url).send()?.text()?)?;
+        let mut form = parse_status_effect_html(&get_and_save(&self.http, url)?)?;
         form.fields
             .push(("name".to_string(), status_effect_name.to_string()));
         post_forms_to(&self.http, url, form)
