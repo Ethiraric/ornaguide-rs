@@ -12,6 +12,7 @@ pub enum Tag {
     KingdomRaid,
     OffHandAbility,
     FoundInArcanists,
+    OtherRealmsRaid,
 }
 
 /// Parse the tags of the item.
@@ -26,6 +27,7 @@ pub fn parse_tags<T>(iter: impl Iterator<Item = NodeDataRef<T>>) -> Result<Vec<T
             "✓ Kingdom Raid" => tags.push(Tag::KingdomRaid),
             "✓ Off-hand ability" => tags.push(Tag::OffHandAbility),
             "✓ Found in Arcanists" => tags.push(Tag::FoundInArcanists),
+            "✓ Other Realms Raid" => tags.push(Tag::OtherRealmsRaid),
             x => return Err(Error::HTMLParsingError(format!("Unknown tag: {}", x))),
         }
     }

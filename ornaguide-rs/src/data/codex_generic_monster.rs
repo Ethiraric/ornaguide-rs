@@ -97,9 +97,11 @@ impl<'a> CodexGenericMonster<'a> {
         static KRB_STR: &str = "Kingdom Raid";
         self.tags()
             .iter()
-            .map(|tag| match tag {
-                Tag::WorldRaid => WRB_STR,
-                Tag::KingdomRaid => KRB_STR,
+            .filter_map(|tag| match tag {
+                Tag::WorldRaid => Some(WRB_STR),
+                Tag::KingdomRaid => Some(KRB_STR),
+                // TODO(ethiraric, 27/07/2022): Include Other Realm Raid as a spawn?
+                Tag::OtherRealmsRaid => None,
                 _ => panic!("Unknown tag {:?} for monster", tag),
             })
             .sorted()
