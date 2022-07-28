@@ -1,12 +1,8 @@
 use crate::{
-    error::Error,
-    items::{admin::AdminItem, raw::RawItem},
-    monsters::{admin::AdminMonster, raw::RawMonster},
-    pets::admin::AdminPet,
-    skills::{admin::AdminSkill, raw::RawSkill},
+    error::Error, items::admin::AdminItem, monsters::admin::AdminMonster, pets::admin::AdminPet,
+    skills::admin::AdminSkill,
 };
 
-mod cache;
 pub(crate) mod html_form_parser;
 pub(crate) mod html_list_parser;
 pub(crate) mod html_utils;
@@ -55,34 +51,6 @@ pub struct PetRow {
     pub id: u32,
     /// Name of the pet.
     pub name: String,
-}
-
-/// A source of information from the game. On the site, this represents the public API.
-/// Note that the info can be fetched locally from a cache.
-pub trait Guide {
-    /// If not already done, query the API of the guide for the list of items and store it in a
-    /// cache. If the cache is already fetched, return it. The latter case cannot return an `Err`.
-    fn fetch_items(&mut self) -> Result<&[RawItem], Error>;
-
-    /// Return the cache, if already fetched. This method will always return `None` before a call
-    /// to `fetch_items`.
-    fn get_items(&self) -> Option<&[RawItem]>;
-
-    /// If not already done, query the API of the guide for the list of monsters and store it in a
-    /// cache. If the cache is already fetched, return it. The latter case cannot return an `Err`.
-    fn fetch_monsters(&mut self) -> Result<&[RawMonster], Error>;
-
-    /// Return the cache, if already fetched. This method will always return `None` before a call
-    /// to `fetch_monsters`.
-    fn get_monsters(&self) -> Option<&[RawMonster]>;
-
-    /// If not already done, query the API of the guide for the list of skills and store it in a
-    /// cache. If the cache is already fetched, return it. The latter case cannot return an `Err`.
-    fn fetch_skills(&mut self) -> Result<&[RawSkill], Error>;
-
-    /// Return the cache, if already fetched. This method will always return `None` before a call
-    /// to `fetch_skills`.
-    fn get_skills(&self) -> Option<&[RawSkill]>;
 }
 
 /// A read-write access to the administrator panel of the guide.
@@ -169,5 +137,4 @@ pub trait AdminGuide {
     fn admin_add_status_effect(&self, status_effect_name: &str) -> Result<(), Error>;
 }
 
-pub use cache::CachedGuide;
 pub use ornaguide::{OrnaAdminGuide, OrnaGuide};

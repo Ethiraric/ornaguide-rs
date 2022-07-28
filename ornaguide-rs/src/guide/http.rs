@@ -28,9 +28,6 @@ use crate::{
         },
         html_list_parser::{parse_list_html, Entry, ParsedTable},
     },
-    items::RawItem,
-    monsters::RawMonster,
-    skills::RawSkill,
 };
 
 pub(crate) struct Http {
@@ -312,35 +309,6 @@ impl Http {
         Ok(Self {
             http: Client::builder().default_headers(headers).build()?,
         })
-    }
-
-    // --- Guide API ---
-
-    pub(crate) fn fetch_items(&self) -> Result<Vec<RawItem>, Error> {
-        Ok(self
-            .http
-            .post(concat!(BASE_PATH!(), "/api/v1/items"))
-            .json("{}")
-            .send()?
-            .json()?)
-    }
-
-    pub(crate) fn fetch_monsters(&self) -> Result<Vec<RawMonster>, Error> {
-        Ok(self
-            .http
-            .post(concat!(BASE_PATH!(), "/api/v1/monster"))
-            .json("{}")
-            .send()?
-            .json()?)
-    }
-
-    pub(crate) fn fetch_skills(&self) -> Result<Vec<RawSkill>, Error> {
-        Ok(self
-            .http
-            .post(concat!(BASE_PATH!(), "/api/v1/skill"))
-            .json("{}")
-            .send()?
-            .json()?)
     }
 
     // --- Guide Admin ---

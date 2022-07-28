@@ -7,41 +7,30 @@ use crate::{
     },
     error::Error,
     guide::{
-        html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, Guide,
-        ItemCategory, ItemRow, ItemType, MonsterFamily, MonsterRow, PetRow, SkillRow, SkillType,
-        Spawn, StatusEffect,
+        html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, ItemCategory,
+        ItemRow, ItemType, MonsterFamily, MonsterRow, PetRow, SkillRow, SkillType, Spawn,
+        StatusEffect,
     },
-    items::{admin::AdminItem, raw::RawItem},
-    monsters::{admin::AdminMonster, RawMonster},
+    items::admin::AdminItem,
+    monsters::admin::AdminMonster,
     pets::admin::AdminPet,
-    skills::{admin::AdminSkill, RawSkill},
+    skills::admin::AdminSkill,
 };
 /// The main interface for the guide.
 pub struct OrnaGuide {
     http: Http,
-    items: Option<Vec<RawItem>>,
-    monsters: Option<Vec<RawMonster>>,
-    skills: Option<Vec<RawSkill>>,
 }
 
 impl OrnaGuide {
     /// Construct a bare instance of the guide.
     pub fn new() -> Self {
-        Self {
-            http: Http::new(),
-            items: None,
-            monsters: None,
-            skills: None,
-        }
+        Self { http: Http::new() }
     }
 
     /// Construct an instance of the guide from an existing http session.
     /// This can be use to "subclass" the guide.
     fn from_http(http: Http) -> Self {
-        Self {
-            http,
-            ..Default::default()
-        }
+        Self { http }
     }
 
     /// Get the http session from the guide.
@@ -56,44 +45,6 @@ impl Default for OrnaGuide {
     }
 }
 
-impl Guide for OrnaGuide {
-    fn fetch_items(&mut self) -> Result<&[RawItem], Error> {
-        if self.items.is_none() {
-            self.items = Some(self.http.fetch_items()?);
-        }
-
-        Ok(self.items.as_ref().unwrap())
-    }
-
-    fn get_items(&self) -> Option<&[RawItem]> {
-        self.items.as_ref().map(|items| items.as_ref())
-    }
-
-    fn fetch_monsters(&mut self) -> Result<&[crate::monsters::RawMonster], Error> {
-        if self.monsters.is_none() {
-            self.monsters = Some(self.http.fetch_monsters()?);
-        }
-
-        Ok(self.monsters.as_ref().unwrap())
-    }
-
-    fn get_monsters(&self) -> Option<&[crate::monsters::RawMonster]> {
-        self.monsters.as_ref().map(|monster| monster.as_ref())
-    }
-
-    fn fetch_skills(&mut self) -> Result<&[RawSkill], Error> {
-        if self.skills.is_none() {
-            self.skills = Some(self.http.fetch_skills()?);
-        }
-
-        Ok(self.skills.as_ref().unwrap())
-    }
-
-    fn get_skills(&self) -> Option<&[RawSkill]> {
-        self.skills.as_ref().map(|skill| skill.as_ref())
-    }
-}
-
 pub struct OrnaAdminGuide {
     guide: OrnaGuide,
 }
@@ -104,32 +55,6 @@ impl OrnaAdminGuide {
         Ok(Self {
             guide: OrnaGuide::from_http(Http::new_with_cookie(cookie)?),
         })
-    }
-}
-
-impl Guide for OrnaAdminGuide {
-    fn fetch_items(&mut self) -> Result<&[RawItem], Error> {
-        self.guide.fetch_items()
-    }
-
-    fn get_items(&self) -> Option<&[RawItem]> {
-        self.guide.get_items()
-    }
-
-    fn fetch_monsters(&mut self) -> Result<&[crate::monsters::RawMonster], Error> {
-        self.guide.fetch_monsters()
-    }
-
-    fn get_monsters(&self) -> Option<&[crate::monsters::RawMonster]> {
-        self.guide.get_monsters()
-    }
-
-    fn fetch_skills(&mut self) -> Result<&[RawSkill], Error> {
-        self.guide.fetch_skills()
-    }
-
-    fn get_skills(&self) -> Option<&[RawSkill]> {
-        self.guide.get_skills()
     }
 }
 
