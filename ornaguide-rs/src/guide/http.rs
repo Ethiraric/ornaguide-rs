@@ -364,6 +364,13 @@ impl Http {
         query_all_pages(url, &self.http)
     }
 
+    pub(crate) fn admin_add_item(&self, form: ParsedForm) -> Result<(), Error> {
+        let url = concat!(BASE_PATH!(), "/admin/items/item/add/");
+        let mut post_form = parse_item_html(&get_and_save(&self.http, url)?, &[])?;
+        post_form.fields = form.fields;
+        post_forms_to(&self.http, url, post_form)
+    }
+
     // Guide Admin Monsters
     pub(crate) fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(
@@ -387,6 +394,13 @@ impl Http {
     pub(crate) fn admin_retrieve_monsters_list(&self) -> Result<Vec<Entry>, Error> {
         let url = concat!(BASE_PATH!(), "/admin/monsters/monster/");
         query_all_pages(url, &self.http)
+    }
+
+    pub(crate) fn admin_add_monster(&self, form: ParsedForm) -> Result<(), Error> {
+        let url = concat!(BASE_PATH!(), "/admin/monsters/monster/add/");
+        let mut post_form = parse_monster_html(&get_and_save(&self.http, url)?, &[])?;
+        post_form.fields = form.fields;
+        post_forms_to(&self.http, url, post_form)
     }
 
     // Guide Admin Skills
@@ -432,6 +446,13 @@ impl Http {
     pub(crate) fn admin_retrieve_pets_list(&self) -> Result<Vec<Entry>, Error> {
         let url = concat!(BASE_PATH!(), "/admin/pets/pet/");
         query_all_pages(url, &self.http)
+    }
+
+    pub(crate) fn admin_add_pet(&self, form: ParsedForm) -> Result<(), Error> {
+        let url = concat!(BASE_PATH!(), "/admin/pets/pet/add/");
+        let mut post_form = parse_pet_html(&get_and_save(&self.http, url)?, &[])?;
+        post_form.fields = form.fields;
+        post_forms_to(&self.http, url, post_form)
     }
 
     // Guide Static data

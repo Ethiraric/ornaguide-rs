@@ -93,6 +93,10 @@ pub trait AdminGuide {
     fn admin_save_item(&self, item: AdminItem) -> Result<(), Error>;
     /// Retrieve the list of items from the admin view.
     fn admin_retrieve_items_list(&self) -> Result<Vec<ItemRow>, Error>;
+    /// Add a new item to the guide.
+    /// The csrfmiddlewaretoken and id fields of the provided item will be ignored.
+    /// In order to retrieve the id of the new item, all items have to be queried again.
+    fn admin_add_item(&self, item: AdminItem) -> Result<(), Error>;
 
     /// Retrieve the monster with the given id from the guide.
     fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<AdminMonster, Error>;
@@ -100,6 +104,10 @@ pub trait AdminGuide {
     fn admin_save_monster(&self, monster: AdminMonster) -> Result<(), Error>;
     /// Retrieve the list of monsters from the admin view.
     fn admin_retrieve_monsters_list(&self) -> Result<Vec<MonsterRow>, Error>;
+    /// Add a new monster to the guide.
+    /// The csrfmiddlewaretoken and id fields of the provided monster will be ignored.
+    /// In order to retrieve the id of the new monster, all monsters have to be queried again.
+    fn admin_add_monster(&self, monster: AdminMonster) -> Result<(), Error>;
 
     /// Retrieve the skill with the given id from the guide.
     fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<AdminSkill, Error>;
@@ -118,6 +126,10 @@ pub trait AdminGuide {
     fn admin_save_pet(&self, pet: AdminPet) -> Result<(), Error>;
     /// Retrieve the list of pets from the admin view.
     fn admin_retrieve_pets_list(&self) -> Result<Vec<PetRow>, Error>;
+    /// Add a new pet to the guide.
+    /// The csrfmiddlewaretoken and id fields of the provided pet will be ignored.
+    /// In order to retrieve the id of the new pet, all pets have to be queried again.
+    fn admin_add_pet(&self, pet: AdminPet) -> Result<(), Error>;
 
     /// Retrieve the list of spawns from the admin view.
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error>;

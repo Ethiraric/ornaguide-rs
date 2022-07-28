@@ -159,6 +159,10 @@ impl AdminGuide for OrnaAdminGuide {
             .collect())
     }
 
+    fn admin_add_item(&self, item: AdminItem) -> Result<(), Error> {
+        self.guide.http().admin_add_item(ParsedForm::from(item))
+    }
+
     fn admin_retrieve_monster_by_id(
         &self,
         id: u32,
@@ -189,6 +193,12 @@ impl AdminGuide for OrnaAdminGuide {
                 name: entry.value,
             })
             .collect())
+    }
+
+    fn admin_add_monster(&self, monster: AdminMonster) -> Result<(), Error> {
+        self.guide
+            .http()
+            .admin_add_monster(ParsedForm::from(monster))
     }
 
     fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<AdminSkill, Error> {
@@ -245,6 +255,10 @@ impl AdminGuide for OrnaAdminGuide {
                 name: entry.value,
             })
             .collect())
+    }
+
+    fn admin_add_pet(&self, pet: AdminPet) -> Result<(), Error> {
+        self.guide.http().admin_add_pet(ParsedForm::from(pet))
     }
 
     fn admin_retrieve_spawns_list(&self) -> Result<Vec<Spawn>, Error> {
