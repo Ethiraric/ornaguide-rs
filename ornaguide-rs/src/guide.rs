@@ -8,6 +8,7 @@ pub(crate) mod html_list_parser;
 pub(crate) mod html_utils;
 mod http;
 mod ornaguide;
+mod post_error_parser;
 mod r#static;
 
 pub mod fetch;

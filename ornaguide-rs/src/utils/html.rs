@@ -67,6 +67,29 @@ pub fn get_attribute_from_node(
     }
 }
 
+/// Return the list of attributes form an HTML node.
+/// I am very unsure of what I'm doing here, but it works for what I use it for.
+pub fn list_attributes_form_node(node: &NodeRef, node_name: &str) -> Result<Vec<String>, Error> {
+    if let NodeData::Element(ElementData {
+        name: _,
+        attributes,
+        template_contents: _,
+    }) = node.data()
+    {
+        let attributes = attributes.borrow();
+        Ok(attributes
+            .map
+            .iter()
+            .flat_map(|(_, value)| value.value.split(' ').map(str::to_string))
+            .collect())
+    } else {
+        Err(Error::HTMLParsingError(format!(
+            "Failed to get attributes from {}",
+            node_name
+        )))
+    }
+}
+
 /// Get the text contained in the node.
 pub fn node_to_text(node: &NodeRef) -> String {
     node.text_contents().trim().to_string()

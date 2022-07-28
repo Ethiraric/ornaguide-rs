@@ -38,6 +38,16 @@ pub enum Error {
         /// An error message.
         String,
     ),
+    /// The request was successfully delivered, the guide responded 200 OK, but there are surprise
+    /// errors which caused the guide to just ignore your POST request.
+    GuidePostFormError(
+        /// The URL that was requested.
+        String,
+        /// The generic error message.
+        String,
+        /// A list of errors found throughout the page.
+        Vec<String>,
+    ),
     /// There was an error in parsing HTML.
     HTMLParsingError(String),
     /// A conversion from multiple codex status effects to guide ids did not fully succeed.
@@ -121,6 +131,9 @@ impl Display for Error {
             Error::ParseFloatError(err) => write!(f, "{}", err),
             Error::ResponseError(method, url, status, err) => {
                 write!(f, "HTTP {} {} {}: {}", method, url, status, err)
+            }
+            Error::GuidePostFormError(url, generic, errors) => {
+                write!(f, "HTTP POST {}: {}: {:?}", url, generic, errors)
             }
             Error::HTMLParsingError(err) => write!(f, "{}", err),
             Error::PartialCodexStatusEffectsConversion(found, not_found) => write!(

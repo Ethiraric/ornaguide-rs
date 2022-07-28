@@ -27,6 +27,7 @@ use crate::{
             parse_spawn_html, parse_status_effect_html, ParsedForm,
         },
         html_list_parser::{parse_list_html, Entry, ParsedTable},
+        post_error_parser::parse_post_error_html,
     },
 };
 
@@ -177,7 +178,12 @@ const PET_FORM_FIELD_NAMES: &[&str] = &[
 
 /// Perform a POST request on the URL, serializing the form as an urlencoded body and setting the
 /// referer to the URL.
-fn post_forms_to(http: &Client, url: &str, form: ParsedForm) -> Result<(), Error> {
+fn post_forms_to(
+    http: &Client,
+    url: &str,
+    form: ParsedForm,
+    form_root_name: &str,
+) -> Result<(), Error> {
     let mut tmpurl = reqwest::Url::parse("http://x").unwrap();
     tmpurl
         .query_pairs_mut()
@@ -193,14 +199,18 @@ fn post_forms_to(http: &Client, url: &str, form: ParsedForm) -> Result<(), Error
         .body(body)
         .send()?;
 
-    if response.status().is_success() {
+    let status = response.status();
+    let text = response.text()?;
+    parse_post_error_html(url, &text, form_root_name)?;
+
+    if status.is_success() {
         Ok(())
     } else {
         Err(Error::ResponseError(
             "POST".to_string(),
             url.to_string(),
-            response.status().as_u16(),
-            response.text()?,
+            status.as_u16(),
+            text,
         ))
     }
 }
@@ -324,6 +334,7 @@ impl Http {
             &self.http,
             &format!(concat!(BASE_PATH!(), "/admin/items/item/{}/change/"), id),
             form,
+            "#item_form",
         )
     }
 
@@ -336,7 +347,7 @@ impl Http {
         let url = concat!(BASE_PATH!(), "/admin/items/item/add/");
         let mut post_form = parse_item_html(&get_and_save(&self.http, url)?, &[])?;
         post_form.fields = form.fields;
-        post_forms_to(&self.http, url, post_form)
+        post_forms_to(&self.http, url, post_form, "#item_form")
     }
 
     // Guide Admin Monsters
@@ -356,6 +367,7 @@ impl Http {
                 id
             ),
             form,
+            "#monster_form",
         )
     }
 
@@ -368,7 +380,7 @@ impl Http {
         let url = concat!(BASE_PATH!(), "/admin/monsters/monster/add/");
         let mut post_form = parse_monster_html(&get_and_save(&self.http, url)?, &[])?;
         post_form.fields = form.fields;
-        post_forms_to(&self.http, url, post_form)
+        post_forms_to(&self.http, url, post_form, "#monster_form")
     }
 
     // Guide Admin Skills
@@ -382,6 +394,7 @@ impl Http {
             &self.http,
             &format!(concat!(BASE_PATH!(), "/admin/skills/skill/{}/change/"), id),
             form,
+            "#skill_form",
         )
     }
 
@@ -394,7 +407,7 @@ impl Http {
         let url = concat!(BASE_PATH!(), "/admin/skills/skill/add/");
         let mut post_form = parse_skill_html(&get_and_save(&self.http, url)?, &[])?;
         post_form.fields = form.fields;
-        post_forms_to(&self.http, url, post_form)
+        post_forms_to(&self.http, url, post_form, "#skill_form")
     }
 
     // Guide Admin Pets
@@ -403,6 +416,7 @@ impl Http {
             &self.http,
             &format!(concat!(BASE_PATH!(), "/admin/pets/pet/{}/change/"), id),
             form,
+            "#pet_form",
         )
     }
 
@@ -420,7 +434,7 @@ impl Http {
         let url = concat!(BASE_PATH!(), "/admin/pets/pet/add/");
         let mut post_form = parse_pet_html(&get_and_save(&self.http, url)?, &[])?;
         post_form.fields = form.fields;
-        post_forms_to(&self.http, url, post_form)
+        post_forms_to(&self.http, url, post_form, "#pet_form")
     }
 
     // Guide Static data
@@ -459,7 +473,7 @@ impl Http {
         let mut form = parse_spawn_html(&get_and_save(&self.http, url)?)?;
         form.fields
             .push(("description".to_string(), spawn_name.to_string()));
-        post_forms_to(&self.http, url, form)
+        post_forms_to(&self.http, url, form, "#spawn_form")
     }
 
     pub(crate) fn admin_add_status_effect(&self, status_effect_name: &str) -> Result<(), Error> {
@@ -467,7 +481,7 @@ impl Http {
         let mut form = parse_status_effect_html(&get_and_save(&self.http, url)?)?;
         form.fields
             .push(("name".to_string(), status_effect_name.to_string()));
-        post_forms_to(&self.http, url, form)
+        post_forms_to(&self.http, url, form, "#statuseffect_form")
     }
 
     // --- Codex ---
