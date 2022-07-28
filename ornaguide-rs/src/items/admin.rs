@@ -110,7 +110,7 @@ pub struct AdminItem {
     /// How much more spawns there are with this item (%).
     pub spawn_bonus: f32,
     /// How much more experience you gain with this item (%).
-    pub exp_bonus: Vec<f32>,
+    pub exp_bonus: f32,
     /// Whether this item is a boss item (affects scaling and assessing).
     pub boss: bool,
     /// Whether this item is in the arena pool.
@@ -181,7 +181,7 @@ impl Default for AdminItem {
             gold_bonus: 0.0,
             drop_bonus: 0.0,
             spawn_bonus: 0.0,
-            exp_bonus: Vec::new(),
+            exp_bonus: 0.0,
             boss: false,
             arena: false,
             category: None,
@@ -260,7 +260,7 @@ impl TryFrom<ParsedForm> for AdminItem {
                 "gold_bonus" => item.gold_bonus = value.parse()?,
                 "drop_bonus" => item.drop_bonus = value.parse()?,
                 "spawn_bonus" => item.spawn_bonus = value.parse()?,
-                "exp_bonus" => item.exp_bonus.push(value.parse()?),
+                "exp_bonus" => item.exp_bonus = value.parse()?,
                 "boss" => item.boss = value == "on",
                 "arena" => item.arena = value == "on",
                 "category" => {
@@ -384,9 +384,7 @@ impl From<AdminItem> for ParsedForm {
         push("gold_bonus", item.gold_bonus.to_string());
         push("drop_bonus", item.drop_bonus.to_string());
         push("spawn_bonus", item.spawn_bonus.to_string());
-        for x in item.exp_bonus.iter() {
-            push("exp_bonus", x.to_string());
-        }
+        push("exp_bonus", item.exp_bonus.to_string());
 
         if item.boss {
             push("boss", "on".to_string());

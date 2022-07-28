@@ -102,7 +102,7 @@ pub struct ItemFilters<'a> {
     /// Filter by spawn_bonus.
     pub spawn_bonus: Filter<'a, f32>,
     /// Filter by exp_bonus.
-    pub exp_bonus: Filter<'a, Vec<f32>>,
+    pub exp_bonus: Filter<'a, f32>,
     // Filter by boss.
     pub boss: Filter<'a, bool>,
     /// Filter by arena.
