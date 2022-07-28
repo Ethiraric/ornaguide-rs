@@ -75,6 +75,8 @@ pub struct AdminItem {
     pub status_protection: u32,
     /// How much mana you save with this item, if equippable (%).
     pub mana_saver: i8,
+    /// How much more effective potions are, if equippable (%).
+    pub potion_effectiveness: u8,
     /// Whether the item has adornment slots, if equippable.
     pub has_slots: bool,
     /// The number of adornment slots of the item at common quality level 10.
@@ -168,6 +170,7 @@ impl Default for AdminItem {
             status_infliction: 0,
             status_protection: 0,
             mana_saver: 0,
+            potion_effectiveness: 0,
             has_slots: false,
             base_adornment_slots: 0,
             rarity: "NO".to_string(),
@@ -240,6 +243,7 @@ impl TryFrom<ParsedForm> for AdminItem {
                 "status_infliction" => item.status_infliction = value.parse()?,
                 "status_protection" => item.status_protection = value.parse()?,
                 "mana_saver" => item.mana_saver = value.parse()?,
+                "potion_effectiveness" => item.potion_effectiveness = value.parse()?,
                 "has_slots" => item.has_slots = value == "on",
                 "base_adornment_slots" => item.base_adornment_slots = value.parse()?,
                 "rarity" => item.rarity = value,
@@ -350,6 +354,10 @@ impl From<AdminItem> for ParsedForm {
         push("status_infliction", item.status_infliction.to_string());
         push("status_protection", item.status_protection.to_string());
         push("mana_saver", item.mana_saver.to_string());
+        push(
+            "potion_effectiveness",
+            item.potion_effectiveness.to_string(),
+        );
 
         if item.has_slots {
             push("has_slots", "on".to_string());

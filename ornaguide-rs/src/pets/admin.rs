@@ -76,6 +76,7 @@ impl Default for AdminPet {
         }
     }
 }
+
 impl TryFrom<ParsedForm> for AdminPet {
     type Error = Error;
 

@@ -110,6 +110,7 @@ const ITEM_FORM_FIELD_NAMES: &[&str] = &[
     "materials",
     "price",
     "ability",
+    "potion_effectiveness",
 ];
 
 /// Names of the fields in the admin monster change page.
