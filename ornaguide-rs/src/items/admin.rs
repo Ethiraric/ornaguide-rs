@@ -141,7 +141,7 @@ impl Default for AdminItem {
             codex_uri: String::new(),
             name: String::new(),
             tier: 0,
-            type_: 0,
+            type_: 13, // Corresponds to "TBD" on guide.
             image_name: String::new(),
             description: String::new(),
             notes: String::new(),
