@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub use crate::guide::html_utils::Tag;
+use crate::{data::GuideData, error::Error, monsters::admin::AdminMonster};
 
 /// An ability for a monster.
 #[derive(Debug, Serialize, Deserialize)]
@@ -116,4 +117,172 @@ pub struct Bosses {
 pub struct Raids {
     /// Raids from the codex.
     pub raids: Vec<Raid>,
+}
+
+impl Monster {
+    /// Try to convert `self` to an `AdminMonster`.
+    ///
+    ///  - An unknown family will be ignored, rather than returning an error.
+    ///  - Unknown events are ignored, rather than returning an error.
+    ///  - Unknown drops are ignored, rather than returning an error.
+    ///  - Unknown skills are ignored, rather than returning an error.
+    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminMonster, Error> {
+        Ok(AdminMonster {
+            codex_uri: format!("/codex/monsters/{}/", self.slug),
+            name: self.name.clone(),
+            tier: self.tier,
+            family: guide_data
+                .static_
+                .monster_families
+                .iter()
+                .find(|family| family.name == self.family)
+                .map(|family| family.id),
+            image_name: self.icon.clone(),
+            boss: false,
+            spawns: self
+                .events
+                .iter()
+                .filter_map(|event_name| {
+                    guide_data
+                        .static_
+                        .iter_events()
+                        .find(|event| event.event_name() == *event_name)
+                        .map(|event| event.id)
+                })
+                .collect(),
+            drops: self
+                .drops
+                .iter()
+                .filter_map(|drop| guide_data.items.find_by_uri(&drop.uri).map(|item| item.id))
+                .collect(),
+            skills: self
+                .abilities
+                .iter()
+                .filter_map(|skill| {
+                    guide_data
+                        .skills
+                        .find_by_uri(&skill.uri)
+                        .map(|skill| skill.id)
+                })
+                .collect(),
+            ..AdminMonster::default()
+        })
+    }
+}
+
+impl Boss {
+    /// Try to convert `self` to an `AdminMonster`.
+    ///
+    ///  - An unknown family will be ignored, rather than returning an error.
+    ///  - Unknown events are ignored, rather than returning an error.
+    ///  - Unknown drops are ignored, rather than returning an error.
+    ///  - Unknown skills are ignored, rather than returning an error.
+    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminMonster, Error> {
+        Ok(AdminMonster {
+            codex_uri: format!("/codex/bosses/{}/", self.slug),
+            name: self.name.clone(),
+            tier: self.tier,
+            family: guide_data
+                .static_
+                .monster_families
+                .iter()
+                .find(|family| family.name == self.family)
+                .map(|family| family.id),
+            image_name: self.icon.clone(),
+            boss: true,
+            spawns: self
+                .events
+                .iter()
+                .filter_map(|event_name| {
+                    guide_data
+                        .static_
+                        .iter_events()
+                        .find(|event| event.event_name() == *event_name)
+                        .map(|event| event.id)
+                })
+                .collect(),
+            drops: self
+                .drops
+                .iter()
+                .filter_map(|drop| guide_data.items.find_by_uri(&drop.uri).map(|item| item.id))
+                .collect(),
+            skills: self
+                .abilities
+                .iter()
+                .filter_map(|skill| {
+                    guide_data
+                        .skills
+                        .find_by_uri(&skill.uri)
+                        .map(|skill| skill.id)
+                })
+                .collect(),
+            ..AdminMonster::default()
+        })
+    }
+}
+
+impl Raid {
+    /// Try to convert `self` to an `AdminMonster`.
+    ///
+    ///  - Unknown events are ignored, rather than returning an error.
+    ///  - Unknown spawns are ignored, rather than returning an error.
+    ///  - Unknown drops are ignored, rather than returning an error.
+    ///  - Unknown skills are ignored, rather than returning an error.
+    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminMonster, Error> {
+        Ok(AdminMonster {
+            codex_uri: format!("/codex/bosses/{}/", self.slug),
+            name: self.name.clone(),
+            tier: self.tier,
+            image_name: self.icon.clone(),
+            boss: true,
+            spawns: self
+                // List events to which the raid belongs to.
+                .events
+                .iter()
+                .filter_map(|event_name| {
+                    guide_data
+                        .static_
+                        .iter_events()
+                        .find(|event| event.event_name() == *event_name)
+                        .map(|event| event.id)
+                })
+                // Add raid tags.
+                .chain(self.tags.iter().filter_map(|tag| {
+                    match tag {
+                        Tag::WorldRaid => guide_data
+                            .static_
+                            .spawns
+                            .iter()
+                            .find(|spawn| spawn.name == "World Raid")
+                            .map(|spawn| spawn.id),
+                        Tag::KingdomRaid => guide_data
+                            .static_
+                            .spawns
+                            .iter()
+                            .find(|spawn| spawn.name == "Kingdom Raid")
+                            .map(|spawn| spawn.id),
+                        // TODO(ethiraric, 28/07/2022): Include Other Realm Raid as a spawn?
+                        Tag::OtherRealmsRaid => None,
+                        _ => None,
+                    }
+                }))
+                .collect(),
+            drops: self
+                .drops
+                .iter()
+                .filter_map(|drop| guide_data.items.find_by_uri(&drop.uri).map(|item| item.id))
+                .collect(),
+            skills: self
+                .abilities
+                .iter()
+                .filter_map(|skill| {
+                    guide_data
+                        .skills
+                        .find_by_uri(&skill.uri)
+                        .map(|skill| skill.id)
+                })
+                .collect(),
+            ..AdminMonster::default()
+        })
+    }
 }

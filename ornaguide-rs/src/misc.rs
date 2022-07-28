@@ -1,4 +1,4 @@
-use crate::guide::Static;
+use crate::{error::Error, guide::Static};
 
 /// Remove any added text that may appear in the guide for a name, but not in the game or the
 /// codex.
@@ -81,4 +81,29 @@ macro_rules! retry_once {
             Err(_) => $expr,
         }
     };
+}
+
+/// A trait to extend `Result<Vec<u32>, Error>`, when it comes from an attempt to convert an array
+/// of elements to an array of guide ids.
+pub trait VecIdConversionResult {
+    /// If the conversion errored because some or all elements could not be converted, return an
+    /// `Ok` with the elements that could be converted.
+    /// If all elements failed to be converted, return an `Ok(Vec::new())`.
+    fn ignore_failed_id_conversions(self) -> Self;
+}
+
+impl VecIdConversionResult for Result<Vec<u32>, Error> {
+    fn ignore_failed_id_conversions(self) -> Self {
+        match self {
+            Ok(x) => Ok(x),
+            Err(Error::PartialCodexStatusEffectsConversion(found, _)) => Ok(found),
+            Err(Error::PartialCodexSkillsConversion(found, _)) => Ok(found),
+            Err(Error::PartialCodexItemDroppedBysConversion(found, _)) => Ok(found),
+            Err(Error::PartialCodexItemUpgradeMaterialsConversion(found, _)) => Ok(found),
+            Err(Error::PartialCodexFollowerAbilitiesConversion(found, _)) => Ok(found),
+            Err(Error::PartialCodexMonsterAbilitiesConversion(found, _)) => Ok(found),
+            Err(Error::PartialCodexEventsConversion(found, _)) => Ok(found),
+            x => x,
+        }
+    }
 }

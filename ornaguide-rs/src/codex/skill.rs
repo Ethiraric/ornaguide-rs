@@ -5,7 +5,10 @@ use crate::{
     codex::Tag,
     error::Error,
     guide::Static,
-    misc::{codex_effect_name_iter_to_guide_id_results, codex_effect_name_to_guide_name},
+    misc::{
+        codex_effect_name_iter_to_guide_id_results, codex_effect_name_to_guide_name,
+        VecIdConversionResult,
+    },
     skills::admin::AdminSkill,
 };
 
@@ -86,6 +89,7 @@ impl CodexSkill {
     }
 
     /// Try to convert `self` to an `AdminSkill`.
+    /// Unknown status effects are ignored, rather than returning an error.
     pub fn try_to_admin_skill(&self, static_: &Static) -> Result<AdminSkill, Error> {
         Ok(AdminSkill {
             name: self.name.clone(),
@@ -97,8 +101,14 @@ impl CodexSkill {
                 ".".to_string()
             },
             bought: self.bought_at_arcanist(),
-            causes: self.causes.try_to_guide_ids(static_)?,
-            gives: self.gives.try_to_guide_ids(static_)?,
+            causes: self
+                .causes
+                .try_to_guide_ids(static_)
+                .ignore_failed_id_conversions()?,
+            gives: self
+                .gives
+                .try_to_guide_ids(static_)
+                .ignore_failed_id_conversions()?,
             ..AdminSkill::default()
         })
     }

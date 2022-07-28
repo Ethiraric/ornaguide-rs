@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::error::Error;
+use crate::{data::GuideData, error::Error, pets::admin::AdminPet};
 
 /// An ability for a follower.
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,6 +39,38 @@ pub struct Follower {
 pub struct Followers {
     /// Followers from the codex.
     pub followers: Vec<Follower>,
+}
+
+impl Follower {
+    /// Try to convert `self` to an `AdminPet`.
+    ///
+    ///  - Unknown skills are ignored, rather than returning an error.
+    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminPet, Error> {
+        Ok(AdminPet {
+            codex_uri: format!("/codex/followers/{}", self.slug),
+            name: self.name.clone(),
+            tier: self.tier,
+            image_name: self.icon.clone(),
+            description: if !self.description.is_empty() {
+                self.description.clone()
+            } else {
+                ".".to_string()
+            },
+            limited: !self.events.is_empty(),
+            limited_details: self.events.join(", "),
+            skills: self
+                .abilities
+                .iter()
+                .filter_map(|skill| {
+                    guide_data
+                        .skills
+                        .find_by_uri(&skill.uri)
+                        .map(|skill| skill.id)
+                })
+                .collect(),
+            ..AdminPet::default()
+        })
+    }
 }
 
 impl<'a> Followers {

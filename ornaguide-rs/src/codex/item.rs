@@ -1,7 +1,12 @@
 use crate::{
+    data::GuideData,
     error::Error,
-    guide::{html_utils::Tag, Static},
-    misc::{codex_effect_name_iter_to_guide_id_results, codex_effect_name_to_guide_name},
+    guide::{html_utils::Tag, Static, VecElements},
+    items::admin::AdminItem,
+    misc::{
+        codex_effect_name_iter_to_guide_id_results, codex_effect_name_to_guide_name,
+        VecIdConversionResult,
+    },
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -149,6 +154,126 @@ pub struct Item {
     pub dropped_by: Vec<DroppedBy>,
     /// The materials needed to upgrade the item.
     pub upgrade_materials: Vec<UpgradeMaterial>,
+}
+
+impl Item {
+    /// Try to convert `self` to an `AdminItem`.
+    ///
+    ///  - Unknown status effects are ignored, rather than returning an error.
+    ///  - Unknown upgrade materials are ignored, rather than returning an error.
+    ///  - An unknown ability will be ignored, rather than returning an error.
+    ///  - An unknown element will be ignored, rather than returning an error.
+    ///  - `self.dropped_by` is ignored and will not be saved in the returned `AdminItem`.
+    pub fn try_to_admin_item(&self, guide_data: &GuideData) -> Result<AdminItem, Error> {
+        Ok(AdminItem {
+            codex_uri: format!("/codex/items/{}/", self.slug),
+            name: self.name.clone(),
+            tier: self.tier,
+            image_name: self.icon.clone(),
+            description: if !self.description.is_empty() {
+                self.description.clone()
+            } else {
+                ".".to_string()
+            },
+            hp: self.stats.as_ref().and_then(|stats| stats.hp).unwrap_or(0),
+            mana: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.mana)
+                .unwrap_or(0),
+            attack: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.attack)
+                .unwrap_or(0),
+            magic: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.magic)
+                .unwrap_or(0),
+            defense: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.defense)
+                .unwrap_or(0),
+            resistance: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.resistance)
+                .unwrap_or(0),
+            dexterity: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.dexterity)
+                .unwrap_or(0),
+            ward: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.ward)
+                .unwrap_or(0),
+            crit: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.crit)
+                .unwrap_or(0),
+            foresight: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.foresight)
+                .unwrap_or(0),
+            base_adornment_slots: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.adornment_slots)
+                .unwrap_or(0),
+            has_slots: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.adornment_slots)
+                .unwrap_or(0)
+                > 0,
+            element: self
+                .stats
+                .as_ref()
+                .and_then(|stats| stats.element.as_ref())
+                .and_then(|elem| {
+                    guide_data
+                        .static_
+                        .elements
+                        .get_element_by_name(&elem.to_string())
+                        .ok()
+                })
+                .map(|elem| elem.id),
+            ability: self.ability.as_ref().and_then(|ability| {
+                guide_data
+                    .skills
+                    .find_offhand_from_name(&ability.name)
+                    .map(|skill| skill.id)
+            }),
+            causes: self
+                .causes
+                .try_to_guide_ids(&guide_data.static_)
+                .ignore_failed_id_conversions()?,
+            cures: self
+                .cures
+                .try_to_guide_ids(&guide_data.static_)
+                .ignore_failed_id_conversions()?,
+            gives: self
+                .gives
+                .try_to_guide_ids(&guide_data.static_)
+                .ignore_failed_id_conversions()?,
+            prevents: self
+                .immunities
+                .try_to_guide_ids(&guide_data.static_)
+                .ignore_failed_id_conversions()?,
+            materials: self
+                .upgrade_materials
+                .iter()
+                .filter_map(|item| guide_data.items.find_by_uri(&item.uri).map(|item| item.id))
+                .collect(),
+            ..AdminItem::default()
+        })
+    }
 }
 
 impl ToString for Element {
