@@ -540,7 +540,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                             }
                             Ok(())
                         },
-                        |id| data.guide.monsters.get_by_id(*id),
+                        |id| data.guide.monsters.get_by_id(*id).map(|item| &item.name),
                     )
                 },
                 data,
