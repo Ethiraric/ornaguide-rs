@@ -92,14 +92,21 @@ impl CodexSkill {
     /// Unknown status effects are ignored, rather than returning an error.
     pub fn try_to_admin_skill(&self, static_: &Static) -> Result<AdminSkill, Error> {
         Ok(AdminSkill {
-            name: self.name.clone(),
-            tier: self.tier,
             codex_uri: format!("/codex/spells/{}/", self.slug),
+            name: if self.is_offhand() {
+                format!("{} [off-hand]", self.name)
+            } else if self.slug.starts_with("Zwei") {
+                format!("{} [zwei]", self.name)
+            } else {
+                self.name.clone()
+            },
+            tier: self.tier,
             description: if !self.description.is_empty() {
                 self.description.clone()
             } else {
                 ".".to_string()
             },
+            offhand: self.is_offhand(),
             bought: self.bought_at_arcanist(),
             causes: self
                 .causes
