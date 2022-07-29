@@ -187,4 +187,16 @@ impl<'a> AdminPets {
             ))
         })
     }
+
+    /// Find the admin pet associated with the given id.
+    pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminPet> {
+        self.pets.iter().find(|pet| pet.id == needle)
+    }
+
+    /// Find the admin pet associated with the given id.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminPet, Error> {
+        self.find_by_id(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for admin pet with id #{}", needle)))
+    }
 }

@@ -6,16 +6,19 @@ use ornaguide_rs::{
     monsters::admin::AdminMonster,
 };
 
-use crate::guide_match::{
-    checker::{fix_abilities_field, fix_option_field, fix_spawn_field, Checker},
-    misc::{CodexAbilities, EventsNames},
+use crate::{
+    guide_match::{
+        checker::{fix_abilities_field, fix_option_field, fix_spawn_field, Checker},
+        misc::{CodexAbilities, EventsNames},
+    },
+    retry_once,
 };
 
 /// List monsters that are either:
 ///   - On the guide, but missing on the codex.
 ///   - On the codex, but missing on the guide.
 /// None of these should happen. We can query the codex for monsters outside of their event.
-fn list_missing(data: &OrnaData) -> Result<(), Error> {
+fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     let missing_on_guide = data
         .codex
         .iter_all_monsters()
@@ -62,7 +65,6 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
             }
         }
     }
-
     if !not_on_codex.is_empty() {
         println!("{} monsters not on codex:", not_on_codex.len());
         for monster in not_on_codex.iter() {
@@ -78,6 +80,49 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
                 kind, monster.name, monster.id
             );
         }
+    }
+
+    // Create the new monsters on the guide, if asked to.
+    if fix && !missing_on_guide.is_empty() {
+        for monster in missing_on_guide.iter() {
+            retry_once!(guide.admin_add_monster(monster.try_to_admin_monster(&data.guide)?))?;
+        }
+
+        // Retrieve the new list of monsters, and keep only those we didn't know of before.
+        let all_monsters = retry_once!(guide.admin_retrieve_monsters_list())?;
+        let new_monsters = all_monsters
+            .iter()
+            .filter(|monster| data.guide.monsters.find_by_id(monster.id).is_none())
+            .filter_map(
+                // Retrieve the `AdminMonster` entry.
+                |monster| match retry_once!(guide.admin_retrieve_monster_by_id(monster.id)) {
+                    Ok(x) => Some(x),
+                    Err(x) => {
+                        println!(
+                            "Failed to retrieve monster #{} (https://orna.guide/monsters?show={}): {}",
+                            monster.id, monster.id, x
+                        );
+                        None
+                    }
+                },
+            )
+            .collect_vec();
+
+        // Log what was added.
+        println!(
+            "Added {}/{} monsters on the guide:",
+            new_monsters.len(),
+            missing_on_guide.len()
+        );
+        for monster in new_monsters.iter() {
+            println!(
+                "\t\x1B[0;32m- {:20} (https://orna.guide/monsters?show={})\x1B[0m",
+                monster.name, monster.id
+            );
+        }
+
+        // Add monsters into the data, so it can be used later.
+        data.guide.monsters.monsters.extend(new_monsters);
     }
 
     Ok(())
@@ -281,7 +326,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
 /// Check for any mismatch between the guide monsters and the codex monsters.
 pub fn perform(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
-    list_missing(data)?;
+    list_missing(data, fix, guide)?;
     check_fields(data, fix, guide)?;
     Ok(())
 }

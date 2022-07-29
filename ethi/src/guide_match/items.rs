@@ -14,10 +14,11 @@ use crate::{
         misc::{ItemDroppedBys, ItemUpgradeMaterials},
     },
     misc::sanitize_guide_name,
+    retry_once,
 };
 
 /// List items that are on the guide and not the codex, or on the codex and not on the guide.
-fn list_missing(data: &OrnaData) -> Result<(), Error> {
+fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     let missing_on_guide = data
         .codex
         .items
@@ -37,7 +38,6 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         })
         .filter(|item| data.guide.items.get_by_slug(&item.slug).is_err())
         .collect_vec();
-
     let not_on_codex = data
         .guide
         .items
@@ -57,7 +57,6 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
             );
         }
     }
-
     if !not_on_codex.is_empty() {
         println!("{} items not on codex:", not_on_codex.len());
         for item in not_on_codex.iter() {
@@ -66,6 +65,49 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
                 item.name, item.id
             );
         }
+    }
+
+    // Create the new items on the guide, if asked to.
+    if fix && !missing_on_guide.is_empty() {
+        for item in missing_on_guide.iter() {
+            retry_once!(guide.admin_add_item(item.try_to_admin_item(&data.guide)?))?;
+        }
+
+        // Retrieve the new list of items, and keep only those we didn't know of before.
+        let all_items = retry_once!(guide.admin_retrieve_items_list())?;
+        let new_items = all_items
+            .iter()
+            .filter(|item| data.guide.items.find_by_id(item.id).is_none())
+            .filter_map(
+                // Retrieve the `AdminItem` entry.
+                |item| match retry_once!(guide.admin_retrieve_item_by_id(item.id)) {
+                    Ok(x) => Some(x),
+                    Err(x) => {
+                        println!(
+                            "Failed to retrieve item #{} (https://orna.guide/items?show={}): {}",
+                            item.id, item.id, x
+                        );
+                        None
+                    }
+                },
+            )
+            .collect_vec();
+
+        // Log what was added.
+        println!(
+            "Added {}/{} items on the guide:",
+            new_items.len(),
+            missing_on_guide.len()
+        );
+        for item in new_items.iter() {
+            println!(
+                "\t\x1B[0;32m- {:20} (https://orna.guide/items?show={})\x1B[0m",
+                item.name, item.id
+            );
+        }
+
+        // Add items into the data, so it can be used later.
+        data.guide.items.items.extend(new_items);
     }
 
     Ok(())
@@ -511,21 +553,6 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                         |_| Ok(&guide_dropped_by_ids),
                         dropped_by,
                         |_, ids| {
-                            // For each monster that is missing a drop.
-                            for id in ids.iter() {
-                                // Fetch the monster.
-                                let mut monster = guide.admin_retrieve_monster_by_id(**id)?;
-                                // Check whether the drop was not just missing from the cache.
-                                if !monster.drops.contains(&guide_item.id) {
-                                    // Add the drop to the monster and save it.
-                                    monster.drops.push(guide_item.id);
-                                    guide.admin_save_monster(monster)?;
-                                    guide.admin_retrieve_monster_by_id(**id)?;
-                                }
-                            }
-                            Ok(())
-                        },
-                        |_, ids| {
                             // For each monster thet has one too much a drop.
                             for id in ids.iter() {
                                 // Fetch the monster.
@@ -534,6 +561,21 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                                 if monster.drops.contains(&guide_item.id) {
                                     // Remove the drop from the monster and save it.
                                     monster.drops.retain(|id| *id != guide_item.id);
+                                    guide.admin_save_monster(monster)?;
+                                    guide.admin_retrieve_monster_by_id(**id)?;
+                                }
+                            }
+                            Ok(())
+                        },
+                        |_, ids| {
+                            // For each monster that is missing a drop.
+                            for id in ids.iter() {
+                                // Fetch the monster.
+                                let mut monster = guide.admin_retrieve_monster_by_id(**id)?;
+                                // Check whether the drop was not just missing from the cache.
+                                if !monster.drops.contains(&guide_item.id) {
+                                    // Add the drop to the monster and save it.
+                                    monster.drops.push(guide_item.id);
                                     guide.admin_save_monster(monster)?;
                                     guide.admin_retrieve_monster_by_id(**id)?;
                                 }
@@ -576,8 +618,8 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
 }
 
 /// Check for any mismatch between the guide items and the codex items.
-pub fn perform(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
-    list_missing(data)?;
+pub fn perform(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    list_missing(data, fix, guide)?;
     check_stats(data, fix, guide)?;
     Ok(())
 }

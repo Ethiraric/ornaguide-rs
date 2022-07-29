@@ -1,6 +1,9 @@
 use crate::{
     codex::{CodexBoss, CodexMonster, CodexRaid, MonsterAbility, MonsterDrop},
+    data::GuideData,
+    error::Error,
     guide::html_utils::Tag,
+    monsters::admin::AdminMonster,
 };
 
 use itertools::Itertools;
@@ -123,6 +126,21 @@ impl<'a> CodexGenericMonster<'a> {
             CodexGenericMonster::Monster(x) => &x.drops,
             CodexGenericMonster::Boss(x) => &x.drops,
             CodexGenericMonster::Raid(x) => &x.drops,
+        }
+    }
+
+    /// Try to convert `self` to an `AdminMonster`.
+    ///
+    ///  - An unknown family will be ignored, rather than returning an error.
+    ///  - Unknown events are ignored, rather than returning an error.
+    ///  - Unknown spawns are ignored, rather than returning an error.
+    ///  - Unknown drops are ignored, rather than returning an error.
+    ///  - Unknown skills are ignored, rather than returning an error.
+    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminMonster, Error> {
+        match self {
+            CodexGenericMonster::Monster(x) => x.try_to_admin_monster(guide_data),
+            CodexGenericMonster::Boss(x) => x.try_to_admin_monster(guide_data),
+            CodexGenericMonster::Raid(x) => x.try_to_admin_monster(guide_data),
         }
     }
 }

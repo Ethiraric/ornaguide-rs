@@ -92,7 +92,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
     }
 
     // Create the new status effects on the guide, if asked to.
-    if fix {
+    if fix && !missing_on_guide.is_empty() {
         for status in missing_on_guide.iter() {
             retry_once!(guide.admin_add_status_effect(*status))?;
         }

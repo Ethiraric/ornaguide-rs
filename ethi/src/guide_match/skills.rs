@@ -7,13 +7,16 @@ use ornaguide_rs::{
     skills::admin::AdminSkill,
 };
 
-use crate::guide_match::checker::{fix_status_effects_field, Checker};
+use crate::{
+    guide_match::checker::{fix_status_effects_field, Checker},
+    retry_once,
+};
 
 /// List skills that are either:
 ///   - On the guide, but missing on the codex.
 ///   - On the codex, but missing on the guide.
 /// None of these should happen.
-fn list_missing(data: &OrnaData) -> Result<(), Error> {
+fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     // Passives are not listed on the codex. We get the id to filter out passive skills.
     let guide_passive_id = data
         .guide
@@ -23,6 +26,7 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .find(|type_| type_.name == "Passive")
         .map(|type_| type_.id)
         .unwrap();
+
     let missing_on_guide = data
         .codex
         .skills
@@ -30,7 +34,6 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .iter()
         .filter(|skill| data.guide.skills.get_by_slug(&skill.slug).is_err())
         .collect_vec();
-
     let not_on_codex = data
         .guide
         .skills
@@ -45,20 +48,62 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         println!("{} skills missing on guide:", missing_on_guide.len());
         for skill in missing_on_guide.iter() {
             println!(
-                "\t- {} (https://playorna.com/codex/spells/{})",
+                "\t- {:20} (https://playorna.com/codex/spells/{})",
                 skill.name, skill.slug
             );
         }
     }
-
     if !not_on_codex.is_empty() {
         println!("{} skills not on codex:", not_on_codex.len());
         for skill in not_on_codex.iter() {
             println!(
-                "\t- {} (https://orna.guide/skills?show={})",
+                "\t- {:20} (https://orna.guide/skills?show={})",
                 skill.name, skill.id
             );
         }
+    }
+
+    // Create the new skills on the guide, if asked to.
+    if fix && !missing_on_guide.is_empty() {
+        for skill in missing_on_guide.iter() {
+            retry_once!(guide.admin_add_skill(skill.try_to_admin_skill(&data.guide.static_)?))?;
+        }
+
+        // Retrieve the new list of skills, and keep only those we didn't know of before.
+        let all_skills = retry_once!(guide.admin_retrieve_skills_list())?;
+        let new_skills = all_skills
+            .iter()
+            .filter(|skill| data.guide.skills.find_by_id(skill.id).is_none())
+            .filter_map(
+                // Retrieve the `AdminSkill` entry.
+                |skill| match retry_once!(guide.admin_retrieve_skill_by_id(skill.id)) {
+                    Ok(x) => Some(x),
+                    Err(x) => {
+                        println!(
+                            "Failed to retrieve skill #{} (https://orna.guide/skills?show={}): {}",
+                            skill.id, skill.id, x
+                        );
+                        None
+                    }
+                },
+            )
+            .collect_vec();
+
+        // Log what was added.
+        println!(
+            "Added {}/{} skills on the guide:",
+            new_skills.len(),
+            missing_on_guide.len()
+        );
+        for skill in new_skills.iter() {
+            println!(
+                "\t\x1B[0;32m- {:20} (https://orna.guide/skills?show={})\x1B[0m",
+                skill.name, skill.id
+            );
+        }
+
+        // Add skills into the data, so it can be used later.
+        data.guide.skills.skills.extend(new_skills);
     }
 
     Ok(())
@@ -158,7 +203,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
 
 /// Check for any mismatch between the guide skills and the codex skills.
 pub fn perform(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
-    list_missing(data)?;
+    list_missing(data, fix, guide)?;
     check_fields(data, fix, guide)?;
     Ok(())
 }

@@ -6,7 +6,10 @@ use ornaguide_rs::{
     pets::admin::AdminPet,
 };
 
-use crate::guide_match::checker::{fix_abilities_field, Checker};
+use crate::{
+    guide_match::checker::{fix_abilities_field, Checker},
+    retry_once,
+};
 
 use super::misc::CodexAbilities;
 
@@ -14,7 +17,7 @@ use super::misc::CodexAbilities;
 ///   - On the guide, but missing on the codex.
 ///   - On the codex, but missing on the guide.
 /// None of these should happen.
-fn list_missing(data: &OrnaData) -> Result<(), Error> {
+fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     let missing_on_guide = data
         .codex
         .followers
@@ -22,7 +25,6 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
         .iter()
         .filter(|follower| data.guide.pets.get_by_slug(&follower.slug).is_err())
         .collect_vec();
-
     let not_on_codex = data
         .guide
         .pets
@@ -40,12 +42,54 @@ fn list_missing(data: &OrnaData) -> Result<(), Error> {
             );
         }
     }
-
     if !not_on_codex.is_empty() {
         println!("{} pets not on codex:", not_on_codex.len());
         for pet in not_on_codex.iter() {
             println!("\t- {} (https://orna.guide/pets?show={})", pet.name, pet.id);
         }
+    }
+
+    // Create the new pets on the guide, if asked to.
+    if fix && !missing_on_guide.is_empty() {
+        for pet in missing_on_guide.iter() {
+            retry_once!(guide.admin_add_pet(pet.try_to_admin_pet(&data.guide)?))?;
+        }
+
+        // Retrieve the new list of pets, and keep only those we didn't know of before.
+        let all_pets = retry_once!(guide.admin_retrieve_pets_list())?;
+        let new_pets = all_pets
+            .iter()
+            .filter(|pet| data.guide.pets.find_by_id(pet.id).is_none())
+            .filter_map(
+                // Retrieve the `AdminPet` entry.
+                |pet| match retry_once!(guide.admin_retrieve_pet_by_id(pet.id)) {
+                    Ok(x) => Some(x),
+                    Err(x) => {
+                        println!(
+                            "Failed to retrieve pet #{} (https://orna.guide/pets?show={}): {}",
+                            pet.id, pet.id, x
+                        );
+                        None
+                    }
+                },
+            )
+            .collect_vec();
+
+        // Log what was added.
+        println!(
+            "Added {}/{} pets on the guide:",
+            new_pets.len(),
+            missing_on_guide.len()
+        );
+        for pet in new_pets.iter() {
+            println!(
+                "\t\x1B[0;32m- {:20} (https://orna.guide/pets?show={})\x1B[0m",
+                pet.name, pet.id
+            );
+        }
+
+        // Add pets into the data, so it can be used later.
+        data.guide.pets.pets.extend(new_pets);
     }
 
     Ok(())
@@ -159,7 +203,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
 
 /// Check for any mismatch between the guide pets and the codex pets.
 pub fn perform(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
-    list_missing(data)?;
+    list_missing(data, fix, guide)?;
     check_fields(data, fix, guide)?;
     Ok(())
 }
