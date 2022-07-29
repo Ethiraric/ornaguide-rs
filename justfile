@@ -22,15 +22,15 @@ backup_output:
 
 backup_output_now:
   cargo run --release --example ethi json refresh
-  cp -r output output-`date "+%Y-%m-%dT%k-%M"`
-  BZIP2=-9 tar -cjvf output-`date "+%Y-%m-%dT%k-%M"`{.tar.bz2,}
-  mv output-`date "+%Y-%m-%dT%k-%M"`.tar.bz2 backups_output
-  rm -r output-`date "+%Y-%m-%dT%k-%M"`
+  cp -r output output-`date "+%Y-%m-%dT%H-%M"`
+  BZIP2=-9 tar -cjvf output-`date "+%Y-%m-%dT%H-%M"`{.tar.bz2,}
+  mv output-`date "+%Y-%m-%dT%H-%M"`.tar.bz2 backups_output
+  rm -r output-`date "+%Y-%m-%dT%H-%M"`
 
 backup_htmls_now:
-  cp -r htmls htmls-`date "+%Y-%m-%dT%k-%M"`
-  BZIP2=-9 tar -cjvf htmls-`date "+%Y-%m-%dT%k-%M"`{.tar.bz2,}
-  mv htmls-`date "+%Y-%m-%dT%k-%M"`.tar.bz2 backups_html
-  rm -r htmls-`date "+%Y-%m-%dT%k-%M"`
+  cp -r htmls htmls-`date "+%Y-%m-%dT%H-%M"`
+  BZIP2=-9 tar -cjvf htmls-`date "+%Y-%m-%dT%H-%M"`{.tar.bz2,}
+  mv htmls-`date "+%Y-%m-%dT%H-%M"`.tar.bz2 backups_html
+  rm -r htmls-`date "+%Y-%m-%dT%H-%M"`
 
 cron: new_jsons backup_htmls backup_output
