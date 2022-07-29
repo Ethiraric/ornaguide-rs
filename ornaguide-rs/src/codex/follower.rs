@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{data::GuideData, error::Error, pets::admin::AdminPet};
+use crate::{
+    data::GuideData,
+    error::Error,
+    pets::admin::{AdminPet, CostType},
+};
 
 /// An ability for a follower.
 #[derive(Debug, Serialize, Deserialize)]
@@ -45,9 +49,9 @@ impl Follower {
     /// Try to convert `self` to an `AdminPet`.
     ///
     ///  - Unknown skills are ignored, rather than returning an error.
-    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminPet, Error> {
+    pub fn try_to_admin_pet(&self, guide_data: &GuideData) -> Result<AdminPet, Error> {
         Ok(AdminPet {
-            codex_uri: format!("/codex/followers/{}", self.slug),
+            codex_uri: format!("/codex/followers/{}/", self.slug),
             name: self.name.clone(),
             tier: self.tier,
             image_name: self.icon.clone(),
@@ -55,6 +59,11 @@ impl Follower {
                 self.description.clone()
             } else {
                 ".".to_string()
+            },
+            cost_type: if self.tier >= 8 {
+                CostType::Orn
+            } else {
+                CostType::Gold
             },
             limited: !self.events.is_empty(),
             limited_details: self.events.join(", "),
