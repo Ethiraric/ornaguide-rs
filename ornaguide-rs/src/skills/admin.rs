@@ -62,7 +62,7 @@ impl Default for AdminSkill {
             codex_uri: String::new(),
             name: String::new(),
             tier: 0,
-            type_: 1,
+            type_: 16, // Corresponds to "TBD" on guide.
             is_magic: false,
             mana_cost: 0,
             description: String::new(),
