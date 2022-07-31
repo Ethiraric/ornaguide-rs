@@ -157,6 +157,11 @@ pub struct Item {
 }
 
 impl Item {
+    /// Return whether the item can be found in shops.
+    pub fn found_in_shops(&self) -> bool {
+        self.tags.iter().any(|tag| *tag == Tag::FoundInShops)
+    }
+
     /// Try to convert `self` to an `AdminItem`.
     ///
     ///  - Unknown status effects are ignored, rather than returning an error.
