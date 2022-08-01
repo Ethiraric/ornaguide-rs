@@ -50,22 +50,31 @@ fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<
         if let Some(pos) = uri.find('/') {
             let kind = &uri[0..pos];
             let slug = &uri[pos + 1..];
-            match kind {
-                "monsters" => {
-                    data.codex
-                        .monsters
-                        .monsters
-                        .push(guide.codex_fetch_monster(slug)?);
+            let result = || -> Result<(), Error> {
+                match kind {
+                    "monsters" => {
+                        data.codex
+                            .monsters
+                            .monsters
+                            .push(guide.codex_fetch_monster(slug)?);
+                    }
+                    "bosses" => {
+                        data.codex.bosses.bosses.push(guide.codex_fetch_boss(slug)?);
+                    }
+                    "raids" => {
+                        data.codex.raids.raids.push(guide.codex_fetch_raid(slug)?);
+                    }
+                    _ => {
+                        println!("Unknown monster kind for URI {}", uri);
+                    }
                 }
-                "bosses" => {
-                    data.codex.bosses.bosses.push(guide.codex_fetch_boss(slug)?);
-                }
-                "raids" => {
-                    data.codex.raids.raids.push(guide.codex_fetch_raid(slug)?);
-                }
-                _ => {
-                    println!("Unknown monster kind for URI {}", uri);
-                }
+                Ok(())
+            }();
+            // Ignore 404s.
+            match result {
+                Err(Error::ResponseError(_, _, 404, _)) => {}
+                Err(x) => return Err(x),
+                _ => {}
             }
             bar.inc(1);
         } else {
@@ -148,10 +157,11 @@ fn add_event_followers(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<()
             .iter()
             .any(|follower| &&*follower.slug == slug)
         {
-            data.codex
-                .followers
-                .followers
-                .push(guide.codex_fetch_follower(slug)?);
+            match guide.codex_fetch_follower(slug) {
+                Ok(follower) => data.codex.followers.followers.push(follower),
+                Err(Error::ResponseError(_, _, 404, _)) => {}
+                Err(x) => return Err(x),
+            }
         }
         bar.inc(1);
     }
