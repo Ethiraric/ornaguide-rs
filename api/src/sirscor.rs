@@ -121,7 +121,7 @@ fn check_skill_tbd_type(data: &OrnaData, response: &mut String) -> Result<(), st
             .skills
             .skills
             .iter()
-            .filter(|skill| skill.type_ == 13), // TBD
+            .filter(|skill| skill.type_ == 16), // TBD
         "Missing <pre>type</pre> (TBD)",
         skill_to_li,
         response,
