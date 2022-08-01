@@ -240,63 +240,84 @@ fn parse_html_page(contents: &str) -> Result<ExtractedInfo, Error> {
 
 /// Parses a monster page from `playorna.com` and returns the details about the given monster.
 pub fn parse_html_codex_monster(contents: &str, slug: String) -> Result<CodexMonster, Error> {
-    parse_html_page(contents).and_then(|info| {
-        Ok(CodexMonster {
-            slug,
-            name: info.name,
-            icon: info.icon,
-            events: info.events,
-            family: info.family.ok_or_else(|| {
-                Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
-            })?,
-            rarity: info.rarity.ok_or_else(|| {
-                Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
-            })?,
-            tier: info.tier,
-            tags: info.tags,
-            abilities: info.abilities,
-            drops: info.drops,
+    parse_html_page(contents)
+        .and_then(|info| {
+            Ok(CodexMonster {
+                slug: slug.clone(),
+                name: info.name,
+                icon: info.icon,
+                events: info.events,
+                family: info.family.ok_or_else(|| {
+                    Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
+                })?,
+                rarity: info.rarity.ok_or_else(|| {
+                    Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
+                })?,
+                tier: info.tier,
+                tags: info.tags,
+                abilities: info.abilities,
+                drops: info.drops,
+            })
         })
-    })
+        .map_err(|err| match err {
+            Error::HTMLParsingError(msg) => {
+                Error::HTMLParsingError(format!("Monster {}: {}", slug, msg))
+            }
+            x => x,
+        })
 }
 
 /// Parses a boss page from `playorna.com` and returns the details about the given boss.
 pub fn parse_html_codex_boss(contents: &str, slug: String) -> Result<CodexBoss, Error> {
-    parse_html_page(contents).and_then(|info| {
-        Ok(CodexBoss {
-            slug,
-            name: info.name,
-            icon: info.icon,
-            events: info.events,
-            family: info.family.ok_or_else(|| {
-                Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
-            })?,
-            rarity: info.rarity.ok_or_else(|| {
-                Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
-            })?,
-            tier: info.tier,
-            tags: info.tags,
-            abilities: info.abilities,
-            drops: info.drops,
+    parse_html_page(contents)
+        .and_then(|info| {
+            Ok(CodexBoss {
+                slug: slug.clone(),
+                name: info.name,
+                icon: info.icon,
+                events: info.events,
+                family: info.family.ok_or_else(|| {
+                    Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
+                })?,
+                rarity: info.rarity.ok_or_else(|| {
+                    Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
+                })?,
+                tier: info.tier,
+                tags: info.tags,
+                abilities: info.abilities,
+                drops: info.drops,
+            })
         })
-    })
+        .map_err(|err| match err {
+            Error::HTMLParsingError(msg) => {
+                Error::HTMLParsingError(format!("Boss {}: {}", slug, msg))
+            }
+            x => x,
+        })
 }
 
 /// Parses a raid page from `playorna.com` and returns the details about the given raid.
 pub fn parse_html_codex_raid(contents: &str, slug: String) -> Result<CodexRaid, Error> {
-    parse_html_page(contents).and_then(|info| {
-        Ok(CodexRaid {
-            slug,
-            name: info.name,
-            description: info.description.ok_or_else(|| {
-                Error::HTMLParsingError("Failed to retrieve description from raid".to_string())
-            })?,
-            icon: info.icon,
-            events: info.events,
-            tier: info.tier,
-            tags: info.tags,
-            abilities: info.abilities,
-            drops: info.drops,
+    parse_html_page(contents)
+        .and_then(|info| {
+            Ok(CodexRaid {
+                slug: slug.clone(),
+                name: info.name,
+                description: info.description.ok_or_else(|| {
+                    Error::HTMLParsingError("Failed to retrieve description from raid".to_string())
+                })?,
+                icon: info.icon,
+                events: info.events,
+                tier: info.tier,
+                tags: info.tags,
+                abilities: info.abilities,
+                drops: info.drops,
+            })
         })
-    })
+        .map_err(|err| match err {
+            Error::HTMLParsingError(msg) => {
+                Error::HTMLParsingError(format!("Raid {}: {}", slug, msg))
+            }
+            x => x,
+        })
 }
