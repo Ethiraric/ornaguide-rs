@@ -114,7 +114,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 }
 
 /// Return an iterator over the status afflictions a weapon with the given element may inflict.
-fn get_iter_element_statuses(element: Option<&CodexElement>) -> std::vec::IntoIter<&str> {
+pub fn get_iter_element_statuses(element: Option<&CodexElement>) -> std::vec::IntoIter<&str> {
     match element {
         Some(CodexElement::Fire) => vec!["Burning"].into_iter(),
         Some(CodexElement::Water) => vec!["Frozen"].into_iter(),

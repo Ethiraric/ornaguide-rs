@@ -13,6 +13,7 @@ use ornaguide_rs::{
 };
 
 mod codex;
+mod codex_bugs;
 mod guide;
 mod guide_match;
 mod misc;
@@ -62,6 +63,7 @@ fn main2() -> Result<(), Error> {
         [_, "match", "skills", "--fix"] => guide_match::skills::perform(&mut data()?, true, &guide),
         [_, "sirscor", "rarity", file] => sirscor::push_rarity(file, &data()?, &guide),
         [_, "ratakor", "raid-hp", file] => ratakor::push_raid_hp(file, &data()?, &guide),
+        [_, "codex", "bugs"] => codex_bugs::check(&data()?, &guide),
         [_] => ethi(&guide, data()?),
         _ => Err(Error::Misc(format!("Invalid CLI arguments: {:?}", &args))),
     }
