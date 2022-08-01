@@ -12,38 +12,29 @@ use crate::retry_once;
 struct Record {
     item: String,
     tier: u8,
-    common: String,
-    superior: String,
-    famed: String,
-    legendary: String,
+    rarity: String,
 }
 
 impl Record {
     fn rarity(&self) -> String {
-        if !self.common.is_empty() {
-            "CO".to_string()
-        } else if !self.superior.is_empty() {
-            "SP".to_string()
-        } else if !self.famed.is_empty() {
-            "FM".to_string()
-        } else if !self.legendary.is_empty() {
-            "LG".to_string()
-        } else {
-            "NO".to_string()
+        match self.rarity.as_str() {
+            "Common" => "CO".to_string(),
+            "Superior" => "SP".to_string(),
+            "Famed" => "FM".to_string(),
+            "Legendary" => "LG".to_string(),
+            _ => "NO".to_string(),
         }
     }
 }
 
 /// Read a CSV containing item rarity and push to the guide the item rarities.
-/// The CSV must contain the following columns: `item`, `tier`, `common`, `superior`, `famed`,
-/// `legendary`. The rarity columns must contain something only if the item is of the given rarity.
 pub fn push_rarity(file: &str, data: &OrnaData, guide: &OrnaAdminGuide) -> Result<(), Error> {
     for record in csv::Reader::from_path(file).unwrap().deserialize() {
         let record: Record = record.unwrap();
         if ["Blinders", "Steadfast Charm"].contains(&record.item.as_str()) {
             continue;
         }
-        println!("{}", record.item);
+        println!("{:30} -> {}", record.item, record.rarity());
         let admin_item = data
             .guide
             .items
