@@ -230,7 +230,7 @@ impl Raid {
     ///  - Unknown skills are ignored, rather than returning an error.
     pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminMonster, Error> {
         Ok(AdminMonster {
-            codex_uri: format!("/codex/bosses/{}/", self.slug),
+            codex_uri: format!("/codex/raids/{}/", self.slug),
             name: self.name.clone(),
             tier: self.tier,
             image_name: self.icon.clone(),
