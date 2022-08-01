@@ -9,7 +9,7 @@ use ornaguide_rs::data::OrnaData;
 use ornaguide_rs::{
     codex::{Codex, CodexItem},
     error::Error,
-    guide::{AdminGuide, Guide, OrnaAdminGuide},
+    guide::{AdminGuide, OrnaAdminGuide},
 };
 
 mod codex;
@@ -23,7 +23,14 @@ mod sirscor;
 #[allow(unused_variables, unused_mut)]
 /// Danger zone. Where I test my code.
 fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
-    guide_match::all(&mut data, false, guide)?;
+    let fix = false;
+
+    // guide_match::all(&mut data, fix, guide)?;
+    guide_match::status_effects::perform(&mut data, fix, guide)?;
+    guide_match::skills::perform(&mut data, fix, guide)?;
+    guide_match::items::perform(&mut data, fix, guide)?;
+    guide_match::monsters::perform(&mut data, fix, guide)?;
+    guide_match::pets::perform(&mut data, fix, guide)?;
 
     Ok(())
 }
@@ -38,9 +45,13 @@ fn main2() -> Result<(), Error> {
     match args.iter().map(|s| s.as_str()).collect::<Vec<_>>()[..] {
         [_, "json", "refresh"] => output::refresh(&guide).map(|_| ()),
         [_, "match", "all"] => guide_match::all(&mut data()?, false, &guide),
-        [_, "match", "all", "--fix"] => guide_match::all(&mut data()?, true, &guide),
-        [_, "match", "items"] => guide_match::items::perform(&data()?, false, &guide),
-        [_, "match", "items", "--fix"] => guide_match::items::perform(&data()?, true, &guide),
+        [_, "match", "all", "--fix"] => {
+            let mut data = data()?;
+            guide_match::all(&mut data, true, &guide)?;
+            data.save_to("output")
+        }
+        [_, "match", "items"] => guide_match::items::perform(&mut data()?, false, &guide),
+        [_, "match", "items", "--fix"] => guide_match::items::perform(&mut data()?, true, &guide),
         [_, "match", "monsters"] => guide_match::monsters::perform(&mut data()?, false, &guide),
         [_, "match", "monsters", "--fix"] => {
             guide_match::monsters::perform(&mut data()?, true, &guide)
