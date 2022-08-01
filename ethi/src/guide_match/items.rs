@@ -433,6 +433,19 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 } else {
                     Vec::<u32>::new().into_iter()
                 })
+                // TODO(ethiraric, 01/08/2022): Remove this chain and the dedup call below once
+                // the codex fixes the blind for swansong
+                .chain(if guide_item.name == "Swansong" {
+                    data.guide
+                        .static_
+                        .status_effects
+                        .iter()
+                        .find(|effect| effect.name == "Blind")
+                        .map(|effect| effect.id)
+                        .into_iter()
+                } else {
+                    None.into_iter()
+                })
                 .sorted()
                 .dedup()
                 .collect_vec();
