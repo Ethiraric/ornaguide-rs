@@ -21,7 +21,7 @@ where
     <T as FromStr>::Err: ToString,
 {
     // The expression must have at least 2 chars if `<` or `>`, 3 if `<=`, `>=`, `==` or `!=`, 4 if
-    // `|[x]`, `&[x]` or `^[x]`.
+    // `|[x]` or `^[x]`.
     if str.len() < 2
         || (str.chars().nth(1).unwrap() == '=' && str.len() < 3)
         || ("|^".contains(str.chars().next().unwrap()) && str.len() < 4)
@@ -49,7 +49,7 @@ where
                 str
             ))),
         }
-    // Parse a `<` or `>=` expression.
+    // Parse a `<` or `>` expression.
     } else if "><".contains(first_char) {
         // If we have a 1 char operator, parse value starting from 2nd char.
         let expected_value = T::from_str(&str[1..]).map_err(|s| Error::Misc(s.to_string()))?;
@@ -69,7 +69,7 @@ where
                 str
             ))),
         }
-    // Parse a `![x]` or `^[x]` expression.
+    // Parse a `|[x]` or `^[x]` expression.
     } else if "|^".contains(first_char) {
         let (match_type, values) = parse_array_filter_of::<T>(str)?;
 
