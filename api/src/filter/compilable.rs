@@ -20,31 +20,37 @@ where
     T: FromStr + std::cmp::PartialOrd,
     <T as FromStr>::Err: ToString,
 {
-    // The expression must have at least 2 chars if `<` or `>`, 3 otherwise.
-    if str.len() < 2 || (str.chars().nth(1).unwrap() == '=' && str.len() < 3) {
-        Err(Error::Misc(format!("Expression is too short: '{}'", str)))
-    } else if str.chars().nth(1).unwrap() == '=' {
+    // The expression must have at least 2 chars if `<` or `>`, 3 if `<=`, `>=`, `==` or `!=`, 4 if
+    // `|[x]`, `&[x]` or `^[x]`.
+    if str.len() < 2
+        || (str.chars().nth(1).unwrap() == '=' && str.len() < 3)
+        || ("|^".contains(str.chars().next().unwrap()) && str.len() < 4)
+    {
+        return Err(Error::Misc(format!("Expression is too short: '{}'", str)));
+    }
+
+    let first_char = str.chars().next().unwrap();
+    let second_char = str.chars().nth(1).unwrap();
+
+    // Parse a `<=`, `>=`, `==` or `!=` expression.
+    if second_char == '=' {
         // If we have a 2 chars operator, parse value starting from 3rd char.
         let expected_value = T::from_str(&str[2..]).map_err(|s| Error::Misc(s.to_string()))?;
 
         // Match the first char and create a closure accordingly.
-        match str.chars().next() {
-            Some('=') => Ok(Filter::Compiled(Box::new(move |a| *a == expected_value))),
-            Some('!') => Ok(Filter::Compiled(Box::new(move |a| *a != expected_value))),
-            Some('>') => Ok(Filter::Compiled(Box::new(move |a| *a >= expected_value))),
-            Some('<') => Ok(Filter::Compiled(Box::new(move |a| *a <= expected_value))),
+        match first_char {
+            '=' => Ok(Filter::Compiled(Box::new(move |a| *a == expected_value))),
+            '!' => Ok(Filter::Compiled(Box::new(move |a| *a != expected_value))),
+            '>' => Ok(Filter::Compiled(Box::new(move |a| *a >= expected_value))),
+            '<' => Ok(Filter::Compiled(Box::new(move |a| *a <= expected_value))),
             // Error on weird operators (`,=` would be one).
-            Some(_) => Err(Error::Misc(format!(
+            _ => Err(Error::Misc(format!(
                 "Invalid operator in expression: {}",
                 str
             ))),
-            // Error if somehow we fail to get the first char.
-            None => Err(Error::Misc(format!(
-                "Failed to get the first character of the expression '{}'",
-                str
-            ))),
         }
-    } else {
+    // Parse a `<` or `>=` expression.
+    } else if "><".contains(first_char) {
         // If we have a 1 char operator, parse value starting from 2nd char.
         let expected_value = T::from_str(&str[1..]).map_err(|s| Error::Misc(s.to_string()))?;
 
@@ -63,6 +69,20 @@ where
                 str
             ))),
         }
+    // Parse a `![x]` or `^[x]` expression.
+    } else if "|^".contains(first_char) {
+        let (match_type, values) = parse_array_filter_of::<T>(str)?;
+
+        match match_type {
+            VecMatch::OneOf => Ok(Filter::Compiled(Box::new(move |a| values.contains(a)))),
+            VecMatch::None => Ok(Filter::Compiled(Box::new(move |a| !values.contains(a)))),
+            _ => Err(Error::Misc(format!(
+                "Logic error: Unknown array expression: {}",
+                str
+            ))),
+        }
+    } else {
+        Err(Error::Misc(format!("Unknown expression: {}", str)))
     }
 }
 
@@ -190,37 +210,7 @@ macro_rules! compilable_vec {
                 match self {
                     // If we have an expression, rewrite it.
                     Filter::Expr(str) => {
-                        // Retrieve match style. Default is Exact.
-                        let mut match_style = VecMatch::Exact;
-                        let str = if let Some(str) = str.strip_prefix('&') {
-                            match_style = VecMatch::All;
-                            str
-                        } else if let Some(str) = str.strip_prefix('|') {
-                            match_style = VecMatch::OneOf;
-                            str
-                        } else if let Some(str) = str.strip_prefix('!') {
-                            match_style = VecMatch::None;
-                            str
-                        } else {
-                            &str
-                        };
-
-                        if !str.starts_with('[') || !str.ends_with(']') {
-                            return Err(Error::Misc(format!("Vec filter missing square brackets")));
-                        }
-                        let str = &str[1..str.len() - 1];
-
-                        // Convert a string of comma-separated values to a `Vec<$ty>`.
-                        let values = str
-                            .split(',')
-                            .map(str::trim)
-                            .map($ty::from_str)
-                            .collect::<Result<Vec<_>, _>>()
-                            .map_err(|e| Error::Misc(e.to_string()))?
-                            .into_iter()
-                            .sorted_by(|a, b| a.partial_cmp(b).unwrap())
-                            .dedup()
-                            .collect_vec();
+                        let (match_style, values) = parse_array_filter_of::<$ty>(&str)?;
 
                         match match_style {
                             VecMatch::Exact => Ok(Filter::Compiled(Box::new(move |a| {
@@ -300,6 +290,52 @@ fn case_insensitive_contains(not_lowercase_haystack: &str, lowercase_needle: &st
         }
     }
     false
+}
+
+/// Parse an expression of either of the form:
+///   - `[x, y]`: Exact match, all elements must be contained, no more.
+///   - `&[x, y]`: All of match, all elements must be contained.
+///   - `|[x, y]`: One of match, one element at least must be contained.
+///   - `^[x, y]`: None match, none  of the elements must be contained.
+fn parse_array_filter_of<T>(expression: &str) -> Result<(VecMatch, Vec<T>), Error>
+where
+    T: FromStr + PartialOrd,
+    <T as FromStr>::Err: ToString,
+{
+    // Retrieve match style. Default is Exact.
+    let mut match_style = VecMatch::Exact;
+    let str = if let Some(str) = expression.strip_prefix('&') {
+        match_style = VecMatch::All;
+        str
+    } else if let Some(str) = expression.strip_prefix('|') {
+        match_style = VecMatch::OneOf;
+        str
+    } else if let Some(str) = expression.strip_prefix('!') {
+        match_style = VecMatch::None;
+        str
+    } else {
+        expression
+    };
+
+    if !str.starts_with('[') || !str.ends_with(']') {
+        return Err(Error::Misc(
+            "Vec filter missing square brackets".to_string(),
+        ));
+    }
+    let str = &str[1..str.len() - 1];
+
+    // Convert a string of comma-separated values to a `Vec<$ty>`.
+    let values = str
+        .split(',')
+        .map(str::trim)
+        .map(T::from_str)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| Error::Misc(e.to_string()))?
+        .into_iter()
+        .sorted_by(|a, b| a.partial_cmp(b).unwrap())
+        .dedup()
+        .collect_vec();
+    Ok((match_style, values))
 }
 
 #[cfg(test)]
