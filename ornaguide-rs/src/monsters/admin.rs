@@ -189,6 +189,26 @@ impl AdminMonster {
                 })
     }
 
+    /// Returns true if the monster is a world raid.
+    pub fn is_world_raid(&self, guide_spawns: &[Spawn]) -> bool {
+        self.boss
+            && self
+                .spawns
+                .iter()
+                .filter_map(|spawn_id| guide_spawns.iter().find(|spawn| spawn.id == *spawn_id))
+                .any(|spawn| spawn.name == "World Raid" || spawn.name == "World Raid year-round")
+    }
+
+    /// Returns true if the monster is a kingdom raid.
+    pub fn is_kingdom_raid(&self, guide_spawns: &[Spawn]) -> bool {
+        self.boss
+            && self
+                .spawns
+                .iter()
+                .filter_map(|spawn_id| guide_spawns.iter().find(|spawn| spawn.id == *spawn_id))
+                .any(|spawn| spawn.name == "Kingdom Raid")
+    }
+
     /// Try to guess what the codex name for the monster is.
     pub fn codex_name(&self) -> String {
         let monster_name = if self.is_regular_monster() {
