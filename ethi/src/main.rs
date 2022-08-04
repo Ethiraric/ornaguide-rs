@@ -15,6 +15,7 @@ use ornaguide_rs::{
 mod codex;
 mod codex_bugs;
 mod guide;
+mod guide_html;
 mod guide_match;
 mod misc;
 mod output;
