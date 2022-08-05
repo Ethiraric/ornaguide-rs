@@ -38,9 +38,18 @@ fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
 }
 
 fn main2() -> Result<(), Error> {
-    let _ = dotenv();
-    let cookie = dotenv::var("ORNAGUIDE_COOKIE").unwrap();
-    let guide = OrnaAdminGuide::new(&cookie)?;
+    let _ = dotenv().map_err(|err| Error::Misc(format!("Failed to load .env: {}", err)))?;
+    let cookie = dotenv::var("ORNAGUIDE_COOKIE").map_err(|err| {
+        Error::Misc(format!(
+            "Failed to get ORNAGUIDE_COOKIE env variable: {}",
+            err
+        ))
+    })?;
+    let ornaguide_host =
+        dotenv::var("ORNAGUIDE_HOST").unwrap_or_else(|_| "https://orna.guide".to_string());
+    let playorna_host =
+        dotenv::var("PLAYORNA_HOST").unwrap_or_else(|_| "https://playorna.com".to_string());
+    let guide = OrnaAdminGuide::new_with_hosts(&cookie, ornaguide_host, playorna_host)?;
     let data = || OrnaData::load_from("output");
 
     let args = std::env::args().collect::<Vec<_>>();

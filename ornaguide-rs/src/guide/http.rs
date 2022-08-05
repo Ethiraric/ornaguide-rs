@@ -33,24 +33,8 @@ use crate::{
 
 pub(crate) struct Http {
     http: Client,
-}
-
-/// Base path of the API (`protocol://host[:port]`).
-/// Can be used in `concat!`.
-macro_rules! BASE_PATH {
-    () => {
-        "http://localhost:12345"
-        // "https://orna.guide/"
-    };
-}
-
-/// Base path of the API of `playorna.com` (`protocol://host[:port]`).
-/// Can be used in `concat!`.
-macro_rules! PLAYORNA_BASE_PATH {
-    () => {
-        "http://localhost:12345"
-        // "https://playorna.com"
-    };
+    orna_guide_host: String,
+    playorna_host: String,
 }
 
 /// Names of the fields in the admin item change page.
@@ -310,6 +294,8 @@ impl Http {
     pub(crate) fn new() -> Self {
         Self {
             http: Client::new(),
+            orna_guide_host: "https://orna.guide".to_string(),
+            playorna_host: "https://playorna.com".to_string(),
         }
     }
 
@@ -318,6 +304,22 @@ impl Http {
         headers.insert("Cookie", HeaderValue::from_str(cookie).unwrap());
         Ok(Self {
             http: Client::builder().default_headers(headers).build()?,
+            orna_guide_host: "https://orna.guide".to_string(),
+            playorna_host: "https://playorna.com".to_string(),
+        })
+    }
+
+    pub(crate) fn new_with_cookie_and_hosts(
+        cookie: &str,
+        orna_guide: String,
+        playorna: String,
+    ) -> Result<Self, Error> {
+        let mut headers = HeaderMap::new();
+        headers.insert("Cookie", HeaderValue::from_str(cookie).unwrap());
+        Ok(Self {
+            http: Client::builder().default_headers(headers).build()?,
+            orna_guide_host: orna_guide,
+            playorna_host: playorna,
         })
     }
 
@@ -325,36 +327,36 @@ impl Http {
 
     // Guide Admin Items
     pub(crate) fn admin_retrieve_item_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
-        let url = format!(concat!(BASE_PATH!(), "/admin/items/item/{}/change/"), id);
+        let url = format!("{}/admin/items/item/{}/change/", self.orna_guide_host, id);
         parse_item_html(&get_and_save(&self.http, &url)?, ITEM_FORM_FIELD_NAMES)
     }
 
     pub(crate) fn admin_save_item(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
         post_forms_to(
             &self.http,
-            &format!(concat!(BASE_PATH!(), "/admin/items/item/{}/change/"), id),
+            &format!("{}/admin/items/item/{}/change/", self.orna_guide_host, id),
             form,
             "#item_form",
         )
     }
 
     pub(crate) fn admin_retrieve_items_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/items/item/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/items/item/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_add_item(&self, form: ParsedForm) -> Result<(), Error> {
-        let url = concat!(BASE_PATH!(), "/admin/items/item/add/");
-        let mut post_form = parse_item_html(&get_and_save(&self.http, url)?, &[])?;
+        let url = format!("{}/admin/items/item/add/", self.orna_guide_host);
+        let mut post_form = parse_item_html(&get_and_save(&self.http, &url)?, &[])?;
         post_form.fields = form.fields;
-        post_forms_to(&self.http, url, post_form, "#item_form")
+        post_forms_to(&self.http, &url, post_form, "#item_form")
     }
 
     // Guide Admin Monsters
     pub(crate) fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
         let url = format!(
-            concat!(BASE_PATH!(), "/admin/monsters/monster/{}/change/"),
-            id
+            "{}/admin/monsters/monster/{}/change/",
+            self.orna_guide_host, id
         );
         parse_monster_html(&get_and_save(&self.http, &url)?, MONSTER_FORM_FIELD_NAMES)
     }
@@ -363,8 +365,8 @@ impl Http {
         post_forms_to(
             &self.http,
             &format!(
-                concat!(BASE_PATH!(), "/admin/monsters/monster/{}/change/"),
-                id
+                "{}/admin/monsters/monster/{}/change/",
+                self.orna_guide_host, id
             ),
             form,
             "#monster_form",
@@ -372,198 +374,186 @@ impl Http {
     }
 
     pub(crate) fn admin_retrieve_monsters_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/monsters/monster/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/monsters/monster/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_add_monster(&self, form: ParsedForm) -> Result<(), Error> {
-        let url = concat!(BASE_PATH!(), "/admin/monsters/monster/add/");
-        let mut post_form = parse_monster_html(&get_and_save(&self.http, url)?, &[])?;
+        let url = format!("{}/admin/monsters/monster/add/", self.orna_guide_host);
+        let mut post_form = parse_monster_html(&get_and_save(&self.http, &url)?, &[])?;
         post_form.fields = form.fields;
-        post_forms_to(&self.http, url, post_form, "#monster_form")
+        post_forms_to(&self.http, &url, post_form, "#monster_form")
     }
 
     // Guide Admin Skills
     pub(crate) fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
-        let url = format!(concat!(BASE_PATH!(), "/admin/skills/skill/{}/change/"), id);
+        let url = format!("{}/admin/skills/skill/{}/change/", self.orna_guide_host, id);
         parse_skill_html(&get_and_save(&self.http, &url)?, SKILL_FORM_FIELD_NAMES)
     }
 
     pub(crate) fn admin_save_skill(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
         post_forms_to(
             &self.http,
-            &format!(concat!(BASE_PATH!(), "/admin/skills/skill/{}/change/"), id),
+            &format!("{}/admin/skills/skill/{}/change/", self.orna_guide_host, id),
             form,
             "#skill_form",
         )
     }
 
     pub(crate) fn admin_retrieve_skills_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/skills/skill/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/skills/skill/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_add_skill(&self, form: ParsedForm) -> Result<(), Error> {
-        let url = concat!(BASE_PATH!(), "/admin/skills/skill/add/");
-        let mut post_form = parse_skill_html(&get_and_save(&self.http, url)?, &[])?;
+        let url = format!("{}/admin/skills/skill/add/", self.orna_guide_host);
+        let mut post_form = parse_skill_html(&get_and_save(&self.http, &url)?, &[])?;
         post_form.fields = form.fields;
-        post_forms_to(&self.http, url, post_form, "#skill_form")
+        post_forms_to(&self.http, &url, post_form, "#skill_form")
     }
 
     // Guide Admin Pets
     pub(crate) fn admin_save_pet(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
         post_forms_to(
             &self.http,
-            &format!(concat!(BASE_PATH!(), "/admin/pets/pet/{}/change/"), id),
+            &format!("{}/admin/pets/pet/{}/change/", self.orna_guide_host, id),
             form,
             "#pet_form",
         )
     }
 
     pub(crate) fn admin_retrieve_pet_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
-        let url = format!(concat!(BASE_PATH!(), "/admin/pets/pet/{}/change/"), id);
+        let url = format!("{}/admin/pets/pet/{}/change/", self.orna_guide_host, id);
         parse_pet_html(&get_and_save(&self.http, &url)?, PET_FORM_FIELD_NAMES)
     }
 
     pub(crate) fn admin_retrieve_pets_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/pets/pet/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/pets/pet/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_add_pet(&self, form: ParsedForm) -> Result<(), Error> {
-        let url = concat!(BASE_PATH!(), "/admin/pets/pet/add/");
-        let mut post_form = parse_pet_html(&get_and_save(&self.http, url)?, &[])?;
+        let url = format!("{}/admin/pets/pet/add/", self.orna_guide_host);
+        let mut post_form = parse_pet_html(&get_and_save(&self.http, &url)?, &[])?;
         post_form.fields = form.fields;
-        post_forms_to(&self.http, url, post_form, "#pet_form")
+        post_forms_to(&self.http, &url, post_form, "#pet_form")
     }
 
     // Guide Static data
     pub(crate) fn admin_retrieve_spawns_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/orna/spawn/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/orna/spawn/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_retrieve_item_categories_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/items/category/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/items/category/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_retrieve_item_types_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/items/type/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/items/type/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_retrieve_monster_families_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/monsters/family/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/monsters/family/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_retrieve_status_effects_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/orna/statuseffect/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/orna/statuseffect/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_retrieve_skill_types_list(&self) -> Result<Vec<Entry>, Error> {
-        let url = concat!(BASE_PATH!(), "/admin/skills/skilltype/");
-        query_all_pages(url, &self.http)
+        let url = format!("{}/admin/skills/skilltype/", self.orna_guide_host);
+        query_all_pages(&url, &self.http)
     }
 
     pub(crate) fn admin_add_spawn(&self, spawn_name: &str) -> Result<(), Error> {
-        let url = concat!(BASE_PATH!(), "/admin/orna/spawn/add/");
-        let mut form = parse_spawn_html(&get_and_save(&self.http, url)?)?;
+        let url = format!("{}/admin/orna/spawn/add/", self.orna_guide_host);
+        let mut form = parse_spawn_html(&get_and_save(&self.http, &url)?)?;
         form.fields
             .push(("description".to_string(), spawn_name.to_string()));
-        post_forms_to(&self.http, url, form, "#spawn_form")
+        post_forms_to(&self.http, &url, form, "#spawn_form")
     }
 
     pub(crate) fn admin_add_status_effect(&self, status_effect_name: &str) -> Result<(), Error> {
-        let url = concat!(BASE_PATH!(), "/admin/orna/statuseffect/add/");
-        let mut form = parse_status_effect_html(&get_and_save(&self.http, url)?)?;
+        let url = format!("{}/admin/orna/statuseffect/add/", self.orna_guide_host);
+        let mut form = parse_status_effect_html(&get_and_save(&self.http, &url)?)?;
         form.fields
             .push(("name".to_string(), status_effect_name.to_string()));
-        post_forms_to(&self.http, url, form, "#statuseffect_form")
+        post_forms_to(&self.http, &url, form, "#statuseffect_form")
     }
 
     // --- Codex ---
 
     // Codex Skills
     pub(crate) fn codex_retrieve_skills_list(&self) -> Result<Vec<CodexListEntry>, Error> {
-        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/spells");
-        query_all_codex_pages(url, &self.http)
+        let url = format!("{}/codex/spells", self.playorna_host);
+        query_all_codex_pages(&url, &self.http)
     }
 
     pub(crate) fn codex_retrieve_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
-        let url = format!(
-            concat!(PLAYORNA_BASE_PATH!(), "/codex/spells/{}"),
-            skill_name
-        );
+        let url = format!("{}/codex/spells/{}", self.playorna_host, skill_name);
         parse_html_codex_skill(&get_and_save(&self.http, &url)?, skill_name.to_string())
     }
 
     // Codex Monsters
     pub(crate) fn codex_retrieve_monsters_list(&self) -> Result<Vec<CodexListEntry>, Error> {
-        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/monsters");
-        query_all_codex_pages(url, &self.http)
+        let url = format!("{}/codex/monsters", self.playorna_host);
+        query_all_codex_pages(&url, &self.http)
     }
 
     pub(crate) fn codex_retrieve_monster(&self, monster_name: &str) -> Result<CodexMonster, Error> {
-        let url = format!(
-            concat!(PLAYORNA_BASE_PATH!(), "/codex/monsters/{}"),
-            monster_name
-        );
+        let url = format!("{}/codex/monsters/{}", self.playorna_host, monster_name);
         parse_html_codex_monster(&get_and_save(&self.http, &url)?, monster_name.to_string())
     }
 
     // Codex Bosses
     pub(crate) fn codex_retrieve_bosses_list(&self) -> Result<Vec<CodexListEntry>, Error> {
-        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/bosses");
-        query_all_codex_pages(url, &self.http)
+        let url = format!("{}/codex/bosses", self.playorna_host);
+        query_all_codex_pages(&url, &self.http)
     }
 
     pub(crate) fn codex_retrieve_boss(&self, boss_name: &str) -> Result<CodexBoss, Error> {
-        let url = format!(
-            concat!(PLAYORNA_BASE_PATH!(), "/codex/bosses/{}"),
-            boss_name
-        );
+        let url = format!("{}/codex/bosses/{}", self.playorna_host, boss_name);
         parse_html_codex_boss(&get_and_save(&self.http, &url)?, boss_name.to_string())
     }
 
     // Codex Raids
     pub(crate) fn codex_retrieve_raids_list(&self) -> Result<Vec<CodexListEntry>, Error> {
-        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/raids");
-        query_all_codex_pages(url, &self.http)
+        let url = format!("{}/codex/raids", self.playorna_host);
+        query_all_codex_pages(&url, &self.http)
     }
 
     pub(crate) fn codex_retrieve_raid(&self, raid_name: &str) -> Result<CodexRaid, Error> {
-        let url = format!(concat!(PLAYORNA_BASE_PATH!(), "/codex/raids/{}"), raid_name);
+        let url = format!("{}/codex/raids/{}", self.playorna_host, raid_name);
         parse_html_codex_raid(&get_and_save(&self.http, &url)?, raid_name.to_string())
     }
 
     // Codex Items
     pub(crate) fn codex_retrieve_items_list(&self) -> Result<Vec<CodexListEntry>, Error> {
-        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/items");
-        query_all_codex_pages(url, &self.http)
+        let url = format!("{}/codex/items", self.playorna_host);
+        query_all_codex_pages(&url, &self.http)
     }
 
     pub(crate) fn codex_retrieve_item(&self, item_name: &str) -> Result<CodexItem, Error> {
-        let url = format!(concat!(PLAYORNA_BASE_PATH!(), "/codex/items/{}"), item_name);
+        let url = format!("{}/codex/items/{}", self.playorna_host, item_name);
         parse_html_codex_item(&get_and_save(&self.http, &url)?, item_name.to_string())
     }
 
     // Codex Followers
     pub(crate) fn codex_retrieve_followers_list(&self) -> Result<Vec<CodexListEntry>, Error> {
-        let url = concat!(PLAYORNA_BASE_PATH!(), "/codex/followers");
-        query_all_codex_pages(url, &self.http)
+        let url = format!("{}/codex/followers", self.playorna_host);
+        query_all_codex_pages(&url, &self.http)
     }
 
     pub(crate) fn codex_retrieve_follower(
         &self,
         follower_name: &str,
     ) -> Result<CodexFollower, Error> {
-        let url = format!(
-            concat!(PLAYORNA_BASE_PATH!(), "/codex/followers/{}"),
-            follower_name
-        );
+        let url = format!("{}/codex/followers/{}", self.playorna_host, follower_name);
         parse_html_codex_follower(&get_and_save(&self.http, &url)?, follower_name.to_string())
     }
 }

@@ -16,6 +16,7 @@ use crate::{
     pets::admin::AdminPet,
     skills::admin::AdminSkill,
 };
+
 /// The main interface for the guide.
 pub struct OrnaGuide {
     http: Http,
@@ -54,6 +55,19 @@ impl OrnaAdminGuide {
     pub fn new(cookie: &str) -> Result<Self, Error> {
         Ok(Self {
             guide: OrnaGuide::from_http(Http::new_with_cookie(cookie)?),
+        })
+    }
+
+    /// Construct an instance of the guide with the given hosts.
+    pub fn new_with_hosts(
+        cookie: &str,
+        orna_guide: String,
+        playorna: String,
+    ) -> Result<Self, Error> {
+        Ok(Self {
+            guide: OrnaGuide::from_http(Http::new_with_cookie_and_hosts(
+                cookie, orna_guide, playorna,
+            )?),
         })
     }
 }
