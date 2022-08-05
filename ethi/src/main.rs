@@ -21,6 +21,7 @@ mod misc;
 mod output;
 mod ratakor;
 mod sirscor;
+mod thecraigger;
 
 #[allow(unused_variables, unused_mut)]
 /// Danger zone. Where I test my code.
