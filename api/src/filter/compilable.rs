@@ -165,6 +165,8 @@ macro_rules! compilable_option {
                     Filter::Expr(str) => {
                         if &str == "<none>" {
                             Ok(Filter::Value(None))
+                        } else if &str == "!=<none>" {
+                            Ok(Filter::Compiled(Box::new(move |a| a.is_some())))
                         } else {
                             match Filter::<'a, $ty>::Expr(str).compiled()? {
                                 Filter::<'a, $ty>::Compiled(f) => {
