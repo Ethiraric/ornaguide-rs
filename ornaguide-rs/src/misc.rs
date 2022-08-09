@@ -107,3 +107,10 @@ impl VecIdConversionResult for Result<Vec<u32>, Error> {
         }
     }
 }
+
+/// Truncate a string until a given char is encountered.
+pub fn truncate_str_until(s: &str, c: char) -> Option<&str> {
+    s.find(c)
+        .map(|pos| s.split_at(pos + 1))
+        .map(|(_, right)| right)
+}

@@ -25,7 +25,7 @@ fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
         Ok(it.as_str().parse()?)
     } else {
         Err(Error::HTMLParsingError(format!(
-            "Failed to find ':' when parsing skill tier: \"{}\"",
+            "Failed to find ':' when parsing item tier: \"{}\"",
             text
         )))
     }
@@ -33,12 +33,12 @@ fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
 
 /// Parse a `<a>` node to a `name`, `uri`, `icon` tuple.
 fn a_to_name_uri_icon(a: &NodeRef) -> Result<(String, String, String), Error> {
-    let uri = get_attribute_from_node(a, "href", "monster <a>")?;
-    let img = descend_to(a, "img", "monster <a>")?;
+    let uri = get_attribute_from_node(a, "href", "item <a>")?;
+    let img = descend_to(a, "img", "item <a>")?;
     let icon = icon_url_to_path(&get_attribute_from_node(
         img.as_node(),
         "src",
-        "monster <a> img",
+        "item <a> img",
     )?);
     let name = node_to_text(a);
     Ok((name, uri, icon))
@@ -46,7 +46,7 @@ fn a_to_name_uri_icon(a: &NodeRef) -> Result<(String, String, String), Error> {
 
 /// Parse a `<div>` node to a `name`, `icon` tuple.
 fn div_to_name_icon(div: &NodeRef) -> Result<(String, String), Error> {
-    let img = descend_to(div, "img", "monster <a>")?;
+    let img = descend_to(div, "img", "item <a>")?;
     let icon = icon_url_to_path(&get_attribute_from_node(
         img.as_node(),
         "src",
@@ -340,5 +340,52 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
         dropped_by,
         upgrade_materials,
         tags,
+    })
+}
+
+/// Parses an item page from `playorna.com` and returns the details about the given item.
+/// The page needs not be in English and only some of the fields are selected.
+/// Fields ignored:
+///   - stats
+///   - causes
+///   - cures
+///   - gives
+///   - immunities
+///   - dropped_by
+///   - upgrade_materials
+///   - tags
+///   - ability
+pub fn parse_html_codex_item_translation(contents: &str, slug: String) -> Result<Item, Error> {
+    let html = parse_html().one(contents);
+
+    let name = descend_to(&html, ".herotext", "html")?;
+    let page = descend_to(&html, ".codex-page", "html")?;
+    let icon = descend_to(page.as_node(), ".codex-page-icon", "page")?;
+    let mut description_it = descend_iter(page.as_node(), ".codex-page-description", "page")?;
+    let tier = descend_to(page.as_node(), ".codex-page-meta", "page")?;
+
+    let description = if let Some(description) = description_it.next() {
+        node_to_text(description.as_node())
+    } else {
+        return Err(Error::HTMLParsingError(
+            "Failed to find description".to_string(),
+        ));
+    };
+
+    Ok(Item {
+        slug,
+        name: node_to_text(name.as_node()),
+        icon: parse_icon(icon.as_node())?,
+        description,
+        tier: parse_tier(tier.as_node())?,
+        stats: None,
+        ability: None,
+        causes: vec![],
+        cures: vec![],
+        gives: vec![],
+        immunities: vec![],
+        dropped_by: vec![],
+        upgrade_materials: vec![],
+        tags: vec![],
     })
 }

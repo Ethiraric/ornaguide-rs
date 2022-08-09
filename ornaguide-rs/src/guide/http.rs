@@ -11,20 +11,23 @@ use reqwest::{
 
 use crate::{
     codex::{
-        html_follower_parser::parse_html_codex_follower,
-        html_item_parser::parse_html_codex_item,
+        html_follower_parser::{parse_html_codex_follower, parse_html_codex_follower_translation},
+        html_item_parser::{parse_html_codex_item, parse_html_codex_item_translation},
         html_list_parser::{parse_html_codex_list, Entry as CodexListEntry, ParsedList},
         html_monster_parser::{
-            parse_html_codex_boss, parse_html_codex_monster, parse_html_codex_raid,
+            parse_html_codex_boss, parse_html_codex_boss_translation, parse_html_codex_monster,
+            parse_html_codex_monster_translation, parse_html_codex_raid,
+            parse_html_codex_raid_translation,
         },
-        html_skill_parser::parse_html_codex_skill,
+        html_skill_parser::{parse_html_codex_skill, parse_html_codex_skill_translation},
         CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill,
     },
     error::Error,
     guide::{
         html_form_parser::{
             parse_item_html, parse_monster_html, parse_pet_html, parse_skill_html,
-            parse_spawn_html, parse_status_effect_html, ParsedForm,
+            parse_spawn_html, parse_status_effect_html, ParsedForm, ITEM_FORM_FIELD_NAMES,
+            MONSTER_FORM_FIELD_NAMES, PET_FORM_FIELD_NAMES, SKILL_FORM_FIELD_NAMES,
         },
         html_list_parser::{parse_list_html, Entry, ParsedTable},
         post_error_parser::parse_post_error_html,
@@ -36,129 +39,6 @@ pub(crate) struct Http {
     orna_guide_host: String,
     playorna_host: String,
 }
-
-/// Names of the fields in the admin item change page.
-const ITEM_FORM_FIELD_NAMES: &[&str] = &[
-    "codex",
-    "name",
-    "tier",
-    "type",
-    "image_name",
-    "description",
-    "notes",
-    "hp",
-    "hp_affected_by_quality",
-    "mana",
-    "mana_affected_by_quality",
-    "attack",
-    "attack_affected_by_quality",
-    "magic",
-    "magic_affected_by_quality",
-    "defense",
-    "defense_affected_by_quality",
-    "resistance",
-    "resistance_affected_by_quality",
-    "dexterity",
-    "dexterity_affected_by_quality",
-    "ward",
-    "ward_affected_by_quality",
-    "crit",
-    "crit_affected_by_quality",
-    "foresight",
-    "view_distance",
-    "follower_stats",
-    "follower_act",
-    "status_infliction",
-    "status_protection",
-    "mana_saver",
-    "has_slots",
-    "base_adornment_slots",
-    "rarity",
-    "element",
-    "equipped_by",
-    "two_handed",
-    "orn_bonus",
-    "gold_bonus",
-    "drop_bonus",
-    "spawn_bonus",
-    "exp_bonus",
-    "boss",
-    "arena",
-    "category",
-    "causes",
-    "cures",
-    "gives",
-    "prevents",
-    "materials",
-    "price",
-    "ability",
-    "potion_effectiveness",
-];
-
-/// Names of the fields in the admin monster change page.
-const MONSTER_FORM_FIELD_NAMES: &[&str] = &[
-    "codex",
-    "name",
-    "tier",
-    "family",
-    "image_name",
-    "boss",
-    "level",
-    "hp",
-    "notes",
-    "spawns",
-    "weak_to",
-    "resistant_to",
-    "immune_to",
-    "immune_to_status",
-    "vulnerable_to_status",
-    "drops",
-    "skills",
-];
-
-/// Names of the fields in the admin skill change page.
-const SKILL_FORM_FIELD_NAMES: &[&str] = &[
-    "codex",
-    "name",
-    "tier",
-    "type",
-    "is_magic",
-    "mana_cost",
-    "description",
-    "element",
-    "offhand",
-    "cost",
-    "bought",
-    "skill_power",
-    "strikes",
-    "modifier_min",
-    "modifier_max",
-    "extra",
-    "buffed_by",
-    "causes",
-    "cures",
-    "gives",
-];
-
-/// Names of the fields in the admin pet change page.
-const PET_FORM_FIELD_NAMES: &[&str] = &[
-    "codex",
-    "name",
-    "tier",
-    "image_name",
-    "description",
-    "attack",
-    "heal",
-    "buff",
-    "debuff",
-    "spell",
-    "protect",
-    "cost",
-    "cost_type",
-    "limited",
-    "limited_details",
-    "skills",
-];
 
 /// Perform a POST request on the URL, serializing the form as an urlencoded body and setting the
 /// referer to the URL.
@@ -555,5 +435,85 @@ impl Http {
     ) -> Result<CodexFollower, Error> {
         let url = format!("{}/codex/followers/{}", self.playorna_host, follower_name);
         parse_html_codex_follower(&get_and_save(&self.http, &url)?, follower_name.to_string())
+    }
+
+    // --- Codex i18n ---
+
+    pub(crate) fn codex_retrieve_skill_translation(
+        &self,
+        skill_name: &str,
+        locale: &str,
+    ) -> Result<CodexSkill, Error> {
+        let url = format!(
+            "{}/codex/spells/{}/?lang={}",
+            self.playorna_host, skill_name, locale
+        );
+        parse_html_codex_skill_translation(&get_and_save(&self.http, &url)?, skill_name.to_string())
+    }
+
+    pub(crate) fn codex_retrieve_monster_translation(
+        &self,
+        monster_name: &str,
+        locale: &str,
+    ) -> Result<CodexMonster, Error> {
+        let url = format!(
+            "{}/codex/monsters/{}/?lang={}",
+            self.playorna_host, monster_name, locale
+        );
+        parse_html_codex_monster_translation(
+            &get_and_save(&self.http, &url)?,
+            monster_name.to_string(),
+        )
+    }
+
+    pub(crate) fn codex_retrieve_boss_translation(
+        &self,
+        boss_name: &str,
+        locale: &str,
+    ) -> Result<CodexBoss, Error> {
+        let url = format!(
+            "{}/codex/bosses/{}/?lang={}",
+            self.playorna_host, boss_name, locale
+        );
+        parse_html_codex_boss_translation(&get_and_save(&self.http, &url)?, boss_name.to_string())
+    }
+
+    pub(crate) fn codex_retrieve_raid_translation(
+        &self,
+        raid_name: &str,
+        locale: &str,
+    ) -> Result<CodexRaid, Error> {
+        let url = format!(
+            "{}/codex/raids/{}/?lang={}",
+            self.playorna_host, raid_name, locale
+        );
+        parse_html_codex_raid_translation(&get_and_save(&self.http, &url)?, raid_name.to_string())
+    }
+
+    pub(crate) fn codex_retrieve_item_translation(
+        &self,
+        item_name: &str,
+        locale: &str,
+    ) -> Result<CodexItem, Error> {
+        let url = format!(
+            "{}/codex/items/{}/?lang={}",
+            self.playorna_host, item_name, locale
+        );
+        parse_html_codex_item_translation(&get_and_save(&self.http, &url)?, item_name.to_string())
+    }
+
+    pub(crate) fn codex_retrieve_follower_translation(
+        &self,
+        follower_name: &str,
+        locale: &str,
+    ) -> Result<CodexFollower, Error> {
+        let url = format!(
+            "{}/codex/followers/{}/?lang={}",
+            self.playorna_host, follower_name, locale
+        );
+        parse_html_codex_follower_translation(
+            &get_and_save(&self.http, &url)?,
+            follower_name.to_string(),
+        )
     }
 }

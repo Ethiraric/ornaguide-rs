@@ -77,8 +77,7 @@ fn parse_status_effects(iter_node: &NodeRef) -> Result<Vec<SkillStatusEffect>, E
     Ok(ret)
 }
 
-/// Parses a page from `playorna.com` and returns the list of entries that were found and their
-/// associated tiers.
+/// Parses a skill page from `playorna.com` and returns the details about the given skill.
 pub fn parse_html_codex_skill(contents: &str, slug: String) -> Result<CodexSkill, Error> {
     let html = parse_html().one(contents);
 
@@ -112,5 +111,39 @@ pub fn parse_html_codex_skill(contents: &str, slug: String) -> Result<CodexSkill
         tags,
         causes,
         gives,
+    })
+}
+
+/// Parses a skill page from `playorna.com` and returns the details about the given skill.
+/// The page needs not be in English and only some of the fields are selected.
+/// Fields ignored:
+///   - tags
+///   - "causes"/"gives": Both are put into `causes`.
+pub fn parse_html_codex_skill_translation(
+    contents: &str,
+    slug: String,
+) -> Result<CodexSkill, Error> {
+    let html = parse_html().one(contents);
+
+    let name = descend_to(&html, ".herotext", "html")?;
+    let page = descend_to(&html, ".codex-page", "html")?;
+    let icon = descend_to(page.as_node(), ".codex-page-icon", "page")?;
+    let description = descend_to(page.as_node(), ".codex-page-description", "page")?;
+    let tier = descend_to(page.as_node(), ".codex-page-meta", "page")?;
+    let mut causes = vec![];
+
+    for h4 in descend_iter(page.as_node(), "h4", "page")? {
+        causes.append(&mut parse_status_effects(h4.as_node())?);
+    }
+
+    Ok(CodexSkill {
+        name: node_to_text(name.as_node()),
+        slug,
+        icon: parse_icon(icon.as_node())?,
+        description: node_to_text(description.as_node()),
+        tier: parse_tier(tier.as_node())?,
+        tags: vec![],
+        causes,
+        gives: vec![],
     })
 }

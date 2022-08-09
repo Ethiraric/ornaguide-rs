@@ -471,4 +471,64 @@ impl Codex for OrnaAdminGuide {
     ) -> Result<crate::codex::CodexFollower, Error> {
         self.guide.http().codex_retrieve_follower(follower_name)
     }
+
+    fn codex_fetch_skill_with_locale(
+        &self,
+        skill_name: &str,
+        locale: &str,
+    ) -> Result<CodexSkill, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_skill_translation(skill_name, locale)
+    }
+
+    fn codex_fetch_monster_with_locale(
+        &self,
+        monster_name: &str,
+        locale: &str,
+    ) -> Result<CodexMonster, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_monster_translation(monster_name, locale)
+    }
+
+    fn codex_fetch_boss_with_locale(
+        &self,
+        boss_name: &str,
+        locale: &str,
+    ) -> Result<crate::codex::CodexBoss, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_boss_translation(boss_name, locale)
+    }
+
+    fn codex_fetch_raid_with_locale(
+        &self,
+        raid_name: &str,
+        locale: &str,
+    ) -> Result<crate::codex::CodexRaid, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_raid_translation(raid_name, locale)
+    }
+
+    fn codex_fetch_item_with_locale(
+        &self,
+        item_name: &str,
+        locale: &str,
+    ) -> Result<crate::codex::CodexItem, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_item_translation(item_name, locale)
+    }
+
+    fn codex_fetch_follower_with_locale(
+        &self,
+        follower_name: &str,
+        locale: &str,
+    ) -> Result<crate::codex::CodexFollower, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_follower_translation(follower_name, locale)
+    }
 }

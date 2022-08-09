@@ -5,7 +5,11 @@ use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRe
 use crate::{
     codex::{CodexFollower, FollowerAbility},
     error::Error,
-    utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text, parse_icon},
+    misc::truncate_str_until,
+    utils::html::{
+        descend_iter, descend_to, get_attribute_from_node, list_attributes_form_node, node_to_text,
+        parse_icon,
+    },
 };
 
 /// The contents of the `codex-page-description` node.
@@ -35,75 +39,61 @@ fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
     }
 }
 
-/// Parse the text contents from a description node containing family, rarity or events.
-fn parse_family_rarity_text<'a>(txt: &'a str, expected_left: &str) -> Result<&'a str, Error> {
-    if let Some(pos) = txt.find(':') {
-        let (left, right) = txt.split_at(pos + 1);
-        if left != expected_left {
-            Err(Error::HTMLParsingError(format!(
-                "Failed to parse family or rarity. Expected {}, got {}",
-                expected_left, left,
-            )))
-        } else {
-            Ok(right.trim())
-        }
-    } else {
-        Err(Error::HTMLParsingError(format!(
-            "Failed to find family or rarity in: {}",
-            txt,
-        )))
-    }
-}
-
 /// Parse the events, family and rarity of the monster.
 fn parse_description_nodes<T>(
     iter: impl Iterator<Item = NodeDataRef<T>>,
 ) -> Result<DescriptionNode, Error> {
     let mut iter = iter.peekable();
-    let mut description = None;
+    let description;
     let mut events = Vec::new();
+    let rarity;
 
-    if let Some(event_node) = iter.peek() {
-        let txt = node_to_text(event_node.as_node());
-        if !txt.starts_with("Event:") && !txt.starts_with("Rarity:") {
-            description = Some(txt);
-            iter.next();
-        }
+    // First node is the description.
+    if let Some(description_node) = iter.next() {
+        description = node_to_text(description_node.as_node());
+    } else {
+        return Err(Error::HTMLParsingError(
+            "No description node when parsing follower".to_string(),
+        ));
     }
 
+    // Look for the event node.
     if let Some(event_node) = iter.peek() {
-        // The event string is composed of the different events separated by a single slash (`/`).
-        if let Ok(events_str) =
-            parse_family_rarity_text(&node_to_text(event_node.as_node()), "Event:")
+        // Event nodes have a `highlight` attribute. Otherwise, the node isn't an event node.
+        if list_attributes_form_node(event_node.as_node(), "Description event node")?
+            .into_iter()
+            .any(|name| name == "codex-page-description-highlight")
         {
-            events = events_str
-                .split('/')
-                .map(|ev| ev.trim().to_string())
-                .collect();
-            events.sort_unstable();
-            iter.next();
+            // The event string is composed of the different events separated by a single slash (`/`).
+            if let Some(events_str) = truncate_str_until(&node_to_text(event_node.as_node()), ':') {
+                events = events_str
+                    .trim()
+                    .split('/')
+                    .map(|ev| ev.trim().to_string())
+                    .collect();
+                events.sort_unstable();
+                iter.next();
+            }
         }
     }
 
-    let rarity = match iter.next() {
-        Some(node) => {
-            parse_family_rarity_text(&node_to_text(node.as_node()), "Rarity:")?.to_string()
-        }
-        None => {
+    // Look for the rarity node.
+    if let Some(rarity_node) = iter.next() {
+        if let Some(rarity_str) = truncate_str_until(&node_to_text(rarity_node.as_node()), ':') {
+            rarity = rarity_str.trim().to_string();
+        } else {
             return Err(Error::HTMLParsingError(
-                "Failed to find rarity node".to_string(),
+                "Failed to find ':' in rarity node".to_string(),
             ));
         }
-    };
-
-    if description.is_none() {
+    } else {
         return Err(Error::HTMLParsingError(
-            "Failed to find description text".to_string(),
+            "Failed to find rarity node".to_string(),
         ));
     }
 
     Ok(DescriptionNode {
-        description: description.unwrap(),
+        description,
         events,
         rarity,
     })
@@ -193,5 +183,39 @@ pub fn parse_html_codex_follower(contents: &str, slug: String) -> Result<CodexFo
         events,
         rarity,
         abilities,
+    })
+}
+
+/// Parse a follower page from `playorna.com` for details about a follower.
+/// The page needs not be in English and only some of the fields are selected.
+/// Fields ignored:
+///   - abilities
+pub fn parse_html_codex_follower_translation(
+    contents: &str,
+    slug: String,
+) -> Result<CodexFollower, Error> {
+    let html = parse_html().one(contents);
+
+    let name = descend_to(&html, ".herotext", "html")?;
+    let page = descend_to(&html, ".codex-page", "html")?;
+    let icon = descend_to(page.as_node(), ".codex-page-icon", "page")?;
+    let descriptions_it = descend_iter(page.as_node(), ".codex-page-description", "page")?;
+    let tier = descend_to(page.as_node(), ".codex-page-meta", "page")?;
+
+    let DescriptionNode {
+        description,
+        events,
+        rarity,
+    } = parse_description_nodes(descriptions_it)?;
+
+    Ok(CodexFollower {
+        name: node_to_text(name.as_node()),
+        slug,
+        icon: parse_icon(icon.as_node())?,
+        description,
+        tier: parse_tier(tier.as_node())?,
+        events,
+        rarity,
+        abilities: vec![],
     })
 }

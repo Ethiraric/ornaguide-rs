@@ -102,4 +102,74 @@ pub trait Codex {
     fn codex_fetch_follower_list(&self) -> Result<Vec<FollowerEntry>, Error>;
     /// Retrieve the details about a follower from the orna codex.
     fn codex_fetch_follower(&self, follower_name: &str) -> Result<CodexFollower, Error>;
+
+    // Locale-aware methods
+
+    /// Retrieve the details about a skill from the orna codex in the given locale.
+    /// Only some fields are returned. Fields that cannot be accurately parsed are left blank.
+    /// Fields ignored:
+    ///   - tags
+    ///   - "causes"/"gives": Both are put into `causes`.
+    fn codex_fetch_skill_with_locale(
+        &self,
+        skill_name: &str,
+        locale: &str,
+    ) -> Result<CodexSkill, Error>;
+    /// Retrieve the details about a monster from the orna codex in the given locale.
+    /// Only some fields are returned. Fields that cannot be accurately parsed are left blank.
+    /// Fields ignored:
+    ///   - abilities
+    ///   - drops
+    fn codex_fetch_monster_with_locale(
+        &self,
+        monster_name: &str,
+        locale: &str,
+    ) -> Result<CodexMonster, Error>;
+    /// Retrieve the details about a boss from the orna codex in the given locale.
+    /// Only some fields are returned. Fields that cannot be accurately parsed are left blank.
+    /// Fields ignored:
+    ///   - abilities
+    ///   - drops
+    fn codex_fetch_boss_with_locale(
+        &self,
+        boss_name: &str,
+        locale: &str,
+    ) -> Result<CodexBoss, Error>;
+    /// Retrieve the details about a raid from the orna codex in the given locale.
+    /// Only some fields are returned. Fields that cannot be accurately parsed are left blank.
+    /// Fields ignored:
+    ///   - abilities
+    ///   - drops
+    ///   - tags
+    fn codex_fetch_raid_with_locale(
+        &self,
+        raid_name: &str,
+        locale: &str,
+    ) -> Result<CodexRaid, Error>;
+    /// Retrieve the details about a item from the orna codex in the given locale.
+    /// Only some fields are returned. Fields that cannot be accurately parsed are left blank.
+    /// Fields ignored:
+    ///   - stats
+    ///   - causes
+    ///   - cures
+    ///   - gives
+    ///   - immunities
+    ///   - dropped_by
+    ///   - upgrade_materials
+    ///   - tags
+    ///   - ability
+    fn codex_fetch_item_with_locale(
+        &self,
+        item_name: &str,
+        locale: &str,
+    ) -> Result<CodexItem, Error>;
+    /// Retrieve the details about a follower from the orna codex in the given locale.
+    /// Only some fields are returned. Fields that cannot be accurately parsed are left blank.
+    /// Fields ignored:
+    ///   - abilities
+    fn codex_fetch_follower_with_locale(
+        &self,
+        follower_name: &str,
+        locale: &str,
+    ) -> Result<CodexFollower, Error>;
 }

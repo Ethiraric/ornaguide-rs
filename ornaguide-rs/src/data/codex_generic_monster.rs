@@ -87,9 +87,10 @@ impl<'a> CodexGenericMonster<'a> {
 
     /// Return the tags attached to the monster.
     pub fn tags(&self) -> &'a Vec<Tag> {
+        static EMPTY_VEC: Vec<Tag> = Vec::new();
         match self {
-            CodexGenericMonster::Monster(x) => &x.tags,
-            CodexGenericMonster::Boss(x) => &x.tags,
+            CodexGenericMonster::Monster(_) => &EMPTY_VEC,
+            CodexGenericMonster::Boss(_) => &EMPTY_VEC,
             CodexGenericMonster::Raid(x) => &x.tags,
         }
     }

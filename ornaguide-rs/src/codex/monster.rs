@@ -42,8 +42,6 @@ pub struct Monster {
     pub rarity: String,
     /// The tier of the monster.
     pub tier: u8,
-    /// Tags attached to the item.
-    pub tags: Vec<Tag>,
     /// The abilities of the monster.
     pub abilities: Vec<Ability>,
     /// The items the monster drops.
@@ -67,8 +65,6 @@ pub struct Boss {
     pub rarity: String,
     /// The tier of the boss.
     pub tier: u8,
-    /// Tags attached to the item.
-    pub tags: Vec<Tag>,
     /// The abilities of the boss.
     pub abilities: Vec<Ability>,
     /// The items the boss drops.
@@ -284,5 +280,65 @@ impl Raid {
                 .collect(),
             ..AdminMonster::default()
         })
+    }
+}
+
+impl<'a> Monsters {
+    /// Find the codex monster associated with the given uri.
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a Monster> {
+        static URI_START: &str = "/codex/monsters/";
+        if !needle.starts_with(URI_START) {
+            return None;
+        }
+
+        let slug = &needle[URI_START.len()..needle.len() - 1];
+        self.monsters.iter().find(|monster| monster.slug == slug)
+    }
+
+    /// Find the codex monster associated with the given uri.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Monster, Error> {
+        self.find_by_uri(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for codex monster with uri '{}'", needle)))
+    }
+}
+
+impl<'a> Bosses {
+    /// Find the codex boss associated with the given uri.
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a Boss> {
+        static URI_START: &str = "/codex/bosses/";
+        if !needle.starts_with(URI_START) {
+            return None;
+        }
+
+        let slug = &needle[URI_START.len()..needle.len() - 1];
+        self.bosses.iter().find(|boss| boss.slug == slug)
+    }
+
+    /// Find the codex boss associated with the given uri.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Boss, Error> {
+        self.find_by_uri(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for codex boses with uri '{}'", needle)))
+    }
+}
+
+impl<'a> Raids {
+    /// Find the codex raid associated with the given uri.
+    pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a Raid> {
+        static URI_START: &str = "/codex/raids/";
+        if !needle.starts_with(URI_START) {
+            return None;
+        }
+
+        let slug = &needle[URI_START.len()..needle.len() - 1];
+        self.raids.iter().find(|raid| raid.slug == slug)
+    }
+
+    /// Find the codex raid associated with the given uri.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Raid, Error> {
+        self.find_by_uri(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for codex raid with uri '{}'", needle)))
     }
 }
