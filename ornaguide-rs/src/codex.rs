@@ -11,6 +11,7 @@ pub(crate) mod monster;
 pub(crate) mod skill;
 
 pub mod fetch;
+pub mod translation;
 
 pub use follower::{
     Ability as FollowerAbility, Follower as CodexFollower, Followers as CodexFollowers,
