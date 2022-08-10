@@ -1,8 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use crate::codex::{CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill};
+use crate::{
+    codex::{CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill},
+    error::Error,
+};
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{BufReader, BufWriter},
+};
 
 /// A set of strings for a particular language.
 #[derive(Default, Serialize, Deserialize, Debug)]
@@ -39,6 +46,7 @@ pub struct LocaleStrings {
 
 /// A set of `LocaleStrings`.
 /// Strings organized in their respective locales.
+#[derive(Default, Serialize, Deserialize, Debug)]
 pub struct LocaleDB {
     /// Map of locales. The key is the locale name.
     pub locales: HashMap<String, LocaleStrings>,
@@ -278,5 +286,53 @@ impl LocaleDB {
         self.locales
             .get(locale)
             .and_then(|locale| locale.rarity(name))
+    }
+
+    /// Save translations to a set of json files in the given directory.
+    pub fn save_to(&self, directory: &str) -> Result<(), Error> {
+        for (lang, db) in self.locales.iter() {
+            serde_json::to_writer_pretty(
+                BufWriter::new(File::create(format!("{}/{}.json", directory, lang))?),
+                db,
+            )?;
+        }
+
+        Ok(())
+    }
+
+    /// Load translations from a set of json files in the given directory.
+    pub fn load_from(directory: &str) -> Result<Self, Error> {
+        let mut ret = Self::default();
+        // List files from folder ending with `.json`.
+        for entry in std::fs::read_dir(directory)?
+            .filter_map(|entry| entry.ok())
+            .filter(|entry| {
+                entry
+                    .file_name()
+                    .to_str()
+                    .map(|name| name.ends_with(".json"))
+                    .unwrap_or(false)
+            })
+        {
+            let filename = entry.file_name();
+            let name = filename.to_str().unwrap();
+            if let Some(lang) = name.strip_suffix(".json") {
+                if let Ok(db) = serde_json::from_reader(BufReader::new(File::open(format!(
+                    "{}/{}",
+                    directory, name
+                ))?)) {
+                    ret.locales.insert(lang.to_string(), db);
+                } else {
+                    println!("Failed to parse json from lang db {}/{}", directory, name);
+                }
+            } else {
+                println!(
+                    "Failed to get lang name from lang db {}/{}",
+                    directory, name
+                );
+            }
+        }
+
+        Ok(ret)
     }
 }
