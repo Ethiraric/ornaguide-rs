@@ -184,8 +184,7 @@ impl Http {
         headers.insert("Cookie", HeaderValue::from_str(cookie).unwrap());
         Ok(Self {
             http: Client::builder().default_headers(headers).build()?,
-            orna_guide_host: "https://orna.guide".to_string(),
-            playorna_host: "https://playorna.com".to_string(),
+            ..Self::new()
         })
     }
 
@@ -197,9 +196,9 @@ impl Http {
         let mut headers = HeaderMap::new();
         headers.insert("Cookie", HeaderValue::from_str(cookie).unwrap());
         Ok(Self {
-            http: Client::builder().default_headers(headers).build()?,
             orna_guide_host: orna_guide,
             playorna_host: playorna,
+            ..Self::new_with_cookie(cookie)?
         })
     }
 
