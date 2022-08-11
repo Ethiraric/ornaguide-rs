@@ -153,6 +153,23 @@ impl LocaleStrings {
     pub fn rarity(&self, name: &str) -> Option<&str> {
         self.rarities.get(name).map(String::as_str)
     }
+
+    /// Merge the contents of `self` with that of `other`.
+    /// For each key in each hash map, the contents of `other` will take precedence over `self` and
+    /// overwrite values in case of duplicate keys.
+    /// `other.locale` is assumed to match `self.locale`. No check is performed.
+    pub fn merge_with(&mut self, mut other: Self) {
+        self.items.extend(other.items.drain());
+        self.raids.extend(other.raids.drain());
+        self.monsters.extend(other.monsters.drain());
+        self.bosses.extend(other.bosses.drain());
+        self.skills.extend(other.skills.drain());
+        self.followers.extend(other.followers.drain());
+        self.statuses.extend(other.statuses.drain());
+        self.events.extend(other.events.drain());
+        self.families.extend(other.families.drain());
+        self.rarities.extend(other.rarities.drain());
+    }
 }
 
 impl LocaleDB {
@@ -267,6 +284,13 @@ impl LocaleDB {
             .and_then(|locale| locale.follower_description(follower_name))
     }
 
+    /// Get the status effect from the locale database.
+    pub fn status(&self, locale: &str, name: &str) -> Option<&str> {
+        self.locales
+            .get(locale)
+            .and_then(|locale| locale.status(name))
+    }
+
     /// Get the event from the locale database.
     pub fn event(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
@@ -334,5 +358,19 @@ impl LocaleDB {
         }
 
         Ok(ret)
+    }
+
+    /// Merge the contents of `self` with that of `other`.
+    /// For each locale, the contents of `other` will take precedence over `self` and overwrite
+    /// values in case of duplicate keys.
+    /// If `other` contains a locale not contained in `self`, it will be added to `self`.
+    pub fn merge_with(&mut self, other: Self) {
+        for (lang, db) in other.locales {
+            if let Some(self_db) = self.locales.get_mut(&lang) {
+                self_db.merge_with(db);
+            } else {
+                self.locales.insert(lang, db);
+            }
+        }
     }
 }
