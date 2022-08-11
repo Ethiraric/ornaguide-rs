@@ -36,6 +36,9 @@ pub struct LocaleStrings {
     /// Event names.
     /// The key is the English string, the value is that in the target locale.
     pub events: HashMap<String, String>,
+    /// Spawn names.
+    /// The key is the English string, the value is that in the target locale.
+    pub spawns: HashMap<String, String>,
     /// Family names.
     /// The key is the English string, the value is that in the target locale.
     pub families: HashMap<String, String>,
@@ -144,6 +147,11 @@ impl LocaleStrings {
         self.events.get(name).map(String::as_str)
     }
 
+    /// Get the spawn from the locale database.
+    pub fn spawn(&self, name: &str) -> Option<&str> {
+        self.spawns.get(name).map(String::as_str)
+    }
+
     /// Get the family from the locale database.
     pub fn family(&self, name: &str) -> Option<&str> {
         self.families.get(name).map(String::as_str)
@@ -167,6 +175,7 @@ impl LocaleStrings {
         self.followers.extend(other.followers.drain());
         self.statuses.extend(other.statuses.drain());
         self.events.extend(other.events.drain());
+        self.spawns.extend(other.spawns.drain());
         self.families.extend(other.families.drain());
         self.rarities.extend(other.rarities.drain());
     }
@@ -298,6 +307,13 @@ impl LocaleDB {
             .and_then(|locale| locale.event(name))
     }
 
+    /// Get the spawn from the locale database.
+    pub fn spawns(&self, locale: &str, name: &str) -> Option<&str> {
+        self.locales
+            .get(locale)
+            .and_then(|locale| locale.event(name))
+    }
+
     /// Get the family from the locale database.
     pub fn family(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
@@ -341,13 +357,17 @@ impl LocaleDB {
             let filename = entry.file_name();
             let name = filename.to_str().unwrap();
             if let Some(lang) = name.strip_suffix(".json") {
-                if let Ok(db) = serde_json::from_reader(BufReader::new(File::open(format!(
+                match serde_json::from_reader(BufReader::new(File::open(format!(
                     "{}/{}",
                     directory, name
                 ))?)) {
-                    ret.locales.insert(lang.to_string(), db);
-                } else {
-                    println!("Failed to parse json from lang db {}/{}", directory, name);
+                    Ok(db) => {
+                        ret.locales.insert(lang.to_string(), db);
+                    }
+                    Err(err) => println!(
+                        "Failed to parse json from lang db {}/{}: {}",
+                        directory, name, err
+                    ),
                 }
             } else {
                 println!(
