@@ -14,6 +14,7 @@ mod data;
 mod filter;
 mod items;
 mod monsters;
+mod options;
 mod pets;
 mod rocket_utils;
 mod sirscor;

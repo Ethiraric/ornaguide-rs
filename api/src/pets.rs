@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::DATA,
     filter::{compilable::Compilable, Filter},
+    options::Options,
 };
 
 /// All the filters applicable on a pet.
@@ -52,6 +53,9 @@ pub struct PetFilters<'a> {
     pub limited_details: Filter<'a, String>,
     /// Filter by skills.
     pub skills: Filter<'a, Vec<u32>>,
+    /// Generic options.
+    #[serde(rename = "_options")]
+    pub options: Options,
 }
 
 /// Query for pets.

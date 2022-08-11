@@ -33,40 +33,62 @@ pub(crate) fn create_compile_error_at(span: Span, message: &str) -> TokenStream 
 
 /// Create a stream with the implementation of `compiled` for the given structure.
 fn make_compiled_fn(fields: &[String]) -> TokenStream {
-    format!(r"
+    format!(
+        r"
     /// Compile all filters within `self`.
     pub fn compiled(self) -> Result<Self, Error> {{
         Ok(Self {{
-            {}
+            {},
+            options: self.options,
         }})
     }}",
-    fields.iter().map(|name| format!("{}: self.{}.compiled()?", name, name)).join(",")
-    ).parse().unwrap()
+        fields
+            .iter()
+            .map(|name| format!("{}: self.{}.compiled()?", name, name))
+            .join(",")
+    )
+    .parse()
+    .unwrap()
 }
 
 /// Create a stream with the implementation of `is_none` for the given structure.
 fn make_is_none_fn(fields: &[String]) -> TokenStream {
-    format!(r"
+    format!(
+        r"
     /// Check whether all filters are set to `Filter::None`.
     pub fn is_none(&self) -> bool {{
         {}
     }}",
-    fields.iter().map(|name| format!("self.{}.is_none()", name)).join("&&")
-    ).parse().unwrap()
+        fields
+            .iter()
+            .map(|name| format!("self.{}.is_none()", name))
+            .join("&&")
+    )
+    .parse()
+    .unwrap()
 }
 
 /// Create a stream with the implementation of `into_fn_vec` for the given structure.
 fn make_into_fn_vec_fn(fields: &[String], filtered_type: &str) -> TokenStream {
-    format!(r"
+    format!(
+        r"
     /// Return a `Vec` of closures for each non-`None` filter in `self`.
     /// Should be faster than invoking each and every filter each time.
     /// This method must not be called if there are uncompiled filters.
     pub fn into_fn_vec(self) -> Vec<Box<dyn Fn(&{}) -> bool + 'a>> {{
         [ {} ].into_iter().flatten().collect()
     }}",
-    filtered_type,
-    fields.iter().map(|name| format!("self.{}.into_fn(|value: &{}| &value.{})", name, filtered_type, name)).join(",")
-    ).parse().unwrap()
+        filtered_type,
+        fields
+            .iter()
+            .map(|name| format!(
+                "self.{}.into_fn(|value: &{}| &value.{})",
+                name, filtered_type, name
+            ))
+            .join(",")
+    )
+    .parse()
+    .unwrap()
 }
 
 /// Create a stream with an `impl` block for the given filter with its methods.
@@ -85,7 +107,8 @@ fn make_impl(fields: &[String], structure: &ItemStruct, filtered_type: &str) -> 
     impl_stream.extend(make_into_fn_vec_fn(fields, filtered_type));
 
     // Make a group out of all the methods.
-    stream.extend::<TokenStream>(TokenTree::Group(Group::new(Delimiter::Brace, impl_stream)).into());
+    stream
+        .extend::<TokenStream>(TokenTree::Group(Group::new(Delimiter::Brace, impl_stream)).into());
     stream
 }
 
@@ -107,11 +130,15 @@ fn make_impl(fields: &[String], structure: &ItemStruct, filtered_type: &str) -> 
 pub fn api_filter(attr: TokenStream, item: TokenStream) -> Result<TokenStream, TokenStream> {
     // Retrieve the name of the type to filter from the attribute.
     let mut attr = attr.into_iter();
-    let filtered_type = if let (Some(TokenTree::Ident(filtered_type)), None) = (attr.next(), attr.next()) {
-        filtered_type.to_string()
-    } else {
-        return Err(create_compile_error_at(Span::call_site(), "Missing filtered type in attribute"));
-    };
+    let filtered_type =
+        if let (Some(TokenTree::Ident(filtered_type)), None) = (attr.next(), attr.next()) {
+            filtered_type.to_string()
+        } else {
+            return Err(create_compile_error_at(
+                Span::call_site(),
+                "Missing filtered type in attribute",
+            ));
+        };
 
     // Parse the item as a structure and get a list of its fields.
     let structure = match syn::parse::<ItemStruct>(item) {
@@ -122,6 +149,7 @@ pub fn api_filter(attr: TokenStream, item: TokenStream) -> Result<TokenStream, T
         .fields
         .iter()
         .filter_map(|field| field.ident.as_ref().map(|id| id.to_string()))
+        .filter(|field| field != "options")
         .collect_vec();
 
     // Copy the structure we decorate as-is, then add an `impl` block with the methods we need.

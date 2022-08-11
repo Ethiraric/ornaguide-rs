@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::DATA,
     filter::{compilable::Compilable, Filter},
+    options::Options,
 };
 
 /// All the filters applicable on a skill.
@@ -57,6 +58,9 @@ pub struct SkillFilters<'a> {
     pub cures: Filter<'a, Vec<u32>>,
     /// Filter by gives.
     pub gives: Filter<'a, Vec<u32>>,
+    /// Generic options.
+    #[serde(rename = "_options")]
+    pub options: Options,
 }
 
 /// Query for skills.

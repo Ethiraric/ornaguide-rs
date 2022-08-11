@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     data::DATA,
     filter::{compilable::Compilable, Filter},
+    options::Options,
 };
 
 /// All the filters applicable on an item.
@@ -123,29 +124,35 @@ pub struct ItemFilters<'a> {
     pub price: Filter<'a, u32>,
     /// Filter by ability.
     pub ability: Filter<'a, Option<u32>>,
+    /// Generic options.
+    #[serde(rename = "_options")]
+    pub options: Options,
 }
 
 /// Query for items.
 /// The `Content-Type` header must be set to `application/json` when calling this route.
 /// Even when using no filter, the body should be an empty JSON object (`{}`).
 #[post("/items", format = "json", data = "<filters>")]
-pub fn post(filters: Json<ItemFilters>) -> Json<Vec<AdminItem>> {
+pub fn post(filters: Json<ItemFilters>) -> Json<serde_json::Value> {
     let lock = DATA.as_ref().unwrap();
     let lock = lock.read();
     let data = lock.as_ref().unwrap().deref();
 
     if filters.is_none() {
-        Json(data.guide.items.items.clone())
+        Json(serde_json::to_value(data.guide.items.items.clone()).unwrap())
     } else {
         let filters = filters.into_inner().compiled().unwrap().into_fn_vec();
         Json(
-            data.guide
-                .items
-                .items
-                .iter()
-                .filter(|item| filters.iter().map(|f| f(item)).all(|x| x))
-                .cloned()
-                .collect_vec(),
+            serde_json::to_value(
+                data.guide
+                    .items
+                    .items
+                    .iter()
+                    .filter(|item| filters.iter().map(|f| f(item)).all(|x| x))
+                    .cloned()
+                    .collect_vec(),
+            )
+            .unwrap(),
         )
     }
 }
