@@ -1,12 +1,12 @@
 use itertools::Itertools;
-use lazy_static::__Deref;
 use ornaguide_rs::{error::Error, items::admin::AdminItem};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::DATA,
+    data::with_data,
+    error::{MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
     options::Options,
 };
@@ -129,20 +129,15 @@ pub struct ItemFilters<'a> {
     pub options: Options,
 }
 
-/// Query for items.
-/// The `Content-Type` header must be set to `application/json` when calling this route.
-/// Even when using no filter, the body should be an empty JSON object (`{}`).
-#[post("/items", format = "json", data = "<filters>")]
-pub fn post(filters: Json<ItemFilters>) -> Json<serde_json::Value> {
-    let lock = DATA.as_ref().unwrap();
-    let lock = lock.read();
-    let data = lock.as_ref().unwrap().deref();
-
-    if filters.is_none() {
-        Json(serde_json::to_value(data.guide.items.items.clone()).unwrap())
-    } else {
-        let filters = filters.into_inner().compiled().unwrap().into_fn_vec();
-        Json(
+/// Implementation function just so I can return a `Result` and `?`.
+pub fn post_impl(filters: ItemFilters) -> Result<serde_json::Value, crate::error::Error> {
+    with_data(|data| {
+        if filters.is_none() {
+            serde_json::to_value(data.guide.items.items.clone())
+                .map_err(ornaguide_rs::error::Error::from)
+                .to_internal_server_error()
+        } else {
+            let filters = filters.compiled().to_bad_request()?.into_fn_vec();
             serde_json::to_value(
                 data.guide
                     .items
@@ -152,8 +147,19 @@ pub fn post(filters: Json<ItemFilters>) -> Json<serde_json::Value> {
                     .cloned()
                     .collect_vec(),
             )
-            .unwrap(),
-        )
+            .map_err(ornaguide_rs::error::Error::from)
+            .to_internal_server_error()
+        }
+    })
+}
+
+/// Query for items.
+/// The `Content-Type` header must be set to `application/json` when calling this route.
+/// Even when using no filter, the body should be an empty JSON object (`{}`).
+#[post("/items", format = "json", data = "<filters>")]
+pub fn post(filters: Json<ItemFilters>) -> MaybeResponse {
+    MaybeResponse {
+        contents: post_impl(filters.into_inner()),
     }
 }
 

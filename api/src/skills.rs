@@ -1,12 +1,12 @@
 use itertools::Itertools;
-use lazy_static::__Deref;
 use ornaguide_rs::{error::Error, skills::admin::AdminSkill};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::DATA,
+    data::with_data,
+    error::{MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
     options::Options,
 };
@@ -63,28 +63,37 @@ pub struct SkillFilters<'a> {
     pub options: Options,
 }
 
+/// Implementation function just so I can return a `Result` and `?`.
+pub fn post_impl(filters: SkillFilters) -> Result<serde_json::Value, crate::error::Error> {
+    with_data(|data| {
+        if filters.is_none() {
+            serde_json::to_value(data.guide.skills.skills.clone())
+                .map_err(ornaguide_rs::error::Error::from)
+                .to_internal_server_error()
+        } else {
+            let filters = filters.compiled().to_bad_request()?.into_fn_vec();
+            serde_json::to_value(
+                data.guide
+                    .skills
+                    .skills
+                    .iter()
+                    .filter(|skill| filters.iter().map(|f| f(skill)).all(|x| x))
+                    .cloned()
+                    .collect_vec(),
+            )
+            .map_err(ornaguide_rs::error::Error::from)
+            .to_internal_server_error()
+        }
+    })
+}
+
 /// Query for skills.
 /// The `Content-Type` header must be set to `application/json` when calling this route.
 /// Even when using no filter, the body should be an empty JSON object (`{}`).
 #[post("/skills", format = "json", data = "<filters>")]
-pub fn post(filters: Json<SkillFilters>) -> Json<Vec<AdminSkill>> {
-    let lock = DATA.as_ref().unwrap();
-    let lock = lock.read();
-    let data = lock.as_ref().unwrap().deref();
-
-    if filters.is_none() {
-        Json(data.guide.skills.skills.clone())
-    } else {
-        let filters = filters.into_inner().compiled().unwrap().into_fn_vec();
-        Json(
-            data.guide
-                .skills
-                .skills
-                .iter()
-                .filter(|skill| filters.iter().map(|f| f(skill)).all(|x| x))
-                .cloned()
-                .collect_vec(),
-        )
+pub fn post(filters: Json<SkillFilters>) -> MaybeResponse {
+    MaybeResponse {
+        contents: post_impl(filters.into_inner()),
     }
 }
 

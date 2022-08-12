@@ -1,5 +1,4 @@
 use itertools::Itertools;
-use lazy_static::__Deref;
 use ornaguide_rs::{
     error::Error,
     pets::admin::{AdminPet, CostType},
@@ -9,7 +8,8 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::DATA,
+    data::with_data,
+    error::{MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
     options::Options,
 };
@@ -58,28 +58,37 @@ pub struct PetFilters<'a> {
     pub options: Options,
 }
 
+/// Implementation function just so I can return a `Result` and `?`.
+pub fn post_impl(filters: PetFilters) -> Result<serde_json::Value, crate::error::Error> {
+    with_data(|data| {
+        if filters.is_none() {
+            serde_json::to_value(data.guide.pets.pets.clone())
+                .map_err(ornaguide_rs::error::Error::from)
+                .to_internal_server_error()
+        } else {
+            let filters = filters.compiled().to_bad_request()?.into_fn_vec();
+            serde_json::to_value(
+                data.guide
+                    .pets
+                    .pets
+                    .iter()
+                    .filter(|pet| filters.iter().map(|f| f(pet)).all(|x| x))
+                    .cloned()
+                    .collect_vec(),
+            )
+            .map_err(ornaguide_rs::error::Error::from)
+            .to_internal_server_error()
+        }
+    })
+}
+
 /// Query for pets.
 /// The `Content-Type` header must be set to `application/json` when calling this route.
 /// Even when using no filter, the body should be an empty JSON object (`{}`).
 #[post("/pets", format = "json", data = "<filters>")]
-pub fn post(filters: Json<PetFilters>) -> Json<Vec<AdminPet>> {
-    let lock = DATA.as_ref().unwrap();
-    let lock = lock.read();
-    let data = lock.as_ref().unwrap().deref();
-
-    if filters.is_none() {
-        Json(data.guide.pets.pets.clone())
-    } else {
-        let filters = filters.into_inner().compiled().unwrap().into_fn_vec();
-        Json(
-            data.guide
-                .pets
-                .pets
-                .iter()
-                .filter(|pet| filters.iter().map(|f| f(pet)).all(|x| x))
-                .cloned()
-                .collect_vec(),
-        )
+pub fn post(filters: Json<PetFilters>) -> MaybeResponse {
+    MaybeResponse {
+        contents: post_impl(filters.into_inner()),
     }
 }
 

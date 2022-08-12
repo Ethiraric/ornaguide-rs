@@ -11,6 +11,7 @@ use crate::data::DATA;
 
 mod cors;
 mod data;
+mod error;
 mod filter;
 mod items;
 mod monsters;
