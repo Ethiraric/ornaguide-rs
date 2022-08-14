@@ -2,7 +2,7 @@ use ornaguide_rs::{data::OrnaData, error::Error};
 use serde::{Deserialize, Serialize};
 
 /// Generic options that can be applied to any route.
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize, Clone)]
 #[serde(default)]
 pub struct Options {
     /// The language in which to query.

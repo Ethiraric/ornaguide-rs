@@ -59,25 +59,30 @@ pub struct MonsterFilters<'a> {
 
 /// Implementation function just so I can return a `Result` and `?`.
 pub fn post_impl(filters: MonsterFilters) -> Result<serde_json::Value, crate::error::Error> {
+    let options = filters.options.clone();
     with_data(|data| {
         if filters.is_none() {
-            serde_json::to_value(data.guide.monsters.monsters.clone())
-                .map_err(ornaguide_rs::error::Error::from)
-                .to_internal_server_error()
+            Ok(data.guide.monsters.monsters.clone())
         } else {
             let filters = filters.compiled().to_bad_request()?.into_fn_vec();
-            serde_json::to_value(
-                data.guide
-                    .monsters
-                    .monsters
-                    .iter()
-                    .filter(|monster| filters.iter().map(|f| f(monster)).all(|x| x))
-                    .cloned()
-                    .collect_vec(),
-            )
+            Ok(data
+                .guide
+                .monsters
+                .monsters
+                .iter()
+                .filter(|monster| filters.iter().map(|f| f(monster)).all(|x| x))
+                .cloned()
+                .collect_vec())
+        }
+    })
+    .and_then(|mut items| {
+        MonsterFilters::apply_sort(&options, &mut items).to_bad_request()?;
+        Ok(items)
+    })
+    .and_then(|items| {
+        serde_json::to_value(items)
             .map_err(ornaguide_rs::error::Error::from)
             .to_internal_server_error()
-        }
     })
 }
 

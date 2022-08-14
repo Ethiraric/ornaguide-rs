@@ -60,25 +60,30 @@ pub struct PetFilters<'a> {
 
 /// Implementation function just so I can return a `Result` and `?`.
 pub fn post_impl(filters: PetFilters) -> Result<serde_json::Value, crate::error::Error> {
+    let options = filters.options.clone();
     with_data(|data| {
         if filters.is_none() {
-            serde_json::to_value(data.guide.pets.pets.clone())
-                .map_err(ornaguide_rs::error::Error::from)
-                .to_internal_server_error()
+            Ok(data.guide.pets.pets.clone())
         } else {
             let filters = filters.compiled().to_bad_request()?.into_fn_vec();
-            serde_json::to_value(
-                data.guide
-                    .pets
-                    .pets
-                    .iter()
-                    .filter(|pet| filters.iter().map(|f| f(pet)).all(|x| x))
-                    .cloned()
-                    .collect_vec(),
-            )
+            Ok(data
+                .guide
+                .pets
+                .pets
+                .iter()
+                .filter(|pet| filters.iter().map(|f| f(pet)).all(|x| x))
+                .cloned()
+                .collect_vec())
+        }
+    })
+    .and_then(|mut items| {
+        PetFilters::apply_sort(&options, &mut items).to_bad_request()?;
+        Ok(items)
+    })
+    .and_then(|items| {
+        serde_json::to_value(items)
             .map_err(ornaguide_rs::error::Error::from)
             .to_internal_server_error()
-        }
     })
 }
 

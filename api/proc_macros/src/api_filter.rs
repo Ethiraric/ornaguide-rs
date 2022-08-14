@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use proc_macro::{Delimiter, Group, Ident, Literal, Punct, Spacing, Span, TokenStream, TokenTree};
 use quote::ToTokens;
-use syn::ItemStruct;
+use syn::{Fields, ItemStruct};
 
 /// Create a `TokenTree::Group` with the given delimiter and contents.
 pub fn new_tokentree_group_with(delimiter: Delimiter, contents: Vec<TokenTree>) -> TokenTree {
@@ -85,6 +85,67 @@ fn make_into_fn_vec_fn(fields: &[String], filtered_type: &str) -> TokenStream {
                 "self.{}.into_fn(|value: &{}| &value.{})",
                 name, filtered_type, name
             ))
+            .join(","),
+    )
+    .parse()
+    .unwrap()
+}
+
+/// Create a stream with the implementation of `apply_sort` for the given structure.
+fn make_apply_sort_fn(fields: &Fields, field_names: &[String], filtered_type: &str) -> TokenStream {
+    format!(
+        r#"
+    /// Sorts a `Vec` of structures given the options.
+    pub fn apply_sort(options: &Options, v: &mut [{}]) -> Result<(), Error> {{
+        if let Some(key) = options.sort_by.as_ref().map(|s| s.as_str()) {{
+            match key {{
+                {},
+                key => return Err(Error::Misc(format!("Failed to find key {{}}", key))),
+            }}
+            if options.sort_descending {{
+                v.reverse();
+            }}
+        }}
+        Ok(())
+    }}"#,
+        filtered_type,
+        fields
+            .iter()
+            .zip(field_names.iter())
+            .filter(|(_, name)| *name != "options")
+            .map(|(field, name)| {
+                let type_name = field.ty.to_token_stream().to_string();
+                // Valid types to sort by are integer / floating types, Strings, and Options of
+                // them.
+                if let Some(ty) = type_name
+                    // Type must be `Filter < 'a, T >`. Remove prefix and suffix.
+                    .strip_prefix("Filter < 'a, ")
+                    .and_then(|s| s.strip_suffix(" >"))
+                    .map(|s| {
+                        // If type is `Filter < 'a, Option < T > >`. Remove the `Option` and angle
+                        // brackets.
+                        // It is not an error if the type is not an option.
+                        s.strip_prefix("Option < ")
+                            .and_then(|s| s.strip_suffix(" >"))
+                            .unwrap_or(s)
+                    })
+                {
+                    if [
+                        "bool", "i8", "u8", "i16", "u16", "i32", "u32", "String", "f32",
+                    ]
+                    .contains(&ty)
+                    {
+                        return format!(
+                            "\"{}\" => v.sort_unstable_by(|a, b| a.{}.partial_cmp(&b.{}).unwrap())",
+                            name, name, name
+                        );
+                    }
+                }
+                format!(
+                    "\"{}\" => return Err(Error::Misc(\"Cannot sort by {}\".to_string()))",
+                    name, name
+                )
+            })
             .join(",")
     )
     .parse()
@@ -105,6 +166,7 @@ fn make_impl(fields: &[String], structure: &ItemStruct, filtered_type: &str) -> 
     impl_stream.extend(make_compiled_fn(fields));
     impl_stream.extend(make_is_none_fn(fields));
     impl_stream.extend(make_into_fn_vec_fn(fields, filtered_type));
+    impl_stream.extend(make_apply_sort_fn(&structure.fields, fields, filtered_type));
 
     // Make a group out of all the methods.
     stream
@@ -124,6 +186,8 @@ fn make_impl(fields: &[String], structure: &ItemStruct, filtered_type: &str) -> 
 ///       Return a `Vec` of closures for each non-`None` filter in `self`.
 ///       Should be faster than invoking each and every filter each time.
 ///       This method must not be called if there are uncompiled filters.
+///     - `fn apply_sort(options: &Options, v: &mut Vec<{}>) -> Result<(), Error>`
+///       Sorts a `Vec` of structures given the options.
 ///
 /// The identifier of the type this filter is to be used upon must be given as an attribute
 /// parameter of the macro: `#[api_filter(FooItem)]` will create methods to filter `FooItem`s.
