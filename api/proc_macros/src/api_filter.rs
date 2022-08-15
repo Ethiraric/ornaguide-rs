@@ -36,7 +36,7 @@ fn make_compiled_fn(fields: &[String]) -> TokenStream {
     format!(
         r"
     /// Compile all filters within `self`.
-    pub fn compiled(self) -> Result<Self, Error> {{
+    pub fn compiled(self) -> Result<Self, crate::error::Error> {{
         Ok(Self {{
             {},
             options: self.options,
@@ -96,11 +96,13 @@ fn make_apply_sort_fn(fields: &Fields, field_names: &[String], filtered_type: &s
     format!(
         r#"
     /// Sorts a `Vec` of structures given the options.
-    pub fn apply_sort(options: &Options, v: &mut [{}]) -> Result<(), Error> {{
+    pub fn apply_sort(options: &Options, v: &mut [{}]) -> Result<(), crate::error::Error> {{
         if let Some(key) = options.sort_by.as_ref().map(|s| s.as_str()) {{
             match key {{
                 {},
-                key => return Err(Error::Misc(format!("Failed to find key {{}}", key))),
+                key => return Err(
+                    ornaguide_rs::error::Error::Misc(format!("Failed to find key {{}}", key))
+                ).to_bad_request(),
             }}
             if options.sort_descending {{
                 v.reverse();
@@ -142,7 +144,9 @@ fn make_apply_sort_fn(fields: &Fields, field_names: &[String], filtered_type: &s
                     }
                 }
                 format!(
-                    "\"{}\" => return Err(Error::Misc(\"Cannot sort by {}\".to_string()))",
+                    "\"{}\" => return Err(
+                        ornaguide_rs::error::Error::Misc(\"Cannot sort by {}\".to_string())
+                        ).to_bad_request()",
                     name, name
                 )
             })

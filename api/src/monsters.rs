@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ornaguide_rs::{data::OrnaData, error::Error, monsters::admin::AdminMonster};
+use ornaguide_rs::{data::OrnaData, monsters::admin::AdminMonster};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};

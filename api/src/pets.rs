@@ -1,7 +1,6 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     data::OrnaData,
-    error::Error,
     pets::admin::{AdminPet, CostType},
 };
 use proc_macros::api_filter;

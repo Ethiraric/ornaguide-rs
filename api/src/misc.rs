@@ -19,7 +19,7 @@ macro_rules! make_post_impl {
                 if filters.is_none() {
                     Ok(<$filter_type>::get_entities(data).clone())
                 } else {
-                    let filters = filters.compiled().to_bad_request()?.into_fn_vec();
+                    let filters = filters.compiled()?.into_fn_vec();
                     Ok(<$filter_type>::get_entities(data)
                         .iter()
                         .filter(|entity| filters.iter().map(|f| f(entity)).all(|x| x))
@@ -28,7 +28,7 @@ macro_rules! make_post_impl {
                 }
             })
             .and_then(|mut entity| {
-                <$filter_type>::apply_sort(&options, &mut entity).to_bad_request()?;
+                <$filter_type>::apply_sort(&options, &mut entity)?;
                 Ok(entity)
             })
             .and_then(|entities| {
