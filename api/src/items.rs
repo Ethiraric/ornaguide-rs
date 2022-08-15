@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ornaguide_rs::{error::Error, items::admin::AdminItem};
+use ornaguide_rs::{data::OrnaData, error::Error, items::admin::AdminItem};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
@@ -8,6 +8,7 @@ use crate::{
     data::with_data,
     error::{MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
+    make_post_impl,
     options::Options,
 };
 
@@ -128,35 +129,14 @@ pub struct ItemFilters<'a> {
     #[serde(rename = "_options")]
     pub options: Options,
 }
-
-/// Implementation function just so I can return a `Result` and `?`.
-pub fn post_impl(filters: ItemFilters) -> Result<serde_json::Value, crate::error::Error> {
-    let options = filters.options.clone();
-    with_data(|data| {
-        if filters.is_none() {
-            Ok(data.guide.items.items.clone())
-        } else {
-            let filters = filters.compiled().to_bad_request()?.into_fn_vec();
-            Ok(data
-                .guide
-                .items
-                .items
-                .iter()
-                .filter(|item| filters.iter().map(|f| f(item)).all(|x| x))
-                .cloned()
-                .collect_vec())
-        }
-    })
-    .and_then(|mut items| {
-        ItemFilters::apply_sort(&options, &mut items).to_bad_request()?;
-        Ok(items)
-    })
-    .and_then(|items| {
-        serde_json::to_value(items)
-            .map_err(ornaguide_rs::error::Error::from)
-            .to_internal_server_error()
-    })
+impl ItemFilters<'_> {
+    /// Get the array of admin items from the data structure.
+    fn get_entities(data: &OrnaData) -> &Vec<AdminItem> {
+        &data.guide.items.items
+    }
 }
+
+make_post_impl!(ItemFilters);
 
 /// Query for items.
 /// The `Content-Type` header must be set to `application/json` when calling this route.

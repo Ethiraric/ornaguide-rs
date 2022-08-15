@@ -14,6 +14,7 @@ mod data;
 mod error;
 mod filter;
 mod items;
+mod misc;
 mod monsters;
 mod options;
 mod pets;

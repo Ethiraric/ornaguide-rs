@@ -2,7 +2,7 @@ use ornaguide_rs::{data::OrnaData, error::Error};
 use serde::{Deserialize, Serialize};
 
 /// Generic options that can be applied to any route.
-#[derive(Default, Serialize, Deserialize, Clone)]
+#[derive(Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Options {
     /// The language in which to query.
@@ -13,6 +13,21 @@ pub struct Options {
     pub sort_by: Option<String>,
     /// Whether sort should be descending (default is ascending).
     pub sort_descending: bool,
+}
+
+impl Options {
+    /// Extracts the contents of `self` to a copy.
+    /// Much like a `clone`, except that non-clonable values are reset to their default.
+    pub fn extract(&mut self) -> Self {
+        let ret = Self {
+            lang: self.lang.replace(String::new()),
+            deref: self.deref,
+            sort_by: self.sort_by.replace(String::new()),
+            sort_descending: self.sort_descending,
+        };
+        *self = Self::default();
+        ret
+    }
 }
 
 /// Trait to be implemented by entity holding IDs which can be dereferenced.

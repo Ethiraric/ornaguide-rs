@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ornaguide_rs::{error::Error, monsters::admin::AdminMonster};
+use ornaguide_rs::{data::OrnaData, error::Error, monsters::admin::AdminMonster};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
@@ -8,6 +8,7 @@ use crate::{
     data::with_data,
     error::{MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
+    make_post_impl,
     options::Options,
 };
 
@@ -57,34 +58,14 @@ pub struct MonsterFilters<'a> {
     pub options: Options,
 }
 
-/// Implementation function just so I can return a `Result` and `?`.
-pub fn post_impl(filters: MonsterFilters) -> Result<serde_json::Value, crate::error::Error> {
-    let options = filters.options.clone();
-    with_data(|data| {
-        if filters.is_none() {
-            Ok(data.guide.monsters.monsters.clone())
-        } else {
-            let filters = filters.compiled().to_bad_request()?.into_fn_vec();
-            Ok(data
-                .guide
-                .monsters
-                .monsters
-                .iter()
-                .filter(|monster| filters.iter().map(|f| f(monster)).all(|x| x))
-                .cloned()
-                .collect_vec())
-        }
-    })
-    .and_then(|mut items| {
-        MonsterFilters::apply_sort(&options, &mut items).to_bad_request()?;
-        Ok(items)
-    })
-    .and_then(|items| {
-        serde_json::to_value(items)
-            .map_err(ornaguide_rs::error::Error::from)
-            .to_internal_server_error()
-    })
+impl MonsterFilters<'_> {
+    /// Get the array of admin monsters from the data structure.
+    fn get_entities(data: &OrnaData) -> &Vec<AdminMonster> {
+        &data.guide.monsters.monsters
+    }
 }
+
+make_post_impl!(MonsterFilters);
 
 /// Query for monsters.
 /// The `Content-Type` header must be set to `application/json` when calling this route.
