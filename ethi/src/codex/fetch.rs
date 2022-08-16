@@ -2,8 +2,11 @@
 
 use ornaguide_rs::{
     codex::{
-        translation::LocaleStrings, Codex, CodexBosses, CodexFollowers, CodexItems, CodexMonsters,
-        CodexRaids, CodexSkills,
+        translation::{
+            BossTranslation, FollowerTranslation, ItemTranslation, LocaleStrings,
+            MonsterTranslation, RaidTranslation, SkillTranslation,
+        },
+        Codex, CodexBosses, CodexFollowers, CodexItems, CodexMonsters, CodexRaids, CodexSkills,
     },
     data::{CodexData, OrnaData},
     error::Error,
@@ -285,7 +288,13 @@ pub fn translations(
 
     // Insert items.
     for item in codex.items.items.into_iter() {
-        strings.items.insert(item.slug.to_string(), item);
+        strings.items.insert(
+            item.slug.to_string(),
+            ItemTranslation {
+                name: item.name,
+                description: item.description,
+            },
+        );
     }
 
     // Insert raids and events.
@@ -307,7 +316,13 @@ pub fn translations(
             strings.events.insert(en.clone(), localed.clone());
         }
 
-        strings.raids.insert(raid.slug.to_string(), raid);
+        strings.raids.insert(
+            raid.slug.to_string(),
+            RaidTranslation {
+                name: raid.name,
+                description: raid.description,
+            },
+        );
     }
 
     // Insert monsters, events, family and rarity.
@@ -335,7 +350,10 @@ pub fn translations(
             .rarities
             .insert(monster_data.rarity.clone(), monster.rarity.clone());
 
-        strings.monsters.insert(monster.slug.to_string(), monster);
+        strings.monsters.insert(
+            monster.slug.to_string(),
+            MonsterTranslation { name: monster.name },
+        );
     }
 
     // Insert boss, events, family and rarity.
@@ -360,7 +378,9 @@ pub fn translations(
             .rarities
             .insert(boss_data.rarity.clone(), boss.rarity.clone());
 
-        strings.bosses.insert(boss.slug.to_string(), boss);
+        strings
+            .bosses
+            .insert(boss.slug.to_string(), BossTranslation { name: boss.name });
     }
 
     // Insert skill and statuses.
@@ -389,7 +409,13 @@ pub fn translations(
             );
         }
 
-        strings.skills.insert(skill.slug.to_string(), skill);
+        strings.skills.insert(
+            skill.slug.to_string(),
+            SkillTranslation {
+                name: skill.name,
+                description: skill.description,
+            },
+        );
     }
 
     // Insert follower and events.
@@ -411,9 +437,13 @@ pub fn translations(
             strings.events.insert(en.clone(), localed.clone());
         }
 
-        strings
-            .followers
-            .insert(follower.slug.to_string(), follower);
+        strings.followers.insert(
+            follower.slug.to_string(),
+            FollowerTranslation {
+                name: follower.name,
+                description: follower.description,
+            },
+        );
     }
 
     Ok(strings)

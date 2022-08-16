@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    codex::{CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill},
-    error::Error,
+    error::Error, items::admin::AdminItem, monsters::admin::AdminMonster, pets::admin::AdminPet,
+    skills::admin::AdminSkill,
 };
 
 use std::{
@@ -10,6 +10,67 @@ use std::{
     fs::File,
     io::{BufReader, BufWriter},
 };
+
+/// Holds strings that can be translated for an item.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ItemTranslation {
+    /// The name of the item.
+    pub name: String,
+    /// The description of the item.
+    pub description: String,
+}
+
+/// Holds strings that can be translated for a raid.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct RaidTranslation {
+    /// The name of the raid.
+    pub name: String,
+    /// The description of the raid.
+    pub description: String,
+}
+
+/// Holds strings that can be translated for a boss.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct BossTranslation {
+    /// The name of the boss.
+    pub name: String,
+}
+
+/// Holds strings that can be translated for a monster.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct MonsterTranslation {
+    /// The name of the monster.
+    pub name: String,
+}
+
+/// Holds strings that can be translated for any monster.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum GenericMonsterTranslation {
+    /// `self` refers to a monster.
+    Monster(MonsterTranslation),
+    /// `self` refers to a raid.
+    Raid(RaidTranslation),
+    /// `self` refers to a boss.
+    Boss(BossTranslation),
+}
+
+/// Holds strings that can be translated for a skill.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SkillTranslation {
+    /// The name of the skill.
+    pub name: String,
+    /// The description of the skill.
+    pub description: String,
+}
+
+/// Holds strings that can be translated for a follower.
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FollowerTranslation {
+    /// The name of the follower.
+    pub name: String,
+    /// The description of the follower.
+    pub description: String,
+}
 
 /// A set of strings for a particular language.
 #[derive(Default, Serialize, Deserialize, Debug)]
@@ -19,17 +80,17 @@ pub struct LocaleStrings {
     /// The locale in which the structure is.
     pub locale: String,
     /// Items from the codex.
-    pub items: HashMap<String, CodexItem>,
+    pub items: HashMap<String, ItemTranslation>,
     /// Raids from the codex.
-    pub raids: HashMap<String, CodexRaid>,
+    pub raids: HashMap<String, RaidTranslation>,
     /// Monsters from the codex.
-    pub monsters: HashMap<String, CodexMonster>,
+    pub monsters: HashMap<String, MonsterTranslation>,
     /// Bosses from the codex.
-    pub bosses: HashMap<String, CodexBoss>,
+    pub bosses: HashMap<String, BossTranslation>,
     /// Skills from the codex.
-    pub skills: HashMap<String, CodexSkill>,
+    pub skills: HashMap<String, SkillTranslation>,
     /// Followers from the codex.
-    pub followers: HashMap<String, CodexFollower>,
+    pub followers: HashMap<String, FollowerTranslation>,
     /// Statuses that can be inflicted.
     /// The key is the English string, the value is that in the target locale.
     pub statuses: HashMap<String, String>,
@@ -57,7 +118,7 @@ pub struct LocaleDB {
 
 impl LocaleStrings {
     /// Get the given item from the locale database.
-    pub fn item(&self, name: &str) -> Option<&CodexItem> {
+    pub fn item(&self, name: &str) -> Option<&ItemTranslation> {
         self.items.get(name)
     }
     /// Get the name of the given item from the locale database.
@@ -71,7 +132,7 @@ impl LocaleStrings {
     }
 
     /// Get the given raid from the locale database.
-    pub fn raid(&self, name: &str) -> Option<&CodexRaid> {
+    pub fn raid(&self, name: &str) -> Option<&RaidTranslation> {
         self.raids.get(name)
     }
 
@@ -86,7 +147,7 @@ impl LocaleStrings {
     }
 
     /// Get the given monster from the locale database.
-    pub fn monster(&self, name: &str) -> Option<&CodexMonster> {
+    pub fn monster(&self, name: &str) -> Option<&MonsterTranslation> {
         self.monsters.get(name)
     }
 
@@ -96,7 +157,7 @@ impl LocaleStrings {
     }
 
     /// Get the given boss from the locale database.
-    pub fn boss(&self, name: &str) -> Option<&CodexBoss> {
+    pub fn boss(&self, name: &str) -> Option<&BossTranslation> {
         self.bosses.get(name)
     }
 
@@ -106,7 +167,7 @@ impl LocaleStrings {
     }
 
     /// Get the given skill from the locale database.
-    pub fn skill(&self, name: &str) -> Option<&CodexSkill> {
+    pub fn skill(&self, name: &str) -> Option<&SkillTranslation> {
         self.skills.get(name)
     }
 
@@ -122,7 +183,7 @@ impl LocaleStrings {
     }
 
     /// Get the given follower from the locale database.
-    pub fn follower(&self, name: &str) -> Option<&CodexFollower> {
+    pub fn follower(&self, name: &str) -> Option<&FollowerTranslation> {
         self.followers.get(name)
     }
 
@@ -183,7 +244,7 @@ impl LocaleStrings {
 
 impl LocaleDB {
     /// Get the given item from the locale database.
-    pub fn item(&self, locale: &str, name: &str) -> Option<&CodexItem> {
+    pub fn item(&self, locale: &str, name: &str) -> Option<&ItemTranslation> {
         self.locales
             .get(locale)
             .and_then(|locale| locale.item(name))
@@ -203,7 +264,7 @@ impl LocaleDB {
     }
 
     /// Get the given raid from the locale database.
-    pub fn raid(&self, locale: &str, name: &str) -> Option<&CodexRaid> {
+    pub fn raid(&self, locale: &str, name: &str) -> Option<&RaidTranslation> {
         self.locales
             .get(locale)
             .and_then(|locale| locale.raid(name))
@@ -224,7 +285,7 @@ impl LocaleDB {
     }
 
     /// Get the given monster from the locale database.
-    pub fn monster(&self, locale: &str, name: &str) -> Option<&CodexMonster> {
+    pub fn monster(&self, locale: &str, name: &str) -> Option<&MonsterTranslation> {
         self.locales
             .get(locale)
             .and_then(|locale| locale.monster(name))
@@ -238,7 +299,7 @@ impl LocaleDB {
     }
 
     /// Get the given boss from the locale database.
-    pub fn boss(&self, locale: &str, name: &str) -> Option<&CodexBoss> {
+    pub fn boss(&self, locale: &str, name: &str) -> Option<&BossTranslation> {
         self.locales
             .get(locale)
             .and_then(|locale| locale.boss(name))
@@ -252,7 +313,7 @@ impl LocaleDB {
     }
 
     /// Get the given skill from the locale database.
-    pub fn skill(&self, locale: &str, name: &str) -> Option<&CodexSkill> {
+    pub fn skill(&self, locale: &str, name: &str) -> Option<&SkillTranslation> {
         self.locales
             .get(locale)
             .and_then(|locale| locale.skill(name))
@@ -273,7 +334,7 @@ impl LocaleDB {
     }
 
     /// Get the given follower from the locale database.
-    pub fn follower(&self, locale: &str, name: &str) -> Option<&CodexFollower> {
+    pub fn follower(&self, locale: &str, name: &str) -> Option<&FollowerTranslation> {
         self.locales
             .get(locale)
             .and_then(|locale| locale.follower(name))
@@ -392,5 +453,61 @@ impl LocaleDB {
                 self.locales.insert(lang, db);
             }
         }
+    }
+}
+
+/// A trait for types that contain translation information and that are able to translate entities
+/// of type `T`.
+pub trait TranslationFor<T> {
+    /// Translate the strings of `entity`.
+    fn apply_to(&self, entity: &mut T);
+}
+
+impl TranslationFor<AdminItem> for ItemTranslation {
+    fn apply_to(&self, item: &mut AdminItem) {
+        item.name = self.name.clone();
+        item.description = self.description.clone();
+    }
+}
+
+impl TranslationFor<AdminMonster> for RaidTranslation {
+    fn apply_to(&self, raid: &mut AdminMonster) {
+        raid.name = self.name.clone();
+    }
+}
+
+impl TranslationFor<AdminMonster> for BossTranslation {
+    fn apply_to(&self, boss: &mut AdminMonster) {
+        boss.name = self.name.clone();
+    }
+}
+
+impl TranslationFor<AdminMonster> for MonsterTranslation {
+    fn apply_to(&self, monster: &mut AdminMonster) {
+        monster.name = self.name.clone();
+    }
+}
+
+impl TranslationFor<AdminMonster> for GenericMonsterTranslation {
+    fn apply_to(&self, monster: &mut AdminMonster) {
+        match self {
+            GenericMonsterTranslation::Monster(x) => x.apply_to(monster),
+            GenericMonsterTranslation::Raid(x) => x.apply_to(monster),
+            GenericMonsterTranslation::Boss(x) => x.apply_to(monster),
+        }
+    }
+}
+
+impl TranslationFor<AdminSkill> for SkillTranslation {
+    fn apply_to(&self, skill: &mut AdminSkill) {
+        skill.name = self.name.clone();
+        skill.description = self.description.clone();
+    }
+}
+
+impl TranslationFor<AdminPet> for FollowerTranslation {
+    fn apply_to(&self, follower: &mut AdminPet) {
+        follower.name = self.name.clone();
+        follower.description = self.description.clone();
     }
 }
