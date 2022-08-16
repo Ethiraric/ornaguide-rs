@@ -36,6 +36,12 @@ macro_rules! make_post_impl {
                     .map_err(ornaguide_rs::error::Error::from)
                     .to_internal_server_error()
             })
+            .and_then(|mut entities| {
+                if options.deref {
+                    with_data(|data| <$filter_type>::deref(&mut entities, data))?
+                }
+                Ok(entities)
+            })
         }
     };
 }

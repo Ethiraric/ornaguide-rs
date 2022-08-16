@@ -1,6 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     data::OrnaData,
+    error::Error as OError,
     pets::admin::{AdminPet, CostType},
 };
 use proc_macros::api_filter;
@@ -9,7 +10,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     data::with_data,
-    error::{MaybeResponse, ToErrorable},
+    deref::deref_skills,
+    error::{Error, MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
     make_post_impl,
     options::Options,
@@ -63,6 +65,24 @@ impl PetFilters<'_> {
     /// Get the array of admin pets from the data structure.
     fn get_entities(data: &OrnaData) -> &Vec<AdminPet> {
         &data.guide.pets.pets
+    }
+
+    fn deref(pets: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+        if let serde_json::Value::Array(pets) = pets {
+            for pet in pets.iter_mut() {
+                if let serde_json::Value::Object(pet) = pet {
+                    if let Some(skills) = pet.get_mut("skills") {
+                        deref_skills(skills, data)?;
+                    }
+                } else {
+                    return Err(OError::Misc("Skill should be an object".to_string()))
+                        .to_internal_server_error();
+                }
+            }
+            Ok(())
+        } else {
+            Err(OError::Misc("Skills should be an array".to_string())).to_internal_server_error()
+        }
     }
 }
 

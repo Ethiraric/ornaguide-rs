@@ -1,12 +1,13 @@
 use itertools::Itertools;
-use ornaguide_rs::{data::OrnaData, skills::admin::AdminSkill};
+use ornaguide_rs::{data::OrnaData, error::Error as OError, skills::admin::AdminSkill};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     data::with_data,
-    error::{MaybeResponse, ToErrorable},
+    deref::{deref_element, deref_monsters, deref_skill_type, deref_status_effects},
+    error::{Error, MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
     make_post_impl,
     options::Options,
@@ -68,6 +69,42 @@ impl SkillFilters<'_> {
     /// Get the array of admin skills from the data structure.
     pub fn get_entities(data: &OrnaData) -> &Vec<AdminSkill> {
         &data.guide.skills.skills
+    }
+
+    /// Dereference IDs to the name of the entity they refer to.
+    pub fn deref(skills: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+        if let serde_json::Value::Array(skills) = skills {
+            for skill in skills.iter_mut() {
+                if let serde_json::Value::Object(skill) = skill {
+                    if let Some(type_) = skill.get_mut("type_") {
+                        deref_skill_type(type_, data)?;
+                    }
+                    if let Some(element) = skill.get_mut("element") {
+                        if !element.is_null() {
+                            deref_element(element, data)?;
+                        }
+                    }
+                    if let Some(buffed_by) = skill.get_mut("buffed_by") {
+                        deref_monsters(buffed_by, data)?;
+                    }
+                    if let Some(causes) = skill.get_mut("causes") {
+                        deref_status_effects(causes, data)?;
+                    }
+                    if let Some(cures) = skill.get_mut("cures") {
+                        deref_status_effects(cures, data)?;
+                    }
+                    if let Some(gives) = skill.get_mut("gives") {
+                        deref_status_effects(gives, data)?;
+                    }
+                } else {
+                    return Err(OError::Misc("Skill should be an object".to_string()))
+                        .to_internal_server_error();
+                }
+            }
+            Ok(())
+        } else {
+            Err(OError::Misc("Skills should be an array".to_string())).to_internal_server_error()
+        }
     }
 }
 

@@ -1,12 +1,16 @@
 use itertools::Itertools;
-use ornaguide_rs::{data::OrnaData, monsters::admin::AdminMonster};
+use ornaguide_rs::{data::OrnaData, error::Error as OError, monsters::admin::AdminMonster};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     data::with_data,
-    error::{MaybeResponse, ToErrorable},
+    deref::{
+        deref_elements, deref_items, deref_monster_family, deref_skills, deref_spawns,
+        deref_status_effects,
+    },
+    error::{Error, MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
     make_post_impl,
     options::Options,
@@ -62,6 +66,50 @@ impl MonsterFilters<'_> {
     /// Get the array of admin monsters from the data structure.
     fn get_entities(data: &OrnaData) -> &Vec<AdminMonster> {
         &data.guide.monsters.monsters
+    }
+
+    fn deref(monsters: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+        if let serde_json::Value::Array(monsters) = monsters {
+            for monster in monsters.iter_mut() {
+                if let serde_json::Value::Object(monster) = monster {
+                    if let Some(family) = monster.get_mut("family") {
+                        if !family.is_null() {
+                            deref_monster_family(family, data)?;
+                        }
+                    }
+                    if let Some(spawns) = monster.get_mut("spawns") {
+                        deref_spawns(spawns, data)?;
+                    }
+                    if let Some(weak_to) = monster.get_mut("weak_to") {
+                        deref_elements(weak_to, data)?;
+                    }
+                    if let Some(resistant_to) = monster.get_mut("resistant_to") {
+                        deref_elements(resistant_to, data)?;
+                    }
+                    if let Some(immune_to) = monster.get_mut("immune_to") {
+                        deref_elements(immune_to, data)?;
+                    }
+                    if let Some(immune_to_status) = monster.get_mut("immune_to_status") {
+                        deref_status_effects(immune_to_status, data)?;
+                    }
+                    if let Some(vulnerable_to_status) = monster.get_mut("vulnerable_to_status") {
+                        deref_status_effects(vulnerable_to_status, data)?;
+                    }
+                    if let Some(drops) = monster.get_mut("drops") {
+                        deref_items(drops, data)?;
+                    }
+                    if let Some(skills) = monster.get_mut("skills") {
+                        deref_skills(skills, data)?;
+                    }
+                } else {
+                    return Err(OError::Misc("Skill should be an object".to_string()))
+                        .to_internal_server_error();
+                }
+            }
+            Ok(())
+        } else {
+            Err(OError::Misc("Skills should be an array".to_string())).to_internal_server_error()
+        }
     }
 }
 

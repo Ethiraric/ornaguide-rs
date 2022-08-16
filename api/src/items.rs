@@ -1,12 +1,16 @@
 use itertools::Itertools;
-use ornaguide_rs::{data::OrnaData, items::admin::AdminItem};
+use ornaguide_rs::{data::OrnaData, error::Error as OError, items::admin::AdminItem};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     data::with_data,
-    error::{MaybeResponse, ToErrorable},
+    deref::{
+        deref_element, deref_equipped_bys, deref_item_category, deref_item_type, deref_items,
+        deref_skill, deref_status_effects,
+    },
+    error::{Error, MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
     make_post_impl,
     options::Options,
@@ -133,6 +137,55 @@ impl ItemFilters<'_> {
     /// Get the array of admin items from the data structure.
     fn get_entities(data: &OrnaData) -> &Vec<AdminItem> {
         &data.guide.items.items
+    }
+
+    fn deref(items: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+        if let serde_json::Value::Array(items) = items {
+            for item in items.iter_mut() {
+                if let serde_json::Value::Object(item) = item {
+                    if let Some(type_) = item.get_mut("type_") {
+                        deref_item_type(type_, data)?;
+                    }
+                    if let Some(element) = item.get_mut("element") {
+                        if !element.is_null() {
+                            deref_element(element, data)?;
+                        }
+                    }
+                    if let Some(equipped_by) = item.get_mut("equipped_by") {
+                        deref_equipped_bys(equipped_by, data)?;
+                    }
+                    if let Some(category) = item.get_mut("cateory") {
+                        deref_item_category(category, data)?;
+                    }
+                    if let Some(causes) = item.get_mut("causes") {
+                        deref_status_effects(causes, data)?;
+                    }
+                    if let Some(cures) = item.get_mut("cures") {
+                        deref_status_effects(cures, data)?;
+                    }
+                    if let Some(gives) = item.get_mut("gives") {
+                        deref_status_effects(gives, data)?;
+                    }
+                    if let Some(prevents) = item.get_mut("prevents") {
+                        deref_status_effects(prevents, data)?;
+                    }
+                    if let Some(materials) = item.get_mut("materials") {
+                        deref_items(materials, data)?;
+                    }
+                    if let Some(ability) = item.get_mut("ability") {
+                        if !ability.is_null() {
+                            deref_skill(ability, data)?;
+                        }
+                    }
+                } else {
+                    return Err(OError::Misc("Skill should be an object".to_string()))
+                        .to_internal_server_error();
+                }
+            }
+            Ok(())
+        } else {
+            Err(OError::Misc("Skills should be an array".to_string())).to_internal_server_error()
+        }
     }
 }
 
