@@ -9,7 +9,7 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::with_data,
+    data::with_locale_data,
     deref::deref_skills,
     error::{Error, MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
@@ -67,6 +67,7 @@ impl PetFilters<'_> {
         &data.guide.pets.pets
     }
 
+    /// Dereference IDs to the name of the entity they refer to.
     fn deref(pets: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
         if let serde_json::Value::Array(pets) = pets {
             for pet in pets.iter_mut() {

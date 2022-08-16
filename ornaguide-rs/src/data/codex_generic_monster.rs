@@ -31,6 +31,15 @@ impl<'a> CodexGenericMonster<'a> {
         }
     }
 
+    // Return the slug of the monster.
+    pub fn slug(&self) -> &str {
+        match self {
+            CodexGenericMonster::Monster(x) => &x.slug,
+            CodexGenericMonster::Boss(x) => &x.slug,
+            CodexGenericMonster::Raid(x) => &x.slug,
+        }
+    }
+
     /// Return the name of the monster.
     pub fn name(&self) -> &'a String {
         match self {

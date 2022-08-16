@@ -4,6 +4,7 @@ use crate::{
 };
 
 /// Aggregate for codex data.
+#[derive(Clone)]
 pub struct CodexData {
     /// Items from the codex.
     pub items: CodexItems,
@@ -21,8 +22,12 @@ pub struct CodexData {
 
 impl<'a> CodexData {
     /// Find which monster/boss/raid corresponds to the given URI.
-    /// The URI must be of the form `/codex/{kind}/{slug}/`.
+    /// The URI must be of the form `/codex/{kind}/{slug}/` or empty.
     pub fn find_generic_monster_from_uri(&'a self, uri: &str) -> Option<CodexGenericMonster<'a>> {
+        if uri.is_empty() {
+            return None;
+        }
+
         // Strip `/codex/` and trailing slash from the uri.
         let uri = uri[7..].trim_end_matches('/');
         if let Some(pos) = uri.find('/') {

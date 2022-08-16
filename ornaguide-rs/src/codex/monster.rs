@@ -4,7 +4,7 @@ pub use crate::guide::html_utils::Tag;
 use crate::{data::GuideData, error::Error, monsters::admin::AdminMonster};
 
 /// An ability for a monster.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Ability {
     /// The name of the ability.
     pub name: String,
@@ -15,7 +15,7 @@ pub struct Ability {
 }
 
 /// A drop for a monster
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Drop {
     /// The name of the item.
     pub name: String,
@@ -26,7 +26,7 @@ pub struct Drop {
 }
 
 /// A monster on the codex.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Monster {
     /// The slug of the monster (`https://playorna.com/codex/monsters/{slug}`).
     pub slug: String,
@@ -49,7 +49,7 @@ pub struct Monster {
 }
 
 /// A boss on the codex.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Boss {
     /// The slug of the boss (`https://playorna.com/codex/bosses/{slug}`).
     pub slug: String,
@@ -72,7 +72,7 @@ pub struct Boss {
 }
 
 /// A raid on the codex.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Raid {
     /// The slug of the raid (`https://playorna.com/codex/raids/{slug}`).
     pub slug: String,
@@ -95,21 +95,21 @@ pub struct Raid {
 }
 
 /// Collection of monsters from the codex.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Monsters {
     /// Monsters from the codex.
     pub monsters: Vec<Monster>,
 }
 
 /// Collection of bosses from the codex.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Bosses {
     /// Bosses from the codex.
     pub bosses: Vec<Boss>,
 }
 
 /// Collection of raids from the codex.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Raids {
     /// Raids from the codex.
     pub raids: Vec<Raid>,

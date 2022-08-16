@@ -180,7 +180,7 @@ impl From<AdminSkill> for ParsedForm {
 }
 
 /// Collection of skills from the guide's admin view.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct AdminSkills {
     /// Skills from the guide's admin view.
     pub skills: Vec<AdminSkill>,

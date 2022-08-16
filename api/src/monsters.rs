@@ -5,7 +5,7 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::with_data,
+    data::with_locale_data,
     deref::{
         deref_elements, deref_items, deref_monster_family, deref_skills, deref_spawns,
         deref_status_effects,
@@ -68,6 +68,7 @@ impl MonsterFilters<'_> {
         &data.guide.monsters.monsters
     }
 
+    /// Dereference IDs to the name of the entity they refer to.
     fn deref(monsters: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
         if let serde_json::Value::Array(monsters) = monsters {
             for monster in monsters.iter_mut() {

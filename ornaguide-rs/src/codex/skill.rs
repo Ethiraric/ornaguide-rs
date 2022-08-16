@@ -13,7 +13,7 @@ use crate::{
 };
 
 /// A status effect caused or given by a skill.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct SkillStatusEffect {
     /// The name of the effect.
     pub effect: String,
@@ -57,7 +57,7 @@ impl SkillStatusEffects for Vec<SkillStatusEffect> {
 }
 
 /// A skill on the codex.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CodexSkill {
     /// The name of the skill.
     pub name: String,
@@ -122,7 +122,7 @@ impl CodexSkill {
 }
 
 /// Collection of skills from the codex.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct CodexSkills {
     /// Skills from the codex.
     pub skills: Vec<CodexSkill>,

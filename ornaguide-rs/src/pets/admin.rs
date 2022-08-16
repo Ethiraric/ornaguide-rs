@@ -162,7 +162,7 @@ impl From<AdminPet> for ParsedForm {
 }
 
 /// Collection of pets from the guide's admin view.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct AdminPets {
     /// Pets from the guide's admin view.
     pub pets: Vec<AdminPet>,

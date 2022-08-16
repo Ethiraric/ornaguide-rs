@@ -5,7 +5,7 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::with_data,
+    data::with_locale_data,
     deref::{deref_element, deref_monsters, deref_skill_type, deref_status_effects},
     error::{Error, MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},

@@ -15,6 +15,15 @@ pub struct Error {
     pub error: ornaguide_rs::error::Error,
 }
 
+impl Clone for Error {
+    fn clone(&self) -> Self {
+        Error {
+            status: self.status,
+            error: ornaguide_rs::error::Error::Misc(format!("{}", self.error)),
+        }
+    }
+}
+
 /// A type that can be converted to the above error, if `Err`.
 /// Does not touch the `Ok` value.
 pub trait ToErrorable<T> {

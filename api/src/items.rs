@@ -5,7 +5,7 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::with_data,
+    data::with_locale_data,
     deref::{
         deref_element, deref_equipped_bys, deref_item_category, deref_item_type, deref_items,
         deref_skill, deref_status_effects,
@@ -139,6 +139,7 @@ impl ItemFilters<'_> {
         &data.guide.items.items
     }
 
+    /// Dereference IDs to the name of the entity they refer to.
     fn deref(items: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
         if let serde_json::Value::Array(items) = items {
             for item in items.iter_mut() {
@@ -178,13 +179,13 @@ impl ItemFilters<'_> {
                         }
                     }
                 } else {
-                    return Err(OError::Misc("Skill should be an object".to_string()))
+                    return Err(OError::Misc("Item should be an object".to_string()))
                         .to_internal_server_error();
                 }
             }
             Ok(())
         } else {
-            Err(OError::Misc("Skills should be an array".to_string())).to_internal_server_error()
+            Err(OError::Misc("Items should be an array".to_string())).to_internal_server_error()
         }
     }
 }

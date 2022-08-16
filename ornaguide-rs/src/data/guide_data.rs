@@ -10,6 +10,7 @@ use crate::{
 };
 
 /// Aggregate for guide data.
+#[derive(Clone)]
 pub struct GuideData {
     /// Items from the guide.
     pub items: AdminItems,

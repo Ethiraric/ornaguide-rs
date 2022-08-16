@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{error::Error, utils::html::node_to_text};
 
 /// A tag attached to an item, a monster or a skill.
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub enum Tag {
     FoundInChests,
     FoundInShops,

@@ -15,18 +15,21 @@ macro_rules! make_post_impl {
             mut filters: $filter_type,
         ) -> Result<serde_json::Value, $crate::error::Error> {
             let options = filters.options.extract();
-            with_data(|data| {
-                if filters.is_none() {
-                    Ok(<$filter_type>::get_entities(data).clone())
-                } else {
-                    let filters = filters.compiled()?.into_fn_vec();
-                    Ok(<$filter_type>::get_entities(data)
-                        .iter()
-                        .filter(|entity| filters.iter().map(|f| f(entity)).all(|x| x))
-                        .cloned()
-                        .collect_vec())
-                }
-            })
+            with_locale_data(
+                |data| {
+                    if filters.is_none() {
+                        Ok(<$filter_type>::get_entities(data).clone())
+                    } else {
+                        let filters = filters.compiled()?.into_fn_vec();
+                        Ok(<$filter_type>::get_entities(data)
+                            .iter()
+                            .filter(|entity| filters.iter().map(|f| f(entity)).all(|x| x))
+                            .cloned()
+                            .collect_vec())
+                    }
+                },
+                &options.lang,
+            )
             .and_then(|mut entity| {
                 <$filter_type>::apply_sort(&options, &mut entity)?;
                 Ok(entity)
@@ -38,7 +41,10 @@ macro_rules! make_post_impl {
             })
             .and_then(|mut entities| {
                 if options.deref {
-                    with_data(|data| <$filter_type>::deref(&mut entities, data))?
+                    with_locale_data(
+                        |data| <$filter_type>::deref(&mut entities, data),
+                        &options.lang,
+                    )?
                 }
                 Ok(entities)
             })

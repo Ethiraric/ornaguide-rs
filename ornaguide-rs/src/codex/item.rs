@@ -26,7 +26,7 @@ pub enum Element {
 }
 
 /// Stats of an item.
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct Stats {
     /// The base attack stat of the item.
     pub attack: Option<i16>,
@@ -55,7 +55,7 @@ pub struct Stats {
 }
 
 /// The ability the item has in off-hand.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Ability {
     /// The name of the ability.
     pub name: String,
@@ -64,7 +64,7 @@ pub struct Ability {
 }
 
 /// A monster dropping an item.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct DroppedBy {
     /// The name of the monster.
     pub name: String,
@@ -75,7 +75,7 @@ pub struct DroppedBy {
 }
 
 /// A monster dropping an item.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UpgradeMaterial {
     /// The name of the material.
     pub name: String,
@@ -86,7 +86,7 @@ pub struct UpgradeMaterial {
 }
 
 /// A debuff the item causes.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Cause {
     /// The name of the debuff.
     pub name: String,
@@ -95,7 +95,7 @@ pub struct Cause {
 }
 
 /// A buff the item gives.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Give {
     /// The name of the buff.
     pub name: String,
@@ -106,7 +106,7 @@ pub struct Give {
 }
 
 /// A debuff the item cures.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Cure {
     /// The name of the buff.
     pub name: String,
@@ -115,7 +115,7 @@ pub struct Cure {
 }
 
 /// An debuff the item prevents.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Immunity {
     /// The name of the debuff.
     pub name: String,
@@ -124,7 +124,7 @@ pub struct Immunity {
 }
 
 /// An item on the codex.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Item {
     /// The slug of the item (`https://playorna.com/codex/items/{slug}`).
     pub slug: String,
@@ -343,7 +343,7 @@ make_impl_for_status_effect_struct_vec!(Cure);
 make_impl_for_status_effect_struct_vec!(Immunity);
 
 /// Collection of items from the codex.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Items {
     /// Items from the codex.
     pub items: Vec<Item>,
@@ -358,7 +358,7 @@ impl<'a> Items {
         }
 
         let slug = &needle[URI_START.len()..needle.len() - 1];
-        self.items.iter().find(|item| item.slug == slug)
+        self.find_by_slug(slug)
     }
 
     /// Find the codex item associated with the given uri.
@@ -366,5 +366,17 @@ impl<'a> Items {
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Item, Error> {
         self.find_by_uri(needle)
             .ok_or_else(|| Error::Misc(format!("No match for codex item with uri '{}'", needle)))
+    }
+
+    /// Find the codex item associated with the given slug.
+    pub fn find_by_slug(&'a self, needle: &str) -> Option<&'a Item> {
+        self.items.iter().find(|item| item.slug == needle)
+    }
+
+    /// Find the codex item associated with the given slug.
+    /// If there is no match, return an `Err`.
+    pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a Item, Error> {
+        self.find_by_slug(needle)
+            .ok_or_else(|| Error::Misc(format!("No match for codex item with slug '{}'", needle)))
     }
 }
