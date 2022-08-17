@@ -223,6 +223,24 @@ impl LocaleStrings {
         self.rarities.get(name).map(String::as_str)
     }
 
+    /// Save translations to a json file.
+    pub fn load_from(file: &str) -> Result<Self, Error> {
+        serde_json::from_reader(BufReader::new(File::open(file)?)).map_err(|err| {
+            Error::Misc(format!(
+                "Failed to parse json from lang db {}: {}",
+                file, err
+            ))
+        })
+    }
+
+    /// Save translations to a json file.
+    pub fn save_to(&self, file: &str) -> Result<(), Error> {
+        Ok(serde_json::to_writer_pretty(
+            BufWriter::new(File::create(file)?),
+            &self,
+        )?)
+    }
+
     /// Merge the contents of `self` with that of `other`.
     /// For each key in each hash map, the contents of `other` will take precedence over `self` and
     /// overwrite values in case of duplicate keys.
@@ -392,10 +410,7 @@ impl LocaleDB {
     /// Save translations to a set of json files in the given directory.
     pub fn save_to(&self, directory: &str) -> Result<(), Error> {
         for (lang, db) in self.locales.iter() {
-            serde_json::to_writer_pretty(
-                BufWriter::new(File::create(format!("{}/{}.json", directory, lang))?),
-                db,
-            )?;
+            db.save_to(&format!("{}/{}.json", directory, lang))?;
         }
 
         Ok(())
@@ -418,10 +433,7 @@ impl LocaleDB {
             let filename = entry.file_name();
             let name = filename.to_str().unwrap();
             if let Some(lang) = name.strip_suffix(".json") {
-                match serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/{}",
-                    directory, name
-                ))?)) {
+                match LocaleStrings::load_from(&format!("{}/{}", directory, name)) {
                     Ok(db) => {
                         ret.locales.insert(lang.to_string(), db);
                     }
