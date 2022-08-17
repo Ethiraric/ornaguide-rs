@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-
 use ornaguide_rs::{
     codex::{
         translation::{
@@ -7,6 +6,7 @@ use ornaguide_rs::{
             MonsterTranslation, RaidTranslation, SkillTranslation,
         },
         Codex, CodexBosses, CodexFollowers, CodexItems, CodexMonsters, CodexRaids, CodexSkills,
+        Sluggable,
     },
     data::{CodexData, OrnaData},
     error::Error,
@@ -16,231 +16,144 @@ use ornaguide_rs::{
 
 use crate::misc::bar;
 
-/// Retrieve all items from the codex.
-pub fn items(guide: &OrnaAdminGuide) -> Result<CodexItems, Error> {
-    let items = guide.codex_fetch_item_list()?;
-    let mut ret = Vec::with_capacity(items.len());
-    let bar = bar(items.len() as u64);
-    for item in items.iter() {
-        let slug = item
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/items/")
-            .unwrap();
+/// Loop fetching entities and displaying a progress bar.
+/// Errors out after the first failed fetch.
+fn fetch_loop<Entry, F, Entity>(
+    entries: &[Entry],
+    fetch: F,
+    kind: &str,
+) -> Result<Vec<Entity>, Error>
+where
+    Entry: Sluggable,
+    F: Fn(&str) -> Result<Entity, Error>,
+{
+    let mut ret = Vec::with_capacity(entries.len());
+    let bar = bar(entries.len() as u64);
+    for entry in entries.iter() {
+        let slug = entry.slug();
         bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_item(slug)?);
+        ret.push(fetch(slug)?);
         bar.inc(1);
     }
-    bar.finish_with_message("CItems  fetched");
-    Ok(CodexItems { items: ret })
+    bar.finish_with_message(format!("{:7 } fetched", kind));
+    Ok(ret)
+}
+
+/// Retrieve all items from the codex.
+pub fn items(guide: &OrnaAdminGuide) -> Result<CodexItems, Error> {
+    fetch_loop(
+        &guide.codex_fetch_item_list()?,
+        |slug| guide.codex_fetch_item(slug),
+        "CItems",
+    )
+    .map(|items| CodexItems { items })
 }
 
 /// Retrieve all searchable monsters from the codex.
 /// This does not fetch monsters from non-active events.
 pub fn monsters(guide: &OrnaAdminGuide) -> Result<CodexMonsters, Error> {
-    let monsters = guide.codex_fetch_monster_list()?;
-    let mut ret = Vec::with_capacity(monsters.len());
-    let bar = bar(monsters.len() as u64);
-    for monster in monsters.iter() {
-        let slug = monster
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/monsters/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_monster(slug)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CMnstrs fetched");
-    Ok(CodexMonsters { monsters: ret })
+    fetch_loop(
+        &guide.codex_fetch_monster_list()?,
+        |slug| guide.codex_fetch_monster(slug),
+        "CMnstrs",
+    )
+    .map(|monsters| CodexMonsters { monsters })
 }
 
 /// Retrieve all searchable bosses from the codex.
 /// This does not fetch bosses from non-active events.
 pub fn bosses(guide: &OrnaAdminGuide) -> Result<CodexBosses, Error> {
-    let bosses = guide.codex_fetch_boss_list()?;
-    let mut ret = Vec::with_capacity(bosses.len());
-    let bar = bar(bosses.len() as u64);
-    for boss in bosses.iter() {
-        let slug = boss
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/bosses/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_boss(slug)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CBosses fetched");
-    Ok(CodexBosses { bosses: ret })
+    fetch_loop(
+        &guide.codex_fetch_boss_list()?,
+        |slug| guide.codex_fetch_boss(slug),
+        "CBosses",
+    )
+    .map(|bosses| CodexBosses { bosses })
 }
 
 /// Retrieve all searchable raids from the codex.
 /// This does not fetch raids from non-active events.
 pub fn raids(guide: &OrnaAdminGuide) -> Result<CodexRaids, Error> {
-    let raids = guide.codex_fetch_raid_list()?;
-    let mut ret = Vec::with_capacity(raids.len());
-    let bar = bar(raids.len() as u64);
-    for raid in raids.iter() {
-        let slug = raid
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/raids/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_raid(slug)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CRaids  fetched");
-    Ok(CodexRaids { raids: ret })
+    fetch_loop(
+        &guide.codex_fetch_raid_list()?,
+        |slug| guide.codex_fetch_raid(slug),
+        "CRaids",
+    )
+    .map(|raids| CodexRaids { raids })
 }
 
 /// Retrieve all skills from the codex.
 pub fn skills(guide: &OrnaAdminGuide) -> Result<CodexSkills, Error> {
-    let skills = guide.codex_fetch_skill_list()?;
-    let mut ret = Vec::with_capacity(skills.len());
-    let bar = bar(skills.len() as u64);
-    for skill in skills.iter() {
-        let slug = skill
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/spells/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_skill(slug)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CSkills fetched");
-    Ok(CodexSkills { skills: ret })
+    fetch_loop(
+        &guide.codex_fetch_skill_list()?,
+        |slug| guide.codex_fetch_skill(slug),
+        "CSkills",
+    )
+    .map(|skills| CodexSkills { skills })
 }
 
 /// Retrieve all searchable followers from the codex.
 /// This does not fetch followers from non-active events.
 pub fn followers(guide: &OrnaAdminGuide) -> Result<CodexFollowers, Error> {
-    let followers = guide.codex_fetch_follower_list()?;
-    let mut ret = Vec::with_capacity(followers.len());
-    let bar = bar(followers.len() as u64);
-    for follower in followers.iter() {
-        let slug = follower
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/followers/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_follower(slug)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CFllwrs fetched");
-    Ok(CodexFollowers { followers: ret })
+    fetch_loop(
+        &guide.codex_fetch_follower_list()?,
+        |slug| guide.codex_fetch_follower(slug),
+        "CFollwrs",
+    )
+    .map(|followers| CodexFollowers { followers })
 }
 
 /// Retrieve all items from the codex.
 pub fn items_translations(guide: &OrnaAdminGuide, locale: &str) -> Result<CodexItems, Error> {
-    let items = guide.codex_fetch_item_list()?;
-    let mut ret = Vec::with_capacity(items.len());
-    let bar = bar(items.len() as u64);
-    for item in items.iter() {
-        let slug = item
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/items/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_item_with_locale(slug, locale)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CItems  fetched");
-    Ok(CodexItems { items: ret })
+    fetch_loop(
+        &guide.codex_fetch_item_list()?,
+        |slug| guide.codex_fetch_item_with_locale(slug, locale),
+        "CItems",
+    )
+    .map(|items| CodexItems { items })
 }
 
 /// Retrieve all searchable monsters from the codex.
 /// This does not fetch monsters from non-active events.
 pub fn monsters_translations(guide: &OrnaAdminGuide, locale: &str) -> Result<CodexMonsters, Error> {
-    let monsters = guide.codex_fetch_monster_list()?;
-    let mut ret = Vec::with_capacity(monsters.len());
-    let bar = bar(monsters.len() as u64);
-    for monster in monsters.iter() {
-        let slug = monster
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/monsters/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_monster_with_locale(slug, locale)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CMnstrs fetched");
-    Ok(CodexMonsters { monsters: ret })
+    fetch_loop(
+        &guide.codex_fetch_monster_list()?,
+        |slug| guide.codex_fetch_monster_with_locale(slug, locale),
+        "CMnstrs",
+    )
+    .map(|monsters| CodexMonsters { monsters })
 }
 
 /// Retrieve all searchable bosses from the codex.
 /// This does not fetch bosses from non-active events.
 pub fn bosses_translations(guide: &OrnaAdminGuide, locale: &str) -> Result<CodexBosses, Error> {
-    let bosses = guide.codex_fetch_boss_list()?;
-    let mut ret = Vec::with_capacity(bosses.len());
-    let bar = bar(bosses.len() as u64);
-    for boss in bosses.iter() {
-        let slug = boss
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/bosses/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_boss_with_locale(slug, locale)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CBosses fetched");
-    Ok(CodexBosses { bosses: ret })
+    fetch_loop(
+        &guide.codex_fetch_boss_list()?,
+        |slug| guide.codex_fetch_boss_with_locale(slug, locale),
+        "CBosses",
+    )
+    .map(|bosses| CodexBosses { bosses })
 }
 
 /// Retrieve all searchable raids from the codex.
 /// This does not fetch raids from non-active events.
 pub fn raids_translations(guide: &OrnaAdminGuide, locale: &str) -> Result<CodexRaids, Error> {
-    let raids = guide.codex_fetch_raid_list()?;
-    let mut ret = Vec::with_capacity(raids.len());
-    let bar = bar(raids.len() as u64);
-    for raid in raids.iter() {
-        let slug = raid
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/raids/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_raid_with_locale(slug, locale)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CRaids  fetched");
-    Ok(CodexRaids { raids: ret })
+    fetch_loop(
+        &guide.codex_fetch_raid_list()?,
+        |slug| guide.codex_fetch_raid_with_locale(slug, locale),
+        "CRaids",
+    )
+    .map(|raids| CodexRaids { raids })
 }
 
 /// Retrieve all skills from the codex.
 pub fn skills_translations(guide: &OrnaAdminGuide, locale: &str) -> Result<CodexSkills, Error> {
-    let skills = guide.codex_fetch_skill_list()?;
-    let mut ret = Vec::with_capacity(skills.len());
-    let bar = bar(skills.len() as u64);
-    for skill in skills.iter() {
-        let slug = skill
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/spells/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_skill_with_locale(slug, locale)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CSkills fetched");
-    Ok(CodexSkills { skills: ret })
+    fetch_loop(
+        &guide.codex_fetch_skill_list()?,
+        |slug| guide.codex_fetch_skill_with_locale(slug, locale),
+        "CSkills",
+    )
+    .map(|skills| CodexSkills { skills })
 }
 
 /// Retrieve all searchable followers from the codex.
@@ -249,22 +162,12 @@ pub fn followers_translations(
     guide: &OrnaAdminGuide,
     locale: &str,
 ) -> Result<CodexFollowers, Error> {
-    let followers = guide.codex_fetch_follower_list()?;
-    let mut ret = Vec::with_capacity(followers.len());
-    let bar = bar(followers.len() as u64);
-    for follower in followers.iter() {
-        let slug = follower
-            .uri
-            .strip_suffix('/')
-            .unwrap()
-            .strip_prefix("/codex/followers/")
-            .unwrap();
-        bar.set_message(slug.to_string());
-        ret.push(guide.codex_fetch_follower_with_locale(slug, locale)?);
-        bar.inc(1);
-    }
-    bar.finish_with_message("CFllwrs fetched");
-    Ok(CodexFollowers { followers: ret })
+    fetch_loop(
+        &guide.codex_fetch_follower_list()?,
+        |slug| guide.codex_fetch_follower_with_locale(slug, locale),
+        "CFollwrs",
+    )
+    .map(|followers| CodexFollowers { followers })
 }
 
 /// Fetch the translation strings in the given locale.

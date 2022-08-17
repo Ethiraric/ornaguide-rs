@@ -1,6 +1,7 @@
 use crate::{
     codex::{
         Codex, CodexBosses, CodexFollowers, CodexItems, CodexMonsters, CodexRaids, CodexSkills,
+        Sluggable,
     },
     error::Error,
     guide::OrnaAdminGuide,
@@ -12,9 +13,7 @@ pub fn items(guide: &OrnaAdminGuide) -> Result<CodexItems, Error> {
         items: guide
             .codex_fetch_item_list()?
             .into_iter()
-            .map(|item| {
-                guide.codex_fetch_item(&item.uri["/codex/items/".len()..item.uri.len() - 1])
-            })
+            .map(|item| guide.codex_fetch_item(item.slug()))
             .collect::<Result<Vec<_>, Error>>()?,
     })
 }
@@ -26,11 +25,7 @@ pub fn monsters(guide: &OrnaAdminGuide) -> Result<CodexMonsters, Error> {
         monsters: guide
             .codex_fetch_monster_list()?
             .into_iter()
-            .map(|monster| {
-                guide.codex_fetch_monster(
-                    &monster.uri["/codex/monsters/".len()..monster.uri.len() - 1],
-                )
-            })
+            .map(|monster| guide.codex_fetch_monster(monster.slug()))
             .collect::<Result<Vec<_>, Error>>()?,
     })
 }
@@ -42,9 +37,7 @@ pub fn bosses(guide: &OrnaAdminGuide) -> Result<CodexBosses, Error> {
         bosses: guide
             .codex_fetch_boss_list()?
             .into_iter()
-            .map(|boss| {
-                guide.codex_fetch_boss(&boss.uri["/codex/bosses/".len()..boss.uri.len() - 1])
-            })
+            .map(|boss| guide.codex_fetch_boss(boss.slug()))
             .collect::<Result<Vec<_>, Error>>()?,
     })
 }
@@ -56,9 +49,7 @@ pub fn raids(guide: &OrnaAdminGuide) -> Result<CodexRaids, Error> {
         raids: guide
             .codex_fetch_raid_list()?
             .into_iter()
-            .map(|raid| {
-                guide.codex_fetch_raid(&raid.uri["/codex/raids/".len()..raid.uri.len() - 1])
-            })
+            .map(|raid| guide.codex_fetch_raid(raid.slug()))
             .collect::<Result<Vec<_>, Error>>()?,
     })
 }
@@ -69,9 +60,7 @@ pub fn skills(guide: &OrnaAdminGuide) -> Result<CodexSkills, Error> {
         skills: guide
             .codex_fetch_skill_list()?
             .into_iter()
-            .map(|skill| {
-                guide.codex_fetch_skill(&skill.uri["/codex/spells/".len()..skill.uri.len() - 1])
-            })
+            .map(|skill| guide.codex_fetch_skill(skill.slug()))
             .collect::<Result<Vec<_>, Error>>()?,
     })
 }
@@ -83,11 +72,7 @@ pub fn followers(guide: &OrnaAdminGuide) -> Result<CodexFollowers, Error> {
         followers: guide
             .codex_fetch_follower_list()?
             .into_iter()
-            .map(|follower| {
-                guide.codex_fetch_follower(
-                    &follower.uri["/codex/followers/".len()..follower.uri.len() - 1],
-                )
-            })
+            .map(|follower| guide.codex_fetch_follower(follower.slug()))
             .collect::<Result<Vec<_>, Error>>()?,
     })
 }

@@ -72,6 +72,48 @@ pub struct FollowerEntry {
     pub uri: String,
 }
 
+/// A trait to implement for things we can get a slug from.
+pub trait Sluggable {
+    /// Return the slug that corresponds to the entity.
+    fn slug(&self) -> &str;
+}
+
+impl Sluggable for SkillEntry {
+    fn slug(&self) -> &str {
+        &self.uri["/codex/items/".len()..self.uri.len() - 1]
+    }
+}
+
+impl Sluggable for MonsterEntry {
+    fn slug(&self) -> &str {
+        &self.uri["/codex/monsters/".len()..self.uri.len() - 1]
+    }
+}
+
+impl Sluggable for BossEntry {
+    fn slug(&self) -> &str {
+        &self.uri["/codex/bosses/".len()..self.uri.len() - 1]
+    }
+}
+
+impl Sluggable for RaidEntry {
+    fn slug(&self) -> &str {
+        &self.uri["/codex/raid/".len()..self.uri.len() - 1]
+    }
+}
+
+impl Sluggable for ItemEntry {
+    fn slug(&self) -> &str {
+        &self.uri["/codex/items/".len()..self.uri.len() - 1]
+    }
+}
+
+impl Sluggable for FollowerEntry {
+    fn slug(&self) -> &str {
+        &self.uri["/codex/followers/".len()..self.uri.len() - 1]
+    }
+}
+
 /// The public codex on `playorna.com`.
 pub trait Codex {
     /// Retrieve the list of skills from the orna codex.
