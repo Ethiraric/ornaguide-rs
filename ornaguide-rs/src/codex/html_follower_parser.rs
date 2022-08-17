@@ -44,18 +44,17 @@ fn parse_description_nodes<T>(
     iter: impl Iterator<Item = NodeDataRef<T>>,
 ) -> Result<DescriptionNode, Error> {
     let mut iter = iter.peekable();
-    let description;
     let mut events = Vec::new();
     let rarity;
 
     // First node is the description.
-    if let Some(description_node) = iter.next() {
-        description = node_to_text(description_node.as_node());
+    let description = if let Some(description_node) = iter.next() {
+        node_to_text(description_node.as_node())
     } else {
         return Err(Error::HTMLParsingError(
             "No description node when parsing follower".to_string(),
         ));
-    }
+    };
 
     // Look for the event node.
     if let Some(event_node) = iter.peek() {
