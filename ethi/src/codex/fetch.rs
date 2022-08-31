@@ -27,6 +27,7 @@ where
     Entry: Sluggable,
     F: Fn(&str) -> Result<Entity, Error>,
 {
+    let sleep = crate::config::playorna_sleep()? as u64;
     let mut ret = Vec::with_capacity(entries.len());
     let bar = bar(entries.len() as u64);
     for entry in entries.iter() {
@@ -34,6 +35,9 @@ where
         bar.set_message(slug.to_string());
         ret.push(fetch(slug)?);
         bar.inc(1);
+        if sleep > 0 {
+            std::thread::sleep(std::time::Duration::from_secs(sleep));
+        }
     }
     bar.finish_with_message(format!("{:7 } fetched", kind));
     Ok(ret)

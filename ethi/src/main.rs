@@ -1,10 +1,8 @@
 use std::time::Instant;
 
-use dotenv::dotenv;
-
 #[allow(unused_imports)]
 use itertools::Itertools;
-use ornaguide_rs::data::OrnaData;
+use ornaguide_rs::{codex::translation::LocaleDB, data::OrnaData};
 #[allow(unused_imports)]
 use ornaguide_rs::{
     codex::{Codex, CodexItem},
@@ -14,6 +12,7 @@ use ornaguide_rs::{
 
 mod codex;
 mod codex_bugs;
+mod config;
 mod guide;
 mod guide_html;
 mod guide_match;
@@ -28,29 +27,27 @@ mod thecraigger;
 fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
     let fix = false;
 
+    let mut db = LocaleDB::load_from("output/i18n")?;
+    db.merge_with(LocaleDB::load_from("output/i18n/manual")?);
+
     // guide_match::all(&mut data, fix, guide)?;
-    guide_match::status_effects::perform(&mut data, fix, guide)?;
-    guide_match::skills::perform(&mut data, fix, guide)?;
-    guide_match::items::perform(&mut data, fix, guide)?;
-    guide_match::monsters::perform(&mut data, fix, guide)?;
-    guide_match::pets::perform(&mut data, fix, guide)?;
+    // guide_match::status_effects::perform(&mut data, fix, guide)?;
+    // guide_match::skills::perform(&mut data, fix, guide)?;
+    // guide_match::items::perform(&mut data, fix, guide)?;
+    // guide_match::monsters::perform(&mut data, fix, guide)?;
+    // guide_match::pets::perform(&mut data, fix, guide)?;
 
     Ok(())
 }
 
 fn main2() -> Result<(), Error> {
-    let _ = dotenv().map_err(|err| Error::Misc(format!("Failed to load .env: {}", err)))?;
-    let cookie = dotenv::var("ORNAGUIDE_COOKIE").map_err(|err| {
-        Error::Misc(format!(
-            "Failed to get ORNAGUIDE_COOKIE env variable: {}",
-            err
-        ))
+    let guide = config::with_config(|config| {
+        OrnaAdminGuide::new_with_hosts(
+            &config.ornaguide_cookie,
+            config.ornaguide_host.clone(),
+            config.playorna_host.clone(),
+        )
     })?;
-    let ornaguide_host =
-        dotenv::var("ORNAGUIDE_HOST").unwrap_or_else(|_| "https://orna.guide".to_string());
-    let playorna_host =
-        dotenv::var("PLAYORNA_HOST").unwrap_or_else(|_| "https://playorna.com".to_string());
-    let guide = OrnaAdminGuide::new_with_hosts(&cookie, ornaguide_host, playorna_host)?;
     let data = || OrnaData::load_from("output");
 
     let args = std::env::args().collect::<Vec<_>>();
@@ -75,6 +72,8 @@ fn main2() -> Result<(), Error> {
         [_, "sirscor", "rarity", file] => sirscor::push_rarity(file, &data()?, &guide),
         [_, "ratakor", "raid-hp", file] => ratakor::push_raid_hp(file, &data()?, &guide),
         [_, "codex", "bugs"] => codex_bugs::check(&data()?, &guide),
+        [_, "translation", locale] => codex::fetch::translations(&guide, &data()?, locale)?
+            .save_to(&format!("output/i18n/{}.json", locale)),
         [_] => ethi(&guide, data()?),
         _ => Err(Error::Misc(format!("Invalid CLI arguments: {:?}", &args))),
     }
