@@ -220,7 +220,7 @@ fn parse_html_page(
     if !skip_abilities_drops_tags {
         for h4 in descend_iter(page.as_node(), "h4", "page")? {
             match h4.text_contents().trim() {
-                "Abilities:" => {
+                "Abilities:" | "Skills:" => {
                     abilities = parse_abilities(h4.as_node())?;
                 }
                 "Drops:" => {

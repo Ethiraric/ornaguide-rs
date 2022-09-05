@@ -166,7 +166,7 @@ pub fn parse_html_codex_follower(contents: &str, slug: String) -> Result<CodexFo
 
     for h4 in descend_iter(page.as_node(), "h4", "page")? {
         match h4.text_contents().trim() {
-            "Abilities:" => {
+            "Abilities:" | "Skills:" => {
                 abilities = parse_abilities(h4.as_node())?;
             }
             x => panic!("{}", x),
