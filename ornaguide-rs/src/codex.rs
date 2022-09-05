@@ -80,7 +80,7 @@ pub trait Sluggable {
 
 impl Sluggable for SkillEntry {
     fn slug(&self) -> &str {
-        &self.uri["/codex/items/".len()..self.uri.len() - 1]
+        &self.uri["/codex/spells/".len()..self.uri.len() - 1]
     }
 }
 
@@ -98,7 +98,7 @@ impl Sluggable for BossEntry {
 
 impl Sluggable for RaidEntry {
     fn slug(&self) -> &str {
-        &self.uri["/codex/raid/".len()..self.uri.len() - 1]
+        &self.uri["/codex/raids/".len()..self.uri.len() - 1]
     }
 }
 
