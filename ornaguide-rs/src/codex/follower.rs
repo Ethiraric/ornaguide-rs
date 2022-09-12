@@ -39,7 +39,7 @@ pub struct Follower {
 }
 
 /// Collection of followers from the codex.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Followers {
     /// Followers from the codex.
     pub followers: Vec<Follower>,

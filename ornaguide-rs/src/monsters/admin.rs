@@ -277,7 +277,7 @@ impl AdminMonster {
 }
 
 /// Collection of monsters from the guide's admin view.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct AdminMonsters {
     /// Monsters from the guide's admin view.
     pub monsters: Vec<AdminMonster>,

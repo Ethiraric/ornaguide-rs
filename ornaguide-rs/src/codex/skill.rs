@@ -122,7 +122,7 @@ impl CodexSkill {
 }
 
 /// Collection of skills from the codex.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct CodexSkills {
     /// Skills from the codex.
     pub skills: Vec<CodexSkill>,

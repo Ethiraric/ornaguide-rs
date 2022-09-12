@@ -4,7 +4,7 @@ use crate::{
 };
 
 /// Aggregate for codex data.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct CodexData {
     /// Items from the codex.
     pub items: CodexItems,

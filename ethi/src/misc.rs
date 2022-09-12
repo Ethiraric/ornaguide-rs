@@ -1,6 +1,11 @@
+use std::{
+    fs::File,
+    io::{BufReader, Read},
+};
+
 use indicatif::{ProgressBar, ProgressStyle};
 use itertools::Itertools;
-use ornaguide_rs::data::OrnaData;
+use ornaguide_rs::{data::OrnaData, error::Error};
 
 pub fn bar(len: u64) -> ProgressBar {
     let bar = ProgressBar::new(len);
@@ -124,4 +129,22 @@ macro_rules! retry_once {
             Err(_) => $expr,
         }
     };
+}
+
+/// Same as `serde_json::from_reader`, but adds the name to the error message, if any.
+pub fn json_read<R, T>(rdr: R, path: &str) -> Result<T, Error>
+where
+    R: Read,
+    T: serde::de::DeserializeOwned,
+{
+    serde_json::from_reader(rdr).map_err(|err| Error::SerdeJson(err, path.to_string()))
+}
+
+/// Same as a `serde_json::from_reader` with a file, but adds the filename to the error message, if any.
+pub fn json_from_file<R, T>(path: &str) -> Result<T, Error>
+where
+    R: Read,
+    T: serde::de::DeserializeOwned,
+{
+    json_read(BufReader::new(File::open(path)?), path)
 }

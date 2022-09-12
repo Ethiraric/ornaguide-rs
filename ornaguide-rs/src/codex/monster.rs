@@ -95,21 +95,21 @@ pub struct Raid {
 }
 
 /// Collection of monsters from the codex.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Monsters {
     /// Monsters from the codex.
     pub monsters: Vec<Monster>,
 }
 
 /// Collection of bosses from the codex.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Bosses {
     /// Bosses from the codex.
     pub bosses: Vec<Boss>,
 }
 
 /// Collection of raids from the codex.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Raids {
     /// Raids from the codex.
     pub raids: Vec<Raid>,

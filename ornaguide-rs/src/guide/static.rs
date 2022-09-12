@@ -79,7 +79,7 @@ pub struct SkillType {
 }
 
 /// Static resources that are used by the guide.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Static {
     /// List of monster spawns.
     pub spawns: Vec<Spawn>,

@@ -6,7 +6,7 @@ use std::{
 /// Generic error type.
 pub enum Error {
     /// There was an error with `serde_json`.
-    SerdeJson(serde_json::Error),
+    SerdeJson(serde_json::Error, String),
     /// There was an error with `std::io`.
     Io(std::io::Error),
     /// A field was missing when converting.
@@ -106,7 +106,13 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::SerdeJson(err) => write!(f, "{}", err),
+            Error::SerdeJson(err, name) => {
+                if name.is_empty() {
+                    write!(f, "{}", err)
+                } else {
+                    write!(f, "{}: {}", name, err)
+                }
+            }
             Error::Io(err) => write!(f, "{}", err),
             Error::MissingField(from, field) => {
                 write!(f, "Failed to convert {}: missing field {}", from, field)
@@ -202,7 +208,7 @@ impl From<reqwest::Error> for Error {
 
 impl From<serde_json::Error> for Error {
     fn from(err: serde_json::Error) -> Self {
-        Self::SerdeJson(err)
+        Self::SerdeJson(err, String::new())
     }
 }
 

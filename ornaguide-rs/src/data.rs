@@ -14,7 +14,7 @@ pub use codex_generic_monster::CodexGenericMonster;
 pub use guide_data::GuideData;
 
 /// Aggregate for both the codex and the guide data.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct OrnaData {
     /// Data from the codex.
     pub codex: CodexData,

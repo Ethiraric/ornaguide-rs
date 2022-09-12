@@ -426,7 +426,7 @@ impl From<AdminItem> for ParsedForm {
 }
 
 /// Collection of items from the guide's admin view.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct AdminItems {
     /// Items from the guide's admin view.
     pub items: Vec<AdminItem>,

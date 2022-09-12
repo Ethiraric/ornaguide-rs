@@ -343,7 +343,7 @@ make_impl_for_status_effect_struct_vec!(Cure);
 make_impl_for_status_effect_struct_vec!(Immunity);
 
 /// Collection of items from the codex.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Default)]
 pub struct Items {
     /// Items from the codex.
     pub items: Vec<Item>,
