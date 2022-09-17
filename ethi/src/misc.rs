@@ -6,6 +6,10 @@ use std::{
 use indicatif::{ProgressBar, ProgressStyle};
 use itertools::Itertools;
 use ornaguide_rs::{data::OrnaData, error::Error};
+use serde::{
+    de::{Unexpected, Visitor},
+    Deserialize, Deserializer,
+};
 
 pub fn bar(len: u64) -> ProgressBar {
     let bar = ProgressBar::new(len);
@@ -147,4 +151,65 @@ where
     T: serde::de::DeserializeOwned,
 {
     json_read(BufReader::new(File::open(path)?), path)
+}
+
+/// Parse the given value as a Google Doc boolean value.
+/// Maps `"TRUE"` to `true`, `"FALSE"` to `false`, and any other value to an error.
+pub fn parse_gdoc_bool<'de, D>(de: D) -> Result<bool, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s = <&str>::deserialize(de)?;
+    match s {
+        "TRUE" => Ok(true),
+        "FALSE" => Ok(false),
+        _ => Err(serde::de::Error::invalid_value(
+            Unexpected::Str(s),
+            &"TRUE or FALSE",
+        )),
+    }
+}
+
+/// Parse the given value as an `u8`. If the value is an empty string, return `0` instead.
+pub fn parse_maybe_empty_u8<'de, D>(de: D) -> Result<u8, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct V {}
+    impl<'de> Visitor<'de> for V {
+        type Value = u8;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            write!(formatter, "A u8 or an empty string (maps to 0)")
+        }
+
+        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            if v > u8::MAX as u64 {
+                Err(serde::de::Error::invalid_value(
+                    Unexpected::Unsigned(v),
+                    &"a value fitting in [0;255]",
+                ))
+            } else {
+                Ok(v as u8)
+            }
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            match v {
+                "" => Ok(0),
+                _ => Err(serde::de::Error::invalid_value(
+                    Unexpected::Str(v),
+                    &"empty string in place of u8",
+                )),
+            }
+        }
+    }
+
+    de.deserialize_any(V {})
 }
