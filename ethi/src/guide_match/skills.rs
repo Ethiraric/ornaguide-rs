@@ -48,7 +48,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
         println!("{} skills missing on guide:", missing_on_guide.len());
         for skill in missing_on_guide.iter() {
             println!(
-                "\t- {:20} (https://playorna.com/codex/spells/{})",
+                "\t- {:20} (https://playorna.com/codex/spells/{}/)",
                 skill.name, skill.slug
             );
         }
