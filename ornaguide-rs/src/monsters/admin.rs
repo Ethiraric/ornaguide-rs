@@ -8,10 +8,12 @@ use crate::{
 };
 
 /// An item fetched from the admin panel.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, Derivative)]
+#[derivative(PartialEq)]
 pub struct AdminMonster {
     /// The CSRF token that was given on the page where the monster was fetched.
     #[serde(skip)]
+    #[derivative(PartialEq = "ignore")]
     pub(crate) csrfmiddlewaretoken: String,
     /// Id of the monster on the guide.
     pub id: u32,
@@ -277,7 +279,7 @@ impl AdminMonster {
 }
 
 /// Collection of monsters from the guide's admin view.
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct AdminMonsters {
     /// Monsters from the guide's admin view.
     pub monsters: Vec<AdminMonster>,

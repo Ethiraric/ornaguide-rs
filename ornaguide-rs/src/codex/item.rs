@@ -26,7 +26,7 @@ pub enum Element {
 }
 
 /// Stats of an item.
-#[derive(Debug, Default, Serialize, Deserialize, Clone)]
+#[derive(Debug, Default, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Stats {
     /// The base attack stat of the item.
     pub attack: Option<i16>,
@@ -55,7 +55,7 @@ pub struct Stats {
 }
 
 /// The ability the item has in off-hand.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Ability {
     /// The name of the ability.
     pub name: String,
@@ -64,7 +64,7 @@ pub struct Ability {
 }
 
 /// A monster dropping an item.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct DroppedBy {
     /// The name of the monster.
     pub name: String,
@@ -75,7 +75,7 @@ pub struct DroppedBy {
 }
 
 /// A monster dropping an item.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct UpgradeMaterial {
     /// The name of the material.
     pub name: String,
@@ -86,7 +86,7 @@ pub struct UpgradeMaterial {
 }
 
 /// A debuff the item causes.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Cause {
     /// The name of the debuff.
     pub name: String,
@@ -95,7 +95,7 @@ pub struct Cause {
 }
 
 /// A buff the item gives.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Give {
     /// The name of the buff.
     pub name: String,
@@ -106,7 +106,7 @@ pub struct Give {
 }
 
 /// A debuff the item cures.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Cure {
     /// The name of the buff.
     pub name: String,
@@ -115,7 +115,7 @@ pub struct Cure {
 }
 
 /// An debuff the item prevents.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Immunity {
     /// The name of the debuff.
     pub name: String,
@@ -124,7 +124,7 @@ pub struct Immunity {
 }
 
 /// An item on the codex.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Item {
     /// The slug of the item (`https://playorna.com/codex/items/{slug}`).
     pub slug: String,
@@ -343,7 +343,7 @@ make_impl_for_status_effect_struct_vec!(Cure);
 make_impl_for_status_effect_struct_vec!(Immunity);
 
 /// Collection of items from the codex.
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, Eq, PartialEq)]
 pub struct Items {
     /// Items from the codex.
     pub items: Vec<Item>,

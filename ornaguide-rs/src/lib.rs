@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate derivative;
+
 pub mod codex;
 pub mod data;
 pub mod error;

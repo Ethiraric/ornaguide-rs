@@ -3,10 +3,12 @@ use serde::{Deserialize, Serialize};
 use crate::{error::Error, guide::html_form_parser::ParsedForm, misc::sanitize_guide_name};
 
 /// A skill fetched from the admin panel.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Derivative)]
+#[derivative(PartialEq)]
 pub struct AdminSkill {
     /// The CSRF token that was given on the page where the skill was fetched.
     #[serde(skip)]
+    #[derivative(PartialEq = "ignore")]
     pub(crate) csrfmiddlewaretoken: String,
     /// Id of the skill on the guide.
     pub id: u32,
@@ -180,7 +182,7 @@ impl From<AdminSkill> for ParsedForm {
 }
 
 /// Collection of skills from the guide's admin view.
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct AdminSkills {
     /// Skills from the guide's admin view.
     pub skills: Vec<AdminSkill>,

@@ -10,6 +10,7 @@ use ornaguide_rs::{
     guide::{AdminGuide, OrnaAdminGuide},
 };
 
+mod backups;
 mod codex;
 mod codex_bugs;
 mod config;
@@ -76,6 +77,7 @@ fn main2() -> Result<(), Error> {
         [_, "codex", "bugs"] => codex_bugs::check(&data()?, &guide),
         [_, "translation", locale] => codex::fetch::translations(&guide, &data()?, locale)?
             .save_to(&format!("output/i18n/{}.json", locale)),
+        [_, "backups", "prune"] => backups::prune("backups_output"),
         [_] => ethi(&guide, data()?),
         _ => Err(Error::Misc(format!("Invalid CLI arguments: {:?}", &args))),
     }

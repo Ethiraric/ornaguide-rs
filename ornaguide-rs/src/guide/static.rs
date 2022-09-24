@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::Error;
 
 /// A spawn for monsters.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Spawn {
     /// Id of the spawn.
     pub id: u32,
@@ -14,7 +14,7 @@ pub struct Spawn {
 /// An item category.
 ///
 /// E.g: Fish, Instrument, Curved Sword, ...
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ItemCategory {
     /// Id of the category.
     pub id: u32,
@@ -25,7 +25,7 @@ pub struct ItemCategory {
 /// An item type.
 ///
 /// E.g.: Fish, Adornment, Off-hand, ...
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct ItemType {
     /// Id of the type.
     pub id: u32,
@@ -34,7 +34,7 @@ pub struct ItemType {
 }
 
 /// A monster family.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct MonsterFamily {
     /// Id of the family.
     pub id: u32,
@@ -43,7 +43,7 @@ pub struct MonsterFamily {
 }
 
 /// A status effect.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct StatusEffect {
     /// Id of the status effect.
     pub id: u32,
@@ -52,7 +52,7 @@ pub struct StatusEffect {
 }
 
 /// An element.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Element {
     /// Id of the element.
     pub id: u32,
@@ -61,7 +61,7 @@ pub struct Element {
 }
 
 /// A class who can equip an item.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct EquippedBy {
     /// Id of the entry.
     pub id: u32,
@@ -70,7 +70,7 @@ pub struct EquippedBy {
 }
 
 /// A skill type (passive, magic, AoE, ...).
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct SkillType {
     /// Id of the skill type.
     pub id: u32,
@@ -79,7 +79,7 @@ pub struct SkillType {
 }
 
 /// Static resources that are used by the guide.
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct Static {
     /// List of monster spawns.
     pub spawns: Vec<Spawn>,

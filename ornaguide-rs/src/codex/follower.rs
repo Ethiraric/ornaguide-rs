@@ -7,7 +7,7 @@ use crate::{
 };
 
 /// An ability for a follower.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Ability {
     /// The name of the ability.
     pub name: String,
@@ -18,7 +18,7 @@ pub struct Ability {
 }
 
 /// A follower on the codex.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct Follower {
     /// The name of the follower.
     pub name: String,
@@ -39,7 +39,7 @@ pub struct Follower {
 }
 
 /// Collection of followers from the codex.
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, Eq, PartialEq)]
 pub struct Followers {
     /// Followers from the codex.
     pub followers: Vec<Follower>,

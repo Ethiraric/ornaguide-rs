@@ -3,10 +3,12 @@ use serde::{Deserialize, Serialize};
 use crate::{error::Error, guide::html_form_parser::ParsedForm};
 
 /// An item fetched from the admin panel.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Derivative)]
+#[derivative(PartialEq)]
 pub struct AdminItem {
     /// The CSRF token that was given on the page where the item was fetched.
     #[serde(skip)]
+    #[derivative(PartialEq = "ignore")]
     pub(crate) csrfmiddlewaretoken: String,
     /// Id of the item on the guide.
     pub id: u32,
@@ -426,7 +428,7 @@ impl From<AdminItem> for ParsedForm {
 }
 
 /// Collection of items from the guide's admin view.
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct AdminItems {
     /// Items from the guide's admin view.
     pub items: Vec<AdminItem>,

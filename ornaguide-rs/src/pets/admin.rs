@@ -10,10 +10,12 @@ pub enum CostType {
 }
 
 /// A pet fetched from the admin panel.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Derivative)]
+#[derivative(PartialEq)]
 pub struct AdminPet {
     /// The CSRF token that was given on the page where the pet was fetched.
     #[serde(skip)]
+    #[derivative(PartialEq = "ignore")]
     pub(crate) csrfmiddlewaretoken: String,
     /// Id of the pet on the guide.
     pub id: u32,
@@ -162,7 +164,7 @@ impl From<AdminPet> for ParsedForm {
 }
 
 /// Collection of pets from the guide's admin view.
-#[derive(Serialize, Deserialize, Clone, Default)]
+#[derive(Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct AdminPets {
     /// Pets from the guide's admin view.
     pub pets: Vec<AdminPet>,

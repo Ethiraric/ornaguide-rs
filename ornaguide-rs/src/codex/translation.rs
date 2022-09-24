@@ -12,7 +12,7 @@ use std::{
 };
 
 /// Holds strings that can be translated for an item.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct ItemTranslation {
     /// The name of the item.
     pub name: String,
@@ -21,7 +21,7 @@ pub struct ItemTranslation {
 }
 
 /// Holds strings that can be translated for a raid.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct RaidTranslation {
     /// The name of the raid.
     pub name: String,
@@ -30,21 +30,21 @@ pub struct RaidTranslation {
 }
 
 /// Holds strings that can be translated for a boss.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct BossTranslation {
     /// The name of the boss.
     pub name: String,
 }
 
 /// Holds strings that can be translated for a monster.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct MonsterTranslation {
     /// The name of the monster.
     pub name: String,
 }
 
 /// Holds strings that can be translated for any monster.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub enum GenericMonsterTranslation {
     /// `self` refers to a monster.
     Monster(MonsterTranslation),
@@ -55,7 +55,7 @@ pub enum GenericMonsterTranslation {
 }
 
 /// Holds strings that can be translated for a skill.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct SkillTranslation {
     /// The name of the skill.
     pub name: String,
@@ -64,7 +64,7 @@ pub struct SkillTranslation {
 }
 
 /// Holds strings that can be translated for a follower.
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
 pub struct FollowerTranslation {
     /// The name of the follower.
     pub name: String,
@@ -73,7 +73,7 @@ pub struct FollowerTranslation {
 }
 
 /// A set of strings for a particular language.
-#[derive(Default, Serialize, Deserialize, Debug)]
+#[derive(Default, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct LocaleStrings {
     // TODO(ethiraric, 09/08/2022): Make so entries don't have unused fields (e.g.: other than name
     // and description for items).
@@ -110,7 +110,7 @@ pub struct LocaleStrings {
 
 /// A set of `LocaleStrings`.
 /// Strings organized in their respective locales.
-#[derive(Default, Serialize, Deserialize, Debug)]
+#[derive(Default, Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct LocaleDB {
     /// Map of locales. The key is the locale name.
     pub locales: HashMap<String, LocaleStrings>,
