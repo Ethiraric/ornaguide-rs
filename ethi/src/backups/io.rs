@@ -1,38 +1,108 @@
 use std::{
     fs::File,
-    io::Read,
+    io::{Cursor, Read, Write},
     path::{Path, PathBuf},
 };
 
-use bzip2::read::BzDecoder;
+use bzip2::{read::BzDecoder, write::BzEncoder, Compression};
 use ornaguide_rs::{
     codex::translation::{LocaleDB, LocaleStrings},
     data::OrnaData,
     error::Error,
 };
-use tar::{Archive, EntryType};
+use tar::{Archive, Builder, EntryType, Header};
 
-use crate::misc::json_read;
+use crate::{backups::Backup, misc::json_read};
 
-fn load_entry_to_translation_db<R>(
-    db: &mut LocaleDB,
-    fullpath: &str,
-    filename: &str,
-    reader: R,
-) -> Result<(), Error>
-where
-    R: Read,
-{
-    let strings: LocaleStrings = json_read(reader, fullpath)?;
-    let lang = filename
-        .strip_suffix(".json")
-        .ok_or_else(|| Error::Misc(format!("{}: lang file doesn't end in `.json`", fullpath)))?
-        .to_string();
-    db.locales.insert(lang, strings);
+/// See [`crate::backups::Backup::save_to`].
+pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> Result<(), Error> {
+    // Create archive path, from path, name and timestamp.
+    // Keep the archive basename, as it will be the root directory from inside the archive.
+    let now = chrono::Local::now();
+    let archive_basename = format!("{}-{}", name, now.format("%FT%H-%M"));
+    let mut archive_path = path.as_ref().to_path_buf();
+    archive_path.push(format!("{}.tar.bz2", archive_basename));
+
+    // Open the archive.
+    let mut archive = Builder::new(BzEncoder::new(
+        File::options()
+            .write(true)
+            .create(true)
+            .open(archive_path)?,
+        Compression::best(),
+    ));
+
+    // Metadata to add to every entry in the archive.
+    let uid = nix::unistd::getuid();
+    let gid = nix::unistd::getgid();
+    let username = nix::unistd::User::from_uid(uid).unwrap().unwrap().name;
+    let groupname = nix::unistd::Group::from_gid(gid).unwrap().unwrap().name;
+    let mtime = now.timestamp() as u64;
+
+    // Create a header for an entry in an archive.
+    // Does not set the size of the entry, as we don't know it yet. Can't set the checksum either.
+    let new_header = |path: &str, is_folder| {
+        let mut header = Header::new_gnu();
+        header.set_uid(uid.as_raw() as u64);
+        header.set_gid(gid.as_raw() as u64);
+        header.set_username(&username).unwrap();
+        header.set_groupname(&groupname).unwrap();
+        header.set_mode(if is_folder { 0o755 } else { 0o644 });
+        header.set_mtime(mtime);
+        header.set_entry_type(if is_folder {
+            EntryType::Directory
+        } else {
+            EntryType::Regular
+        });
+        header.set_path(path).unwrap();
+        header
+    };
+
+    // Create root folder.
+    let mut header = new_header(&archive_basename, true);
+    header.set_cksum();
+    archive.append(&header, &*Vec::<u8>::new()).unwrap();
+
+    // Create translation folders.
+    let locale_dir = format!("{}/i18n", archive_basename);
+    let manual_locale_dir = format!("{}/i18n/manual", archive_basename);
+    let mut header = new_header(&locale_dir, true);
+    header.set_cksum();
+    archive.append(&header, &*Vec::<u8>::new()).unwrap();
+    let mut header = new_header(&manual_locale_dir, true);
+    header.set_cksum();
+    archive.append(&header, &*Vec::<u8>::new()).unwrap();
+
+    // Create a callback to give the data so it writes into the archive.
+    let mut writer_callback =
+        |path: &str, callback: &dyn Fn(&mut dyn Write) -> Result<(), Error>| -> Result<(), Error> {
+            let mut buffer: Vec<u8> = vec![];
+            callback(&mut buffer)?;
+            let mut header = new_header(path, false);
+            header.set_size(buffer.len() as u64);
+            header.set_cksum();
+            archive.append(&header, Cursor::new(buffer)).unwrap();
+            Ok(())
+        };
+
+    // Create Orna Data files.
+    backup
+        .data
+        .save_to_generic(&archive_basename, &mut writer_callback)?;
+
+    // Create translation files.
+    backup
+        .locales
+        .save_to_generic(&locale_dir, &mut writer_callback)?;
+    backup
+        .manual_locales
+        .save_to_generic(&manual_locale_dir, &mut writer_callback)?;
+
     Ok(())
 }
 
-pub fn load_from(archive_path: &Path) -> Result<(OrnaData, LocaleDB), Error> {
+/// See [`crate::backups::Backup::load_from`].
+pub(crate) fn load_from(archive_path: &Path) -> Result<Backup, Error> {
     if archive_path.ends_with(".tar.bz2") {
         return Err(Error::Misc(format!(
             "Invalid backup output file: {:?}",
@@ -169,9 +239,28 @@ pub fn load_from(archive_path: &Path) -> Result<(OrnaData, LocaleDB), Error> {
         }
     }
 
-    // Merge both translation databases.
-    // The manual one's entries take precedence over the regular ones.
-    locales.merge_with(manual_locales);
+    Ok(Backup {
+        data,
+        locales,
+        manual_locales,
+    })
+}
 
-    Ok((data, locales))
+/// Load a `LocaleStrings` from a reader into the given `LocaleDB`.
+fn load_entry_to_translation_db<R>(
+    db: &mut LocaleDB,
+    fullpath: &str,
+    filename: &str,
+    reader: R,
+) -> Result<(), Error>
+where
+    R: Read,
+{
+    let strings: LocaleStrings = json_read(reader, fullpath)?;
+    let lang = filename
+        .strip_suffix(".json")
+        .ok_or_else(|| Error::Misc(format!("{}: lang file doesn't end in `.json`", fullpath)))?
+        .to_string();
+    db.locales.insert(lang, strings);
+    Ok(())
 }

@@ -1,6 +1,6 @@
 use std::{
     fs::File,
-    io::{BufReader, BufWriter},
+    io::{BufReader, Write},
 };
 
 use crate::{error::Error, guide::Static, monsters::admin::AdminMonster};
@@ -105,103 +105,89 @@ impl OrnaData {
         })
     }
 
-    /// Save data to a set of json files in the given directory.
-    pub fn save_to(&self, directory: &str) -> Result<(), Error> {
+    pub fn save_to_generic<Writer>(&self, directory: &str, mut writer: Writer) -> Result<(), Error>
+    where
+        Writer: FnMut(&str, &dyn Fn(&mut dyn Write) -> Result<(), Error>) -> Result<(), Error>,
+    {
         // Codex jsons
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/codex_items.json", directory))?),
-            &self.codex.items,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/codex_raids.json", directory))?),
-            &self.codex.raids,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/codex_monsters.json", directory))?),
-            &self.codex.monsters,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/codex_bosses.json", directory))?),
-            &self.codex.bosses,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/codex_skills.json", directory))?),
-            &self.codex.skills,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/codex_followers.json", directory))?),
-            &self.codex.followers,
-        )?;
+        writer(&format!("{}/codex_items.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.codex.items).map_err(Error::from)
+        })?;
+        writer(&format!("{}/codex_raids.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.codex.raids).map_err(Error::from)
+        })?;
+        writer(&format!("{}/codex_monsters.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.codex.monsters).map_err(Error::from)
+        })?;
+        writer(&format!("{}/codex_bosses.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.codex.bosses).map_err(Error::from)
+        })?;
+        writer(&format!("{}/codex_skills.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.codex.skills).map_err(Error::from)
+        })?;
+        writer(&format!("{}/codex_followers.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.codex.followers).map_err(Error::from)
+        })?;
 
         // Guide jsons
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/guide_items.json", directory))?),
-            &self.guide.items,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/guide_monsters.json", directory))?),
-            &self.guide.monsters,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/guide_skills.json", directory))?),
-            &self.guide.skills,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/guide_pets.json", directory))?),
-            &self.guide.pets,
-        )?;
+        writer(&format!("{}/guide_items.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.guide.items).map_err(Error::from)
+        })?;
+        writer(&format!("{}/guide_monsters.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.guide.monsters).map_err(Error::from)
+        })?;
+        writer(&format!("{}/guide_skills.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.guide.skills).map_err(Error::from)
+        })?;
+        writer(&format!("{}/guide_pets.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.guide.pets).map_err(Error::from)
+        })?;
 
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/guide_spawns.json", directory))?),
-            &self.guide.static_.spawns,
+        writer(&format!("{}/guide_spawns.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.guide.static_.spawns).map_err(Error::from)
+        })?;
+        writer(&format!("{}/guide_elements.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.guide.static_.elements).map_err(Error::from)
+        })?;
+        writer(&format!("{}/guide_item_types.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.guide.static_.item_types).map_err(Error::from)
+        })?;
+        writer(&format!("{}/guide_equipped_bys.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.guide.static_.equipped_bys).map_err(Error::from)
+        })?;
+        writer(
+            &format!("{}/guide_status_effects.json", directory),
+            &|out| {
+                serde_json::to_writer_pretty(out, &self.guide.static_.status_effects)
+                    .map_err(Error::from)
+            },
         )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!("{}/guide_elements.json", directory))?),
-            &self.guide.static_.elements,
+        writer(
+            &format!("{}/guide_item_categories.json", directory),
+            &|out| {
+                serde_json::to_writer_pretty(out, &self.guide.static_.item_categories)
+                    .map_err(Error::from)
+            },
         )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!(
-                "{}/guide_item_types.json",
-                directory
-            ))?),
-            &self.guide.static_.item_types,
+        writer(
+            &format!("{}/guide_monster_families.json", directory),
+            &|out| {
+                serde_json::to_writer_pretty(out, &self.guide.static_.monster_families)
+                    .map_err(Error::from)
+            },
         )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!(
-                "{}/guide_equipped_bys.json",
-                directory
-            ))?),
-            &self.guide.static_.equipped_bys,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!(
-                "{}/guide_status_effects.json",
-                directory
-            ))?),
-            &self.guide.static_.status_effects,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!(
-                "{}/guide_item_categories.json",
-                directory
-            ))?),
-            &self.guide.static_.item_categories,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!(
-                "{}/guide_monster_families.json",
-                directory
-            ))?),
-            &self.guide.static_.monster_families,
-        )?;
-        serde_json::to_writer_pretty(
-            BufWriter::new(File::create(format!(
-                "{}/guide_skill_types.json",
-                directory
-            ))?),
-            &self.guide.static_.skill_types,
-        )?;
+        writer(&format!("{}/guide_skill_types.json", directory), &|out| {
+            serde_json::to_writer_pretty(out, &self.guide.static_.skill_types).map_err(Error::from)
+        })?;
         Ok(())
+    }
+
+    /// Save data to a set of json files in the given directory.
+    pub fn save_to(&self, directory: &str) -> Result<(), Error> {
+        self.save_to_generic(directory, |path, callback| -> Result<(), Error> {
+            let mut file = File::create(path)?;
+            callback(&mut file)
+        })
     }
 
     /// Find which monster/boss/raid in the codex corresponds to the given admin monster.

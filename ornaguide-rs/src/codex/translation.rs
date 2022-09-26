@@ -8,7 +8,7 @@ use crate::{
 use std::{
     collections::HashMap,
     fs::File,
-    io::{BufReader, BufWriter},
+    io::{BufReader, BufWriter, Write},
 };
 
 /// Holds strings that can be translated for an item.
@@ -241,6 +241,11 @@ impl LocaleStrings {
         )?)
     }
 
+    /// Save translations as json to a writer.
+    pub fn save_to_writer<W: Write>(&self, out: W) -> Result<(), Error> {
+        Ok(serde_json::to_writer_pretty(out, &self)?)
+    }
+
     /// Merge the contents of `self` with that of `other`.
     /// For each key in each hash map, the contents of `other` will take precedence over `self` and
     /// overwrite values in case of duplicate keys.
@@ -405,6 +410,21 @@ impl LocaleDB {
         self.locales
             .get(locale)
             .and_then(|locale| locale.rarity(name))
+    }
+
+    /// Write the contents of the locale database with the given helper functions.
+    /// `Writer` is called for each file there is to write.
+    pub fn save_to_generic<Writer>(&self, directory: &str, mut writer: Writer) -> Result<(), Error>
+    where
+        Writer: FnMut(&str, &dyn Fn(&mut dyn Write) -> Result<(), Error>) -> Result<(), Error>,
+    {
+        for (lang, db) in self.locales.iter() {
+            writer(&format!("{}/{}.json", directory, lang), &|out| {
+                db.save_to_writer(out)
+            })?;
+        }
+
+        Ok(())
     }
 
     /// Save translations to a set of json files in the given directory.
