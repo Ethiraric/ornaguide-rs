@@ -1,7 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::Error, items::admin::AdminItem, monsters::admin::AdminMonster, pets::admin::AdminPet,
+    codex::{CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill},
+    data::OrnaData,
+    error::Error,
+    items::admin::AdminItem,
+    misc::codex_effect_name_to_guide_name,
+    monsters::admin::AdminMonster,
+    pets::admin::AdminPet,
     skills::admin::AdminSkill,
 };
 
@@ -117,10 +123,217 @@ pub struct LocaleDB {
 }
 
 impl LocaleStrings {
+    /// Add some codex items to the locale database.
+    /// If an item is already present in `self`, it is updated with the strings from `items`.
+    pub fn add_items(&mut self, items: Vec<CodexItem>) {
+        for item in items.into_iter() {
+            self.items.insert(
+                item.slug.to_string(),
+                ItemTranslation {
+                    name: item.name,
+                    description: item.description,
+                },
+            );
+        }
+    }
+
+    /// Add some codex raids to the locale database.
+    /// If a raid is already present in `self`, it is updated with the strings from `raids`.
+    /// Events associated to the raid are added to the events database.
+    pub fn add_raids_and_events(
+        &mut self,
+        raids: Vec<CodexRaid>,
+        data: &OrnaData,
+    ) -> Result<(), Error> {
+        for raid in raids.into_iter() {
+            let raid_data = data
+                .codex
+                .raids
+                .find_by_uri(&format!("/codex/raids/{}/", raid.slug))
+                .ok_or_else(|| {
+                    Error::Misc(format!(
+                        "Failed to find raid {} (found in locale {})",
+                        raid.slug, self.locale
+                    ))
+                })?;
+
+            // Update strings not directly related to the raid.
+            // TODO(ethiraric, 09/08/2022): Remove clones. Use try_insert?
+            for (localed, en) in raid.events.iter().zip(raid_data.events.iter()) {
+                self.events.insert(en.clone(), localed.clone());
+            }
+
+            self.raids.insert(
+                raid.slug.to_string(),
+                RaidTranslation {
+                    name: raid.name,
+                    description: raid.description,
+                },
+            );
+        }
+        Ok(())
+    }
+
+    /// Add some codex monsters to the locale database.
+    /// If a monsters is already present in `self`, it is updated with the strings from `monsters`.
+    /// Events, families and rarities associated to the monster are added to the database.
+    pub fn add_monsters_events_families_and_rarities(
+        &mut self,
+        monsters: Vec<CodexMonster>,
+        data: &OrnaData,
+    ) -> Result<(), Error> {
+        for monster in monsters.into_iter() {
+            let monster_data = data
+                .codex
+                .monsters
+                .find_by_uri(&format!("/codex/monsters/{}/", monster.slug))
+                .ok_or_else(|| {
+                    Error::Misc(format!(
+                        "Failed to find monster {} (found in locale {})",
+                        monster.slug, self.locale
+                    ))
+                })?;
+
+            // Update strings not directly related to the monster.
+            // TODO(ethiraric, 09/08/2022): Remove clones. Use try_insert?
+            for (localed, en) in monster.events.iter().zip(monster_data.events.iter()) {
+                self.events.insert(en.clone(), localed.clone());
+            }
+            self.families
+                .insert(monster_data.family.clone(), monster.family.clone());
+            self.rarities
+                .insert(monster_data.rarity.clone(), monster.rarity.clone());
+
+            self.monsters.insert(
+                monster.slug.to_string(),
+                MonsterTranslation { name: monster.name },
+            );
+        }
+        Ok(())
+    }
+
+    /// Add some codex bosses to the locale database.
+    /// If a boss is already present in `self`, it is updated with the strings from `bosses`.
+    /// Events, families and rarities associated to the boss are added to the database.
+    pub fn add_bosses_events_families_and_rarities(
+        &mut self,
+        bosses: Vec<CodexBoss>,
+        data: &OrnaData,
+    ) -> Result<(), Error> {
+        for boss in bosses.into_iter() {
+            let boss_data = data
+                .codex
+                .bosses
+                .find_by_uri(&format!("/codex/bosses/{}/", boss.slug))
+                .ok_or_else(|| {
+                    Error::Misc(format!(
+                        "Failed to find boss {} (found in locale {})",
+                        boss.slug, self.locale
+                    ))
+                })?;
+
+            // Update strings not directly related to the boss.
+            // TODO(ethiraric, 09/08/2022): Remove clones. Use try_insert?
+            for (localed, en) in boss.events.iter().zip(boss_data.events.iter()) {
+                self.events.insert(en.clone(), localed.clone());
+            }
+            self.families
+                .insert(boss_data.family.clone(), boss.family.clone());
+            self.rarities
+                .insert(boss_data.rarity.clone(), boss.rarity.clone());
+
+            self.bosses
+                .insert(boss.slug.to_string(), BossTranslation { name: boss.name });
+        }
+        Ok(())
+    }
+
+    /// Add some codex skills to the locale database.
+    /// If a skill is already present in `self`, it is updated with the strings from `skills`.
+    /// Statuses associated to the skill are added to the database.
+    pub fn add_skills_and_statuses(
+        &mut self,
+        skills: Vec<CodexSkill>,
+        data: &OrnaData,
+    ) -> Result<(), Error> {
+        for skill in skills.into_iter() {
+            let skill_data = data
+                .codex
+                .skills
+                .find_by_uri(&format!("/codex/spells/{}/", skill.slug))
+                .ok_or_else(|| {
+                    Error::Misc(format!(
+                        "Failed to find skill {} (found in locale {})",
+                        skill.slug, self.locale
+                    ))
+                })?;
+
+            // Update strings not directly related to the skill.
+            // TODO(ethiraric, 09/08/2022): Remove clones. Use try_insert?
+            for (localed, en) in skill
+                .causes
+                .iter()
+                .zip(skill_data.causes.iter().chain(skill_data.gives.iter()))
+            {
+                self.statuses.insert(
+                    codex_effect_name_to_guide_name(&en.effect).to_string(),
+                    localed.effect.clone(),
+                );
+            }
+
+            self.skills.insert(
+                skill.slug.to_string(),
+                SkillTranslation {
+                    name: skill.name,
+                    description: skill.description,
+                },
+            );
+        }
+        Ok(())
+    }
+
+    /// Add some codex followers to the locale database.
+    /// If a follower is already present in `self`, it is updated with the strings from `followers`.
+    /// Events associated to the follower are added to the database.
+    pub fn add_followers_and_events(
+        &mut self,
+        followers: Vec<CodexFollower>,
+        data: &OrnaData,
+    ) -> Result<(), Error> {
+        for follower in followers.into_iter() {
+            let follower_data = data
+                .codex
+                .followers
+                .find_by_uri(&format!("/codex/followers/{}/", follower.slug))
+                .ok_or_else(|| {
+                    Error::Misc(format!(
+                        "Failed to find follower {} (found in locale {})",
+                        follower.slug, self.locale
+                    ))
+                })?;
+
+            // Update strings not directly related to the follower.
+            // TODO(ethiraric, 09/08/2022): Remove clones. Use try_insert?
+            for (localed, en) in follower.events.iter().zip(follower_data.events.iter()) {
+                self.events.insert(en.clone(), localed.clone());
+            }
+
+            self.followers.insert(
+                follower.slug.to_string(),
+                FollowerTranslation {
+                    name: follower.name,
+                    description: follower.description,
+                },
+            );
+        }
+        Ok(())
+    }
+
     /// Get the given item from the locale database.
     pub fn item(&self, name: &str) -> Option<&ItemTranslation> {
         self.items.get(name)
     }
+
     /// Get the name of the given item from the locale database.
     pub fn item_name(&self, name: &str) -> Option<&str> {
         self.item(name).map(|item| item.name.as_str())
@@ -272,6 +485,7 @@ impl LocaleDB {
             .get(locale)
             .and_then(|locale| locale.item(name))
     }
+
     /// Get the name of the given item from the locale database.
     pub fn item_name(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
