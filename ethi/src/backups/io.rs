@@ -60,6 +60,7 @@ pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> R
 
     // Create root folder.
     let mut header = new_header(&archive_basename, true);
+    header.set_size(0);
     header.set_cksum();
     archive.append(&header, &*Vec::<u8>::new()).unwrap();
 
@@ -67,9 +68,11 @@ pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> R
     let locale_dir = format!("{}/i18n", archive_basename);
     let manual_locale_dir = format!("{}/i18n/manual", archive_basename);
     let mut header = new_header(&locale_dir, true);
+    header.set_size(0);
     header.set_cksum();
     archive.append(&header, &*Vec::<u8>::new()).unwrap();
     let mut header = new_header(&manual_locale_dir, true);
+    header.set_size(0);
     header.set_cksum();
     archive.append(&header, &*Vec::<u8>::new()).unwrap();
 
@@ -102,7 +105,8 @@ pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> R
 }
 
 /// See [`crate::backups::Backup::load_from`].
-pub(crate) fn load_from(archive_path: &Path) -> Result<Backup, Error> {
+pub(crate) fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error> {
+    let archive_path: &Path = archive_path.as_ref();
     if archive_path.ends_with(".tar.bz2") {
         return Err(Error::Misc(format!(
             "Invalid backup output file: {:?}",

@@ -28,7 +28,7 @@ impl Backup {
     }
 
     /// Load the backup from the archive at the given path.
-    pub fn load_from(archive_path: &Path) -> Result<Backup, Error> {
+    pub fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error> {
         io::load_from(archive_path)
     }
 }
