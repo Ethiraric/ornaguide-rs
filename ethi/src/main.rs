@@ -78,6 +78,7 @@ fn main2() -> Result<(), Error> {
         [_, "ratakor", "raid-hp", file] => ratakor::push_raid_hp(file, &data()?, &guide),
         [_, "ethiraric", "summons", file] => ethiraric::summons::summons(file),
         [_, "codex", "bugs"] => codex_bugs::check(&data()?, &guide),
+        [_, "codex", "missing"] => codex::fetch::missing(&guide, &data()?).map(|_| ()),
         [_, "translation", "missing"] => {
             let mut locales = localedb()?;
             let missing = codex::fetch::missing_translations(&guide, &data()?, &locales)?;
@@ -87,6 +88,7 @@ fn main2() -> Result<(), Error> {
         [_, "translation", locale] => codex::fetch::translations(&guide, &data()?, locale)?
             .save_to(&format!("output/i18n/{}.json", locale)),
         [_, "backups", "prune"] => backups::prune("backups_output"),
+        [_, "backups", "merge"] => backups::merge("backups_output", "merges"),
         [_] => ethi(&guide, data()?),
         _ => Err(Error::Misc(format!("Invalid CLI arguments: {:?}", &args))),
     }
