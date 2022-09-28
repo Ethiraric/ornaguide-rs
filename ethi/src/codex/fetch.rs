@@ -343,13 +343,144 @@ pub fn translations(
     strings.add_followers_and_events(codex.followers.followers, &data)?;
 
     Ok(strings)
+}
 
+/// Retrieve all missing searchable items from the codex.
+pub fn missing_items_translations(
+    guide: &OrnaAdminGuide,
+    db: &LocaleStrings,
+    locale: &str,
+) -> Result<CodexItems, Error> {
+    fetch_loop(
+        &guide
+            .codex_fetch_item_list()?
+            .into_iter()
+            .filter(|entry| !db.items.contains_key(entry.slug()))
+            .collect_vec(),
+        |slug| guide.codex_fetch_item_with_locale(slug, locale),
+        "CItems",
+    )
+    .map(|items| CodexItems { items })
+}
 
+/// Retrieve all missing searchable monsters from the codex.
+pub fn missing_monsters_translations(
+    guide: &OrnaAdminGuide,
+    db: &LocaleStrings,
+    locale: &str,
+) -> Result<CodexMonsters, Error> {
+    fetch_loop(
+        &guide
+            .codex_fetch_monster_list()?
+            .into_iter()
+            .filter(|entry| !db.monsters.contains_key(entry.slug()))
+            .collect_vec(),
+        |slug| guide.codex_fetch_monster_with_locale(slug, locale),
+        "CMnstrs",
+    )
+    .map(|monsters| CodexMonsters { monsters })
+}
 
+/// Retrieve all missing searchable bosses from the codex.
+pub fn missing_bosses_translations(
+    guide: &OrnaAdminGuide,
+    db: &LocaleStrings,
+    locale: &str,
+) -> Result<CodexBosses, Error> {
+    fetch_loop(
+        &guide
+            .codex_fetch_boss_list()?
+            .into_iter()
+            .filter(|entry| !db.bosses.contains_key(entry.slug()))
+            .collect_vec(),
+        |slug| guide.codex_fetch_boss_with_locale(slug, locale),
+        "CBosses",
+    )
+    .map(|bosses| CodexBosses { bosses })
+}
 
+/// Retrieve all missing searchable raids from the codex.
+pub fn missing_raids_translations(
+    guide: &OrnaAdminGuide,
+    db: &LocaleStrings,
+    locale: &str,
+) -> Result<CodexRaids, Error> {
+    fetch_loop(
+        &guide
+            .codex_fetch_raid_list()?
+            .into_iter()
+            .filter(|entry| !db.raids.contains_key(entry.slug()))
+            .collect_vec(),
+        |slug| guide.codex_fetch_raid_with_locale(slug, locale),
+        "CRaids",
+    )
+    .map(|raids| CodexRaids { raids })
+}
 
+/// Retrieve all missing searchable skills from the codex.
+pub fn missing_skills_translations(
+    guide: &OrnaAdminGuide,
+    db: &LocaleStrings,
+    locale: &str,
+) -> Result<CodexSkills, Error> {
+    fetch_loop(
+        &guide
+            .codex_fetch_skill_list()?
+            .into_iter()
+            .filter(|entry| !db.skills.contains_key(entry.slug()))
+            .collect_vec(),
+        |slug| guide.codex_fetch_skill_with_locale(slug, locale),
+        "CSkills",
+    )
+    .map(|skills| CodexSkills { skills })
+}
 
+/// Retrieve all missing searchable followers from the codex.
+pub fn missing_followers_translations(
+    guide: &OrnaAdminGuide,
+    db: &LocaleStrings,
+    locale: &str,
+) -> Result<CodexFollowers, Error> {
+    fetch_loop(
+        &guide
+            .codex_fetch_follower_list()?
+            .into_iter()
+            .filter(|entry| !db.followers.contains_key(entry.slug()))
+            .collect_vec(),
+        |slug| guide.codex_fetch_follower_with_locale(slug, locale),
+        "CFollwrs",
+    )
+    .map(|followers| CodexFollowers { followers })
+}
 
+/// Retrieve all missing translations from the already-known locales in `locale_db`.
+/// Returns a new instance of a db, that may be merged with `locale_db` if needed.
+pub fn missing_translations(
+    guide: &OrnaAdminGuide,
+    data: &OrnaData,
+    locale_db: &LocaleDB,
+) -> Result<LocaleDB, Error> {
+    let mut ret = LocaleDB::default();
+
+    for (locale, db) in locale_db.locales.iter() {
+        println!("Fetching missing translations for locale {}", locale);
+        let mut strings = LocaleStrings::default();
+
+        let items = missing_items_translations(guide, db, locale)?;
+        let monsters = missing_monsters_translations(guide, db, locale)?;
+        let bosses = missing_bosses_translations(guide, db, locale)?;
+        let raids = missing_raids_translations(guide, db, locale)?;
+        let skills = missing_skills_translations(guide, db, locale)?;
+        let followers = missing_followers_translations(guide, db, locale)?;
+
+        strings.add_items(items.items);
+        strings.add_monsters_events_families_and_rarities(monsters.monsters, data)?;
+        strings.add_bosses_events_families_and_rarities(bosses.bosses, data)?;
+        strings.add_raids_and_events(raids.raids, data)?;
+        strings.add_skills_and_statuses(skills.skills, data)?;
+        strings.add_followers_and_events(followers.followers, data)?;
+        ret.locales.insert(locale.clone(), strings);
     }
 
+    Ok(ret)
 }

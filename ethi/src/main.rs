@@ -51,6 +51,7 @@ fn main2() -> Result<(), Error> {
         )
     })?;
     let data = || OrnaData::load_from("output");
+    let localedb = || LocaleDB::load_from("output/i18n");
 
     let args = std::env::args().collect::<Vec<_>>();
     match args.iter().map(|s| s.as_str()).collect::<Vec<_>>()[..] {
@@ -77,6 +78,12 @@ fn main2() -> Result<(), Error> {
         [_, "ratakor", "raid-hp", file] => ratakor::push_raid_hp(file, &data()?, &guide),
         [_, "ethiraric", "summons", file] => ethiraric::summons::summons(file),
         [_, "codex", "bugs"] => codex_bugs::check(&data()?, &guide),
+        [_, "translation", "missing"] => {
+            let mut locales = localedb()?;
+            let missing = codex::fetch::missing_translations(&guide, &data()?, &locales)?;
+            locales.merge_with(missing);
+            locales.save_to("output/i18n")
+        }
         [_, "translation", locale] => codex::fetch::translations(&guide, &data()?, locale)?
             .save_to(&format!("output/i18n/{}.json", locale)),
         [_, "backups", "prune"] => backups::prune("backups_output"),
