@@ -12,13 +12,12 @@ use crate::misc::bar;
 /// Walks through item drops and lists monsters in those drops we couldn't find.
 /// Also adds event monsters that have no drops.
 /// Modifies `data` in-place.
-fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<(), Error> {
+fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result<(), Error> {
     // Monsters that are not necessarily listed (i.e.: belong to an event) and that have no drops.
     // These won't show up when listing through item drops.
     let unlisted_without_drops = &["/codex/monsters/elite-balor-flame/".to_string()];
 
     let uris = data
-        .codex
         .items
         .items
         .iter()
@@ -26,8 +25,7 @@ fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<
         .flat_map(|item| item.dropped_by.iter())
         // Keep only the URI of those those we can't find a codex monster for.
         .filter(|dropped_by| {
-            data.codex
-                .find_generic_monster_from_uri(&dropped_by.uri)
+            data.find_generic_monster_from_uri(&dropped_by.uri)
                 .is_none()
         })
         .map(|dropped_by| &dropped_by.uri)
@@ -35,7 +33,7 @@ fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<
         .chain(
             unlisted_without_drops
                 .iter()
-                .filter(|uri| data.codex.find_generic_monster_from_uri(uri).is_none()),
+                .filter(|uri| data.find_generic_monster_from_uri(uri).is_none()),
         )
         // Remove duplicates.
         .sorted()
@@ -53,16 +51,15 @@ fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<
             let result = || -> Result<(), Error> {
                 match kind {
                     "monsters" => {
-                        data.codex
-                            .monsters
+                        data.monsters
                             .monsters
                             .push(guide.codex_fetch_monster(slug)?);
                     }
                     "bosses" => {
-                        data.codex.bosses.bosses.push(guide.codex_fetch_boss(slug)?);
+                        data.bosses.bosses.push(guide.codex_fetch_boss(slug)?);
                     }
                     "raids" => {
-                        data.codex.raids.raids.push(guide.codex_fetch_raid(slug)?);
+                        data.raids.raids.push(guide.codex_fetch_raid(slug)?);
                     }
                     _ => {
                         println!("Unknown monster kind for URI {}", uri);
@@ -87,7 +84,7 @@ fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<
 
 /// Add unlisted followers to the data.
 /// Modifies `data` in-place.
-fn add_event_followers(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<(), Error> {
+fn add_event_followers(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result<(), Error> {
     // List of event pet slugs. Those may or may not appear in the follower list, depending on the
     // time of the year.
     let event_pets = &[
@@ -151,14 +148,13 @@ fn add_event_followers(guide: &OrnaAdminGuide, data: &mut OrnaData) -> Result<()
         bar.set_message(slug.to_string());
         // Don't include a follower twice.
         if !data
-            .codex
             .followers
             .followers
             .iter()
             .any(|follower| &&*follower.slug == slug)
         {
             match guide.codex_fetch_follower(slug) {
-                Ok(follower) => data.codex.followers.followers.push(follower),
+                Ok(follower) => data.followers.followers.push(follower),
                 Err(Error::ResponseError(_, _, 404, _)) => {}
                 Err(x) => return Err(x),
             }
@@ -189,8 +185,47 @@ pub fn refresh(guide: &OrnaAdminGuide) -> Result<OrnaData, Error> {
             static_: guide.admin_retrieve_static_resources()?,
         },
     };
-    add_unlisted_monsters(guide, &mut data)?;
-    add_event_followers(guide, &mut data)?;
+    add_unlisted_monsters(guide, &mut data.codex)?;
+    add_event_followers(guide, &mut data.codex)?;
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
+/// Refresh all guide output jsons. Fetches all guide entities.
+pub fn refresh_guide(guide: &OrnaAdminGuide, codex_data: CodexData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: codex_data,
+        guide: GuideData {
+            items: crate::guide::fetch::items(guide)?,
+            monsters: crate::guide::fetch::monsters(guide)?,
+            skills: crate::guide::fetch::skills(guide)?,
+            pets: crate::guide::fetch::pets(guide)?,
+            static_: guide.admin_retrieve_static_resources()?,
+        },
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
+/// Refresh all codex output jsons. Fetches all codex entities.
+pub fn refresh_codex(guide: &OrnaAdminGuide, guide_data: GuideData) -> Result<OrnaData, Error> {
+    let mut data = OrnaData {
+        codex: CodexData {
+            items: crate::codex::fetch::items(guide)?,
+            raids: crate::codex::fetch::raids(guide)?,
+            monsters: crate::codex::fetch::monsters(guide)?,
+            bosses: crate::codex::fetch::bosses(guide)?,
+            skills: crate::codex::fetch::skills(guide)?,
+            followers: crate::codex::fetch::followers(guide)?,
+        },
+        guide: guide_data,
+    };
+    add_unlisted_monsters(guide, &mut data.codex)?;
+    add_event_followers(guide, &mut data.codex)?;
 
     data.save_to("output")?;
 

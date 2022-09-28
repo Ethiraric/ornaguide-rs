@@ -55,6 +55,8 @@ fn main2() -> Result<(), Error> {
     let args = std::env::args().collect::<Vec<_>>();
     match args.iter().map(|s| s.as_str()).collect::<Vec<_>>()[..] {
         [_, "json", "refresh"] => output::refresh(&guide).map(|_| ()),
+        [_, "json", "refresh", "guide"] => output::refresh_guide(&guide, data()?.codex).map(|_| ()),
+        [_, "json", "refresh", "codex"] => output::refresh_codex(&guide, data()?.guide).map(|_| ()),
         [_, "match", "all"] => guide_match::all(&mut data()?, false, &guide),
         [_, "match", "all", "--fix"] => {
             let mut data = data()?;
