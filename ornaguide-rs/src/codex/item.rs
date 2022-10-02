@@ -52,6 +52,14 @@ pub struct Stats {
     pub adornment_slots: Option<u8>,
     /// The elment of the item.
     pub element: Option<Element>,
+    /// The XP bonus of the item (at common quality).
+    pub exp_bonus: Option<i16>,
+    /// The gold bonus of the item (at common quality).
+    pub gold_bonus: Option<u8>,
+    /// The orn bonus of the item (at common quality).
+    pub orn_bonus: Option<u8>,
+    /// The luck bonus of the item (at common quality).
+    pub luck_bonus: Option<u8>,
 }
 
 /// The ability the item has in off-hand.
