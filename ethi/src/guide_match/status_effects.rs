@@ -106,6 +106,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
 /// Check for any mismatch between the guide status effects and the codex status effects.
 pub fn perform(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    println!("\x1B[0;35mMatching Status effects\x1B[0m");
     list_missing(data, fix, guide)?;
     Ok(())
 }

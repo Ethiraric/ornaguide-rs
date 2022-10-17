@@ -632,6 +632,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
 
 /// Check for any mismatch between the guide items and the codex items.
 pub fn perform(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    println!("\x1B[0;35mMatching Items\x1B[0m");
     list_missing(data, fix, guide)?;
     check_stats(data, fix, guide)?;
     Ok(())

@@ -326,6 +326,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
 /// Check for any mismatch between the guide monsters and the codex monsters.
 pub fn perform(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    println!("\x1B[0;35mMatching Monsters\x1B[0m");
     list_missing(data, fix, guide)?;
     check_fields(data, fix, guide)?;
     Ok(())
