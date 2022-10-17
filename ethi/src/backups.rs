@@ -3,8 +3,9 @@ use std::path::{Path, PathBuf};
 use itertools::Itertools;
 use ornaguide_rs::{codex::translation::LocaleDB, data::OrnaData, error::Error};
 
-use crate::backups::data_merger::DataMerger;
+use crate::backups::{changes::BackupChanges, data_merger::DataMerger};
 
+pub(crate) mod changes;
 pub mod data_merger;
 pub(crate) mod io;
 
@@ -41,6 +42,8 @@ fn iter_backups<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = (PathBuf
         .filter_map(|entry| entry.ok())
         // Filter out directories.
         .filter(|entry| entry.file_type().map(|t| t.is_file()).unwrap_or(false))
+        // Exclude "changes.json" from the list
+        .filter(|entry| !entry.path().ends_with("changes.json"))
         // Sort them. The names are chronological, so it orders them oldest first.
         .sorted_by_key(|entry| entry.path())
         // Try to open them. Ignore those we fail to open.
@@ -77,7 +80,7 @@ pub fn prune<P: AsRef<Path>>(path: P) -> Result<(), Error> {
 /// Archives are sorted by their names. Entries from latter archives take precedence over entries
 /// from former archives.
 pub fn merge<P: AsRef<Path>>(backups_path: P, output_path: P) -> Result<(), Error> {
-    let (data_merger, locales, manual_locales) = iter_backups(backups_path)?
+    let (data_merger, locales, manual_locales) = iter_backups(&backups_path)?
         // Merge everything into one big `OrnaData` and two big `LocaleDB`s.
         .fold(
             (
@@ -93,10 +96,20 @@ pub fn merge<P: AsRef<Path>>(backups_path: P, output_path: P) -> Result<(), Erro
             },
         );
     let data = data_merger.into_orna_data();
-    let backup = Backup {
+    let mut backup = Backup {
         data,
         locales,
         manual_locales,
     };
+
+    let changes_path = format!("{}/changes.json", backups_path.as_ref().to_string_lossy());
+    match BackupChanges::load_from(&changes_path) {
+        Ok(changes) => changes.apply_to(&mut backup),
+        Err(err) => println!(
+            "{}: Failed to load changes to backup: {}",
+            changes_path, err
+        ),
+    };
+
     backup.save_to(output_path, "merge")
 }
