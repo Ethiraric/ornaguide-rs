@@ -12,6 +12,7 @@ pub enum CostType {
 /// A pet fetched from the admin panel.
 #[derive(Clone, Debug, Serialize, Deserialize, Derivative)]
 #[derivative(PartialEq)]
+#[serde(default)]
 pub struct AdminPet {
     /// The CSRF token that was given on the page where the pet was fetched.
     #[serde(skip)]
@@ -30,6 +31,8 @@ pub struct AdminPet {
     pub image_name: String,
     /// In-game description of the pet.
     pub description: String,
+    /// The events in which the pet appear, if limited.
+    pub event: Vec<u32>,
     /// Pet attack chance (%).
     pub attack: u8,
     /// Pet heal chance (%).
@@ -64,6 +67,7 @@ impl Default for AdminPet {
             tier: 0,
             image_name: String::new(),
             description: String::new(),
+            event: Vec::new(),
             attack: 0,
             heal: 0,
             buff: 0,
@@ -95,6 +99,7 @@ impl TryFrom<ParsedForm> for AdminPet {
                 "tier" => pet.tier = value.parse()?,
                 "image_name" => pet.image_name = value,
                 "description" => pet.description = value,
+                "event" => pet.event.push(value.parse()?),
                 "attack" => pet.attack = value.parse()?,
                 "heal" => pet.heal = value.parse()?,
                 "buff" => pet.buff = value.parse()?,
@@ -136,6 +141,9 @@ impl From<AdminPet> for ParsedForm {
         push("tier", pet.tier.to_string());
         push("image_name", pet.image_name);
         push("description", pet.description);
+        for x in pet.event.iter() {
+            push("event", x.to_string());
+        }
         push("attack", pet.attack.to_string());
         push("heal", pet.heal.to_string());
         push("buff", pet.buff.to_string());

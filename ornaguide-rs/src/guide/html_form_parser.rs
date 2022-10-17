@@ -295,6 +295,7 @@ pub(crate) const PET_FORM_FIELD_NAMES: &[&str] = &[
     "tier",
     "image_name",
     "description",
+    "event",
     "attack",
     "heal",
     "buff",
