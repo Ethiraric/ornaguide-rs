@@ -211,6 +211,24 @@ pub fn refresh_guide(guide: &OrnaAdminGuide, codex_data: CodexData) -> Result<Or
     Ok(data)
 }
 
+/// Refresh the guide's static resources.
+pub fn refresh_guide_static(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: data.codex,
+        guide: GuideData {
+            items: data.guide.items,
+            monsters: data.guide.monsters,
+            skills: data.guide.skills,
+            pets: data.guide.pets,
+            static_: guide.admin_retrieve_static_resources()?,
+        },
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
 /// Refresh all codex output jsons. Fetches all codex entities.
 pub fn refresh_codex(guide: &OrnaAdminGuide, guide_data: GuideData) -> Result<OrnaData, Error> {
     let mut data = OrnaData {
