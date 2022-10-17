@@ -56,3 +56,14 @@ pub fn push_rarity(file: &str, data: &OrnaData, guide: &OrnaAdminGuide) -> Resul
     }
     Ok(())
 }
+
+/// Execute a CLI subcommand for sirscor.
+pub fn cli(args: &[&str], guide: &OrnaAdminGuide, data: OrnaData) -> Result<(), Error> {
+    match args {
+        ["rarity", file] => push_rarity(file, &data, guide),
+        _ => Err(Error::Misc(format!(
+            "Invalid CLI `sirscor` arguments: {:?}",
+            &args
+        ))),
+    }
+}

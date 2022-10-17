@@ -43,3 +43,14 @@ pub fn push_raid_hp(file: &str, data: &OrnaData, guide: &OrnaAdminGuide) -> Resu
     }
     Ok(())
 }
+
+/// Execute a CLI subcommand for ratakor.
+pub fn cli(args: &[&str], guide: &OrnaAdminGuide, data: OrnaData) -> Result<(), Error> {
+    match args {
+        ["raid-hp", file] => push_raid_hp(file, &data, guide),
+        _ => Err(Error::Misc(format!(
+            "Invalid CLI `ratakor` arguments: {:?}",
+            &args
+        ))),
+    }
+}

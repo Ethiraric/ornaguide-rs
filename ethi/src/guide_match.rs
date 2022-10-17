@@ -18,3 +18,21 @@ pub fn all(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
 
     Ok(())
 }
+
+/// Execute a CLI subcommand on matching.
+pub fn cli(args: &[&str], guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
+    match args {
+        ["items"] => items::perform(&mut data, false, &guide),
+        ["items", "--fix"] => items::perform(&mut data, true, &guide),
+        ["monsters"] => monsters::perform(&mut data, false, &guide),
+        ["monsters", "--fix"] => monsters::perform(&mut data, true, &guide),
+        ["pets"] => pets::perform(&mut data, false, &guide),
+        ["pets", "--fix"] => pets::perform(&mut data, true, &guide),
+        ["skills"] => skills::perform(&mut data, false, &guide),
+        ["skills", "--fix"] => skills::perform(&mut data, true, &guide),
+        _ => Err(Error::Misc(format!(
+            "Invalid CLI `match` arguments: {:?}",
+            &args
+        ))),
+    }
+}

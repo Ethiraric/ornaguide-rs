@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ornaguide_rs::{error::Error, guide::OrnaAdminGuide};
+use ornaguide_rs::{data::OrnaData, error::Error, guide::OrnaAdminGuide};
 
 use crate::{backups::Backup, guide_match};
 
@@ -32,4 +32,16 @@ pub fn match_(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     println!("Matching with merge archive {}", path.to_string_lossy());
 
     guide_match::all(&mut merge.data, fix, guide)
+}
+
+/// Execute a CLI subcommand on merges.
+pub fn cli(args: &[&str], guide: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
+    match args {
+        ["match"] => match_(false, &guide),
+        ["match", "--fix"] => match_(true, &guide),
+        _ => Err(Error::Misc(format!(
+            "Invalid CLI `merge` arguments: {:?}",
+            &args
+        ))),
+    }
 }

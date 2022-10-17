@@ -24,6 +24,7 @@ mod output;
 mod ratakor;
 mod sirscor;
 mod thecraigger;
+mod translation;
 
 #[allow(unused_variables, unused_mut)]
 /// Danger zone. Where I test my code.
@@ -55,48 +56,25 @@ fn main2() -> Result<(), Error> {
     let localedb = || LocaleDB::load_from("output/i18n");
 
     let args = std::env::args().collect::<Vec<_>>();
-    match args.iter().map(|s| s.as_str()).collect::<Vec<_>>()[..] {
-        [_, "json", "refresh"] => output::refresh(&guide).map(|_| ()),
-        [_, "json", "refresh", "guide"] => output::refresh_guide(&guide, data()?.codex).map(|_| ()),
-        [_, "json", "refresh", "guide", "static"] => {
-            output::refresh_guide_static(&guide, data()?).map(|_| ())
+    let args = args.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+    if args.len() == 1 {
+        ethi(&guide, data()?)
+    } else {
+        match args[1] {
+            "json" => output::cli(&args[2..], &guide, data()?),
+            "match" => guide_match::cli(&args[2..], &guide, data()?),
+            "sirscor" => sirscor::cli(&args[2..], &guide, data()?),
+            "ratakor" => ratakor::cli(&args[2..], &guide, data()?),
+            "ethiraric" => ethiraric::cli(&args[2..], &guide, data()?),
+            "codex" => codex::cli(&args[2..], &guide, data()?),
+            "translation" => translation::cli(&args[2..], &guide, data()?, localedb()?),
+            "backups" => backups::cli(&args[2..], &guide, data()?),
+            "merge" => merge::cli(&args[2..], &guide, data()?),
+            subcommand => Err(Error::Misc(format!(
+                "Invalid CLI subcommand: {}",
+                subcommand
+            ))),
         }
-        [_, "json", "refresh", "codex"] => output::refresh_codex(&guide, data()?.guide).map(|_| ()),
-        [_, "match", "all"] => guide_match::all(&mut data()?, false, &guide),
-        [_, "match", "all", "--fix"] => {
-            let mut data = data()?;
-            guide_match::all(&mut data, true, &guide)?;
-            data.save_to("output")
-        }
-        [_, "match", "items"] => guide_match::items::perform(&mut data()?, false, &guide),
-        [_, "match", "items", "--fix"] => guide_match::items::perform(&mut data()?, true, &guide),
-        [_, "match", "monsters"] => guide_match::monsters::perform(&mut data()?, false, &guide),
-        [_, "match", "monsters", "--fix"] => {
-            guide_match::monsters::perform(&mut data()?, true, &guide)
-        }
-        [_, "match", "pets"] => guide_match::pets::perform(&mut data()?, false, &guide),
-        [_, "match", "pets", "--fix"] => guide_match::pets::perform(&mut data()?, true, &guide),
-        [_, "match", "skills"] => guide_match::skills::perform(&mut data()?, false, &guide),
-        [_, "match", "skills", "--fix"] => guide_match::skills::perform(&mut data()?, true, &guide),
-        [_, "sirscor", "rarity", file] => sirscor::push_rarity(file, &data()?, &guide),
-        [_, "ratakor", "raid-hp", file] => ratakor::push_raid_hp(file, &data()?, &guide),
-        [_, "ethiraric", "summons", file] => ethiraric::summons::summons(file),
-        [_, "codex", "bugs"] => codex_bugs::check(&data()?, &guide),
-        [_, "codex", "missing"] => codex::fetch::missing(&guide, &data()?).map(|_| ()),
-        [_, "translation", "missing"] => {
-            let mut locales = localedb()?;
-            let missing = codex::fetch::missing_translations(&guide, &data()?, &locales)?;
-            locales.merge_with(missing);
-            locales.save_to("output/i18n")
-        }
-        [_, "translation", locale] => codex::fetch::translations(&guide, &data()?, locale)?
-            .save_to(&format!("output/i18n/{}.json", locale)),
-        [_, "backups", "prune"] => backups::prune("backups_output"),
-        [_, "backups", "merge"] => backups::merge("backups_output", "merges"),
-        [_, "merge", "match"] => merge::match_(false, &guide),
-        [_, "merge", "match", "--fix"] => merge::match_(true, &guide),
-        [_] => ethi(&guide, data()?),
-        _ => Err(Error::Misc(format!("Invalid CLI arguments: {:?}", &args))),
     }
 }
 

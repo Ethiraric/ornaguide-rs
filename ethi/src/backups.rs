@@ -1,7 +1,9 @@
 use std::path::{Path, PathBuf};
 
 use itertools::Itertools;
-use ornaguide_rs::{codex::translation::LocaleDB, data::OrnaData, error::Error};
+use ornaguide_rs::{
+    codex::translation::LocaleDB, data::OrnaData, error::Error, guide::OrnaAdminGuide,
+};
 
 use crate::backups::{changes::BackupChanges, data_merger::DataMerger};
 
@@ -112,4 +114,16 @@ pub fn merge<P: AsRef<Path>>(backups_path: P, output_path: P) -> Result<(), Erro
     };
 
     backup.save_to(output_path, "merge")
+}
+
+/// Execute a CLI subcommand on backups.
+pub fn cli(args: &[&str], _: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
+    match args {
+        ["prune"] => prune("backups_output"),
+        ["merge"] => merge("backups_output", "merges"),
+        _ => Err(Error::Misc(format!(
+            "Invalid CLI `backup` arguments: {:?}",
+            &args
+        ))),
+    }
 }
