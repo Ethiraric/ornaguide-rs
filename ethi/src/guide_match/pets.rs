@@ -185,17 +185,27 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 .into_iter()
                 .sorted()
                 .collect_vec();
-            check.skill_id_vec(
-                "abilities",
-                &pet_skills_ids,
-                &expected_skills_ids,
-                |pet: &mut AdminPet, _| {
-                    fix_abilities_field(pet, &pet_skills_ids, data, &expected_skills_ids, |pet| {
-                        &mut pet.skills
-                    })
-                },
-                data,
-            )?;
+            // TODO(ethiraric, 17/10/22): Remove once we cycle all events. Skill slugs were
+            // kebab-caseified.
+            if !expected_skills_ids.is_empty() {
+                check.skill_id_vec(
+                    "abilities",
+                    &pet_skills_ids,
+                    &expected_skills_ids,
+                    |pet: &mut AdminPet, _| {
+                        fix_abilities_field(
+                            pet,
+                            &pet_skills_ids,
+                            data,
+                            &expected_skills_ids,
+                            |pet| &mut pet.skills,
+                        )
+                    },
+                    data,
+                )?;
+            } else {
+                // println!("Follower {} has no ability on codex.", follower.name);
+            }
         }
     }
     Ok(())

@@ -304,21 +304,27 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 .into_iter()
                 .sorted()
                 .collect::<Vec<_>>();
-            check.skill_id_vec(
-                "abilities",
-                &admin_ability_ids,
-                &expected_ids,
-                |monster: &mut AdminMonster, _| {
-                    fix_abilities_field(
-                        monster,
-                        &admin_ability_ids,
-                        data,
-                        &expected_ids,
-                        |monster| &mut monster.skills,
-                    )
-                },
-                data,
-            )?;
+            // TODO(ethiraric, 17/10/22): Remove once we cycle all events. Skill slugs were
+            // kebab-caseified.
+            if !expected_ids.is_empty() {
+                check.skill_id_vec(
+                    "abilities",
+                    &admin_ability_ids,
+                    &expected_ids,
+                    |monster: &mut AdminMonster, _| {
+                        fix_abilities_field(
+                            monster,
+                            &admin_ability_ids,
+                            data,
+                            &expected_ids,
+                            |monster| &mut monster.skills,
+                        )
+                    },
+                    data,
+                )?;
+            } else {
+                // println!("Monster {} has no ability on codex.", codex_monster.name());
+            }
         }
     }
     Ok(())

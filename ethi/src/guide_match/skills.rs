@@ -182,7 +182,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
 
             // Gives
             // I think I have no way of translating those two.
-            if codex_skill.slug != "CerusDefendPhys" && codex_skill.slug != "CerusDefendMag" {
+            if codex_skill.slug != "defend-2" && codex_skill.slug != "defend-3" {
                 let admin_gives = admin_skill.gives.iter().cloned().sorted().collect_vec();
                 let codex_gives = codex_skill
                     .gives
