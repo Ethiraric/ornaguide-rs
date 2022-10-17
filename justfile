@@ -33,4 +33,9 @@ backup_htmls_now:
   mv htmls-`date "+%Y-%m-%dT%H-%M"`.tar.bz2 backups_html
   rm -r htmls-`date "+%Y-%m-%dT%H-%M"`
 
+merge:
+  cargo run --release --bin ethi backups merge
+
+new_merge_now: backup_output_now merge
+
 cron: new_jsons backup_htmls backup_output
