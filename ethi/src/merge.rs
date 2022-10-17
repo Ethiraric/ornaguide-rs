@@ -37,8 +37,8 @@ pub fn match_(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
 /// Execute a CLI subcommand on merges.
 pub fn cli(args: &[&str], guide: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
     match args {
-        ["match"] => match_(false, &guide),
-        ["match", "--fix"] => match_(true, &guide),
+        ["match"] => match_(false, guide),
+        ["match", "--fix"] => match_(true, guide),
         _ => Err(Error::Misc(format!(
             "Invalid CLI `merge` arguments: {:?}",
             &args
