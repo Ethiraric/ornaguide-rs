@@ -336,11 +336,11 @@ pub fn translations(
     };
 
     strings.add_items(codex.items.items);
-    strings.add_raids_and_events(codex.raids.raids, &data)?;
-    strings.add_monsters_events_families_and_rarities(codex.monsters.monsters, &data)?;
-    strings.add_bosses_events_families_and_rarities(codex.bosses.bosses, &data)?;
-    strings.add_skills_and_statuses(codex.skills.skills, &data)?;
-    strings.add_followers_and_events(codex.followers.followers, &data)?;
+    strings.add_raids_and_events(codex.raids.raids, data)?;
+    strings.add_monsters_events_families_and_rarities(codex.monsters.monsters, data)?;
+    strings.add_bosses_events_families_and_rarities(codex.bosses.bosses, data)?;
+    strings.add_skills_and_statuses(codex.skills.skills, data)?;
+    strings.add_followers_and_events(codex.followers.followers, data)?;
 
     Ok(strings)
 }

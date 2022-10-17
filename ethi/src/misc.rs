@@ -213,3 +213,23 @@ where
 
     de.deserialize_any(V {})
 }
+
+/// Turns a PascalCase name into a kebab-case one.
+#[allow(dead_code)]
+fn kebab_casify(slug: &str) -> String {
+    let mut new_slug = String::new();
+    let mut capital = true;
+    for c in slug.chars() {
+        if c.is_uppercase() {
+            if !capital {
+                new_slug.push('-');
+            }
+            new_slug.push(c.to_ascii_lowercase());
+            capital = true;
+        } else {
+            new_slug.push(c);
+            capital = false;
+        }
+    }
+    new_slug
+}

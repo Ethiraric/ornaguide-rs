@@ -107,7 +107,7 @@ pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> R
 /// See [`crate::backups::Backup::load_from`].
 pub(crate) fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error> {
     let archive_path: &Path = archive_path.as_ref();
-    if archive_path.ends_with(".tar.bz2") {
+    if !archive_path.to_string_lossy().ends_with(".tar.bz2") {
         return Err(Error::Misc(format!(
             "Invalid backup output file: {:?}",
             archive_path
