@@ -145,6 +145,7 @@ where
 }
 
 /// Same as a `serde_json::from_reader` with a file, but adds the filename to the error message, if any.
+#[allow(dead_code)]
 pub fn json_from_file<R, T>(path: &str) -> Result<T, Error>
 where
     R: Read,
