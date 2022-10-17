@@ -18,6 +18,7 @@ mod ethiraric;
 mod guide;
 mod guide_html;
 mod guide_match;
+mod merge;
 mod misc;
 mod output;
 mod ratakor;
@@ -92,6 +93,8 @@ fn main2() -> Result<(), Error> {
             .save_to(&format!("output/i18n/{}.json", locale)),
         [_, "backups", "prune"] => backups::prune("backups_output"),
         [_, "backups", "merge"] => backups::merge("backups_output", "merges"),
+        [_, "merge", "match"] => merge::match_(false, &guide),
+        [_, "merge", "match", "--fix"] => merge::match_(true, &guide),
         [_] => ethi(&guide, data()?),
         _ => Err(Error::Misc(format!("Invalid CLI arguments: {:?}", &args))),
     }
