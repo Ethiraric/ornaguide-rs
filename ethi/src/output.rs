@@ -229,6 +229,24 @@ pub fn refresh_guide_static(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Or
     Ok(data)
 }
 
+/// Refresh the guide's skills.
+pub fn refresh_guide_skills(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: data.codex,
+        guide: GuideData {
+            items: data.guide.items,
+            monsters: data.guide.monsters,
+            skills: crate::guide::fetch::skills(guide)?,
+            pets: data.guide.pets,
+            static_: data.guide.static_,
+        },
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
 /// Refresh all codex output jsons. Fetches all codex entities.
 pub fn refresh_codex(guide: &OrnaAdminGuide, guide_data: GuideData) -> Result<OrnaData, Error> {
     let mut data = OrnaData {
@@ -250,6 +268,25 @@ pub fn refresh_codex(guide: &OrnaAdminGuide, guide_data: GuideData) -> Result<Or
     Ok(data)
 }
 
+/// Refresh the codex's skills.
+pub fn refresh_codex_skills(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: CodexData {
+            items: data.codex.items,
+            raids: data.codex.raids,
+            monsters: data.codex.monsters,
+            bosses: data.codex.bosses,
+            skills: crate::codex::fetch::skills(guide)?,
+            followers: data.codex.followers,
+        },
+        guide: data.guide,
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
 /// Execute a CLI subcommand on outputs.
 pub fn cli<F>(args: &[&str], guide: &OrnaAdminGuide, data: F) -> Result<(), Error>
 where
@@ -258,8 +295,10 @@ where
     match args {
         ["refresh"] => refresh(guide).map(|_| ()),
         ["refresh", "guide"] => refresh_guide(guide, data()?.codex).map(|_| ()),
+        ["refresh", "guide", "skills"] => refresh_guide_skills(guide, data()?).map(|_| ()),
         ["refresh", "guide", "static"] => refresh_guide_static(guide, data()?).map(|_| ()),
         ["refresh", "codex"] => refresh_codex(guide, data()?.guide).map(|_| ()),
+        ["refresh", "codex", "skills"] => refresh_codex_skills(guide, data()?).map(|_| ()),
         _ => Err(Error::Misc(format!(
             "Invalid CLI `json` arguments: {:?}",
             &args
