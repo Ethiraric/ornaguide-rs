@@ -61,7 +61,7 @@ fn main2() -> Result<(), Error> {
         ethi(&guide, data()?)
     } else {
         match args[1] {
-            "json" => output::cli(&args[2..], &guide, data()?),
+            "json" => output::cli(&args[2..], &guide, data),
             "match" => guide_match::cli(&args[2..], &guide, data()?),
             "sirscor" => sirscor::cli(&args[2..], &guide, data()?),
             "ratakor" => ratakor::cli(&args[2..], &guide, data()?),

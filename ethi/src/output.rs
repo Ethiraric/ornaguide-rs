@@ -251,12 +251,15 @@ pub fn refresh_codex(guide: &OrnaAdminGuide, guide_data: GuideData) -> Result<Or
 }
 
 /// Execute a CLI subcommand on outputs.
-pub fn cli(args: &[&str], guide: &OrnaAdminGuide, data: OrnaData) -> Result<(), Error> {
+pub fn cli<F>(args: &[&str], guide: &OrnaAdminGuide, data: F) -> Result<(), Error>
+where
+    F: FnOnce() -> Result<OrnaData, Error>,
+{
     match args {
         ["refresh"] => refresh(guide).map(|_| ()),
-        ["refresh", "guide"] => refresh_guide(guide, data.codex).map(|_| ()),
-        ["refresh", "guide", "static"] => refresh_guide_static(guide, data).map(|_| ()),
-        ["refresh", "codex"] => refresh_codex(guide, data.guide).map(|_| ()),
+        ["refresh", "guide"] => refresh_guide(guide, data()?.codex).map(|_| ()),
+        ["refresh", "guide", "static"] => refresh_guide_static(guide, data()?).map(|_| ()),
+        ["refresh", "codex"] => refresh_codex(guide, data()?.guide).map(|_| ()),
         _ => Err(Error::Misc(format!(
             "Invalid CLI `json` arguments: {:?}",
             &args
