@@ -15,7 +15,7 @@ pub fn cli(
             locales.merge_with(missing);
             locales.save_to("output/i18n")
         }
-        [locale] => crate::codex::fetch::translations(&guide, &data, locale)?
+        [locale] => crate::codex::fetch::translations(guide, &data, locale)?
             .save_to(&format!("output/i18n/{}.json", locale)),
         _ => Err(Error::Misc(format!(
             "Invalid CLI `translation` arguments: {:?}",
