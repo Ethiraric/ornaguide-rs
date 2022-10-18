@@ -21,6 +21,15 @@ pub struct SkillStatusEffect {
     pub chance: i8,
 }
 
+/// A summon from a skill.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub struct SkillSummon {
+    /// The name of the summon.
+    pub name: String,
+    /// The chance (0-100) of the summon happening.
+    pub chance: i8,
+}
+
 /// A trait to extend `Vec<SkillStatusEffect>` specifically.
 pub trait SkillStatusEffects {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide status_effect ids.
@@ -57,7 +66,8 @@ impl SkillStatusEffects for Vec<SkillStatusEffect> {
 }
 
 /// A skill on the codex.
-#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[serde(default)]
 pub struct CodexSkill {
     /// The name of the skill.
     pub name: String,
@@ -75,6 +85,8 @@ pub struct CodexSkill {
     pub causes: Vec<SkillStatusEffect>,
     /// The effects the skill gives to the caster.
     pub gives: Vec<SkillStatusEffect>,
+    /// The entities summoned by the spell.
+    pub summons: Vec<Vec<SkillSummon>>,
 }
 
 impl CodexSkill {

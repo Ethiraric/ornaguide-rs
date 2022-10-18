@@ -26,7 +26,7 @@ pub use monster::{
     Monster as CodexMonster, Monsters as CodexMonsters, Raid as CodexRaid, Raids as CodexRaids,
     Tag,
 };
-pub use skill::{CodexSkill, CodexSkills, SkillStatusEffect, SkillStatusEffects};
+pub use skill::{CodexSkill, CodexSkills, SkillStatusEffect, SkillStatusEffects, SkillSummon};
 
 #[derive(Debug)]
 pub struct SkillEntry {
