@@ -30,7 +30,7 @@ fn parse_status_effects(status_effects_root: &NodeRef) -> Result<Vec<SkillStatus
         // Iterate over all `div`s.
         .following_siblings()
         .filter(is_html_tag_node)
-        .filter_map(|node| {
+        .map_while(|node| {
             descend_if_tag(&node, "div", |node, _| {
                 // Don't attempt to parse what is not a `div`.
                 let span = descend_to(node, "span", "skill status effect")?;
@@ -75,7 +75,7 @@ fn parse_summons(summons_root: &NodeRef) -> Result<Vec<Vec<SkillSummon>>, Error>
         // Iterate over all outer `div`s.
         .following_siblings()
         .filter(is_html_tag_node)
-        .filter_map(|node| {
+        .map_while(|node| {
             // `descend_if_tag` will return `None` when we hit another `h4`.
             // Keep on while it matches our outer `div`s.
             // The closure returns a `Result<Vec<SkillSummon>, Error>`.
