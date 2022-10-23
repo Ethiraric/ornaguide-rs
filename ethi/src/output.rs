@@ -229,6 +229,24 @@ pub fn refresh_guide_static(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Or
     Ok(data)
 }
 
+/// Refresh the guide's items.
+pub fn refresh_guide_items(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: data.codex,
+        guide: GuideData {
+            items: crate::guide::fetch::items(guide)?,
+            monsters: data.guide.monsters,
+            skills: data.guide.skills,
+            pets: data.guide.pets,
+            static_: data.guide.static_,
+        },
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
 /// Refresh the guide's skills.
 pub fn refresh_guide_skills(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
     let data = OrnaData {
@@ -296,6 +314,7 @@ where
         ["refresh"] => refresh(guide).map(|_| ()),
         ["refresh", "guide"] => refresh_guide(guide, data()?.codex).map(|_| ()),
         ["refresh", "guide", "skills"] => refresh_guide_skills(guide, data()?).map(|_| ()),
+        ["refresh", "guide", "items"] => refresh_guide_items(guide, data()?).map(|_| ()),
         ["refresh", "guide", "static"] => refresh_guide_static(guide, data()?).map(|_| ()),
         ["refresh", "codex"] => refresh_codex(guide, data()?.guide).map(|_| ()),
         ["refresh", "codex", "skills"] => refresh_codex_skills(guide, data()?).map(|_| ()),
