@@ -3,10 +3,10 @@ use std::{
     io::{BufWriter, Write},
 };
 
+use futures::Future;
 use reqwest::{
-    blocking::{Client, Response},
     header::{HeaderMap, HeaderValue},
-    StatusCode, Url,
+    Client, Response, StatusCode, Url,
 };
 
 use crate::{
@@ -40,9 +40,17 @@ pub(crate) struct Http {
     playorna_host: String,
 }
 
+pub fn block_on<F: Future>(future: F) -> F::Output {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(future)
+}
+
 /// Perform a POST request on the URL, serializing the form as an urlencoded body and setting the
 /// referer to the URL.
-fn post_forms_to(
+async fn async_post_forms_to(
     http: &Client,
     url: &str,
     form: ParsedForm,
@@ -61,10 +69,11 @@ fn post_forms_to(
         .header("Content-Type", "application/x-www-form-urlencoded")
         .header("Origin", "orna.guide")
         .body(body)
-        .send()?;
+        .send()
+        .await?;
 
     let status = response.status();
-    let text = response.text()?;
+    let text = response.text().await?;
     parse_post_error_html(url, &text, form_root_name)?;
 
     if status.is_success() {
@@ -79,10 +88,21 @@ fn post_forms_to(
     }
 }
 
+/// Perform a POST request on the URL, serializing the form as an urlencoded body and setting the
+/// referer to the URL.
+fn post_forms_to(
+    http: &Client,
+    url: &str,
+    form: ParsedForm,
+    form_root_name: &str,
+) -> Result<(), Error> {
+    block_on(async_post_forms_to(http, url, form, form_root_name))
+}
+
 /// Send an HTTP GET request and expect that the response will be a 200 OK.
 /// If the response isn't, return an error.
-fn get_expect_200(http: &Client, url: &str) -> Result<Response, Error> {
-    let response = http.get(url).send()?;
+async fn get_expect_200(http: &Client, url: &str) -> Result<Response, Error> {
+    let response = http.get(url).send().await?;
     if response.status() == StatusCode::OK {
         Ok(response)
     } else {
@@ -90,15 +110,15 @@ fn get_expect_200(http: &Client, url: &str) -> Result<Response, Error> {
             "GET".to_string(),
             url.to_string(),
             response.status().as_u16(),
-            response.text()?,
+            response.text().await?,
         ))
     }
 }
 
 /// Execute a GET HTTP request and save the output.
-fn get_and_save(http: &Client, url: &str) -> Result<String, Error> {
-    let response = get_expect_200(http, url)?;
-    let body = response.text()?;
+async fn async_get_and_save(http: &Client, url: &str) -> Result<String, Error> {
+    let response = get_expect_200(http, url).await?;
+    let body = response.text().await?;
     let url = Url::parse(url).unwrap();
     if url.host_str().unwrap() != "localhost" {
         let path = url.path().replace('/', "_");
@@ -112,6 +132,13 @@ fn get_and_save(http: &Client, url: &str) -> Result<String, Error> {
         write!(writer, "{}", body)?;
     }
     Ok(body)
+}
+
+/// Execute a GET HTTP request and save the output.
+/// We need to have both the `send` and the `text` calls run on the same runtime. We cannot use two
+/// calls to `block_on` in `async_get_and_save`.
+fn get_and_save(http: &Client, url: &str) -> Result<String, Error> {
+    block_on(async_get_and_save(http, url))
 }
 
 /// Cycles through the different pages of the route and reads each table.
