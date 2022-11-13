@@ -15,6 +15,7 @@ use crate::{
     monsters::admin::AdminMonster,
     pets::admin::AdminPet,
     skills::admin::AdminSkill,
+    utils::block_on_this_thread,
 };
 
 /// The main interface for the guide.
@@ -70,15 +71,57 @@ impl OrnaAdminGuide {
             )?),
         })
     }
+
+    /// Retrieve the item with the given id from the guide (asynchronous).
+    pub async fn async_admin_retrieve_item_by_id(&self, id: u32) -> Result<AdminItem, Error> {
+        Ok(AdminItem {
+            id,
+            ..AdminItem::try_from(
+                self.guide
+                    .http()
+                    .async_admin_retrieve_item_by_id(id)
+                    .await?,
+            )?
+        })
+    }
+
+    pub async fn async_admin_retrieve_monster_by_id(&self, id: u32) -> Result<AdminMonster, Error> {
+        Ok(AdminMonster {
+            id,
+            ..AdminMonster::try_from(
+                self.guide
+                    .http()
+                    .async_admin_retrieve_monster_by_id(id)
+                    .await?,
+            )?
+        })
+    }
+
+    pub async fn async_admin_retrieve_skill_by_id(&self, id: u32) -> Result<AdminSkill, Error> {
+        Ok(AdminSkill {
+            id,
+            ..AdminSkill::try_from(
+                self.guide
+                    .http()
+                    .async_admin_retrieve_skill_by_id(id)
+                    .await?,
+            )?
+        })
+    }
+
+    pub async fn async_admin_retrieve_pet_by_id(&self, id: u32) -> Result<AdminPet, Error> {
+        Ok(AdminPet {
+            id,
+            ..AdminPet::try_from(self.guide.http().async_admin_retrieve_pet_by_id(id).await?)?
+        })
+    }
 }
 
 impl AdminGuide for OrnaAdminGuide {
     fn admin_retrieve_item_by_id(&self, id: u32) -> Result<AdminItem, Error> {
-        Ok(AdminItem {
-            id,
-            ..AdminItem::try_from(self.guide.http().admin_retrieve_item_by_id(id)?)?
-        })
+        block_on_this_thread(self.async_admin_retrieve_item_by_id(id))
     }
+
     fn admin_save_item(&self, item: AdminItem) -> Result<(), Error> {
         self.guide
             .http()
@@ -102,14 +145,8 @@ impl AdminGuide for OrnaAdminGuide {
         self.guide.http().admin_add_item(ParsedForm::from(item))
     }
 
-    fn admin_retrieve_monster_by_id(
-        &self,
-        id: u32,
-    ) -> Result<crate::monsters::admin::AdminMonster, Error> {
-        Ok(AdminMonster {
-            id,
-            ..AdminMonster::try_from(self.guide.http().admin_retrieve_monster_by_id(id)?)?
-        })
+    fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<AdminMonster, Error> {
+        block_on_this_thread(self.async_admin_retrieve_monster_by_id(id))
     }
 
     fn admin_save_monster(
@@ -141,10 +178,7 @@ impl AdminGuide for OrnaAdminGuide {
     }
 
     fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<AdminSkill, Error> {
-        Ok(AdminSkill {
-            id,
-            ..AdminSkill::try_from(self.guide.http().admin_retrieve_skill_by_id(id)?)?
-        })
+        block_on_this_thread(self.async_admin_retrieve_skill_by_id(id))
     }
 
     fn admin_save_skill(&self, skill: AdminSkill) -> Result<(), Error> {
@@ -171,10 +205,7 @@ impl AdminGuide for OrnaAdminGuide {
     }
 
     fn admin_retrieve_pet_by_id(&self, id: u32) -> Result<AdminPet, Error> {
-        Ok(AdminPet {
-            id,
-            ..AdminPet::try_from(self.guide.http().admin_retrieve_pet_by_id(id)?)?
-        })
+        block_on_this_thread(self.async_admin_retrieve_pet_by_id(id))
     }
 
     fn admin_save_pet(&self, pet: AdminPet) -> Result<(), Error> {

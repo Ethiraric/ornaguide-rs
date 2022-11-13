@@ -1,27 +1,40 @@
+use std::sync::Arc;
+
+use futures::{StreamExt, TryStreamExt};
 use ornaguide_rs::{
     error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
-    items::admin::AdminItems,
+    items::admin::{AdminItem, AdminItems},
     monsters::admin::AdminMonsters,
     pets::admin::AdminPets,
     skills::admin::AdminSkills,
 };
 
-use crate::{misc::bar, retry_once};
+use crate::{
+    misc::{bar, block_on_this_thread},
+    retry_once,
+};
 
 pub fn items(guide: &OrnaAdminGuide) -> Result<AdminItems, Error> {
     let sleep = crate::config::ornaguide_sleep()? as u64;
     let items = guide.admin_retrieve_items_list()?;
-    let mut ret = Vec::with_capacity(items.len());
-    let bar = bar(items.len() as u64);
-    for item in items.iter() {
-        bar.set_message(item.name.clone());
-        ret.push(retry_once!(guide.admin_retrieve_item_by_id(item.id))?);
-        bar.inc(1);
-        if sleep > 0 {
-            std::thread::sleep(std::time::Duration::from_secs(sleep));
-        }
-    }
+    let bar = Arc::new(bar(items.len() as u64));
+    let ret = block_on_this_thread(
+        futures::stream::iter(items.into_iter().map(|item| {
+            let cloned_bar = bar.clone();
+            async move {
+                let admin_item = retry_once!(guide.async_admin_retrieve_item_by_id(item.id).await)?;
+                cloned_bar.set_message(item.name.clone());
+                cloned_bar.inc(1);
+                if sleep > 0 {
+                    tokio::time::sleep(std::time::Duration::from_secs(sleep)).await
+                }
+                Result::<AdminItem, Error>::Ok(admin_item)
+            }
+        }))
+        .buffered(if sleep > 0 { 1 } else { 10 })
+        .try_collect::<Vec<AdminItem>>(),
+    )?;
     bar.finish_with_message("AItems  fetched");
     Ok(AdminItems { items: ret })
 }

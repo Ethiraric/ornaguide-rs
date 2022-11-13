@@ -3,6 +3,7 @@ use std::{
     io::{BufReader, Read},
 };
 
+use futures::Future;
 use indicatif::{ProgressBar, ProgressStyle};
 use itertools::Itertools;
 use ornaguide_rs::{data::OrnaData, error::Error};
@@ -233,4 +234,13 @@ fn kebab_casify(slug: &str) -> String {
         }
     }
     new_slug
+}
+
+/// Build a tokio runtime for the current thread and await the future on it.
+pub fn block_on_this_thread<F: Future>(future: F) -> F::Output {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(future)
 }

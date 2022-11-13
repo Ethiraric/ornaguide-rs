@@ -3,7 +3,6 @@ use std::{
     io::{BufWriter, Write},
 };
 
-use futures::Future;
 use reqwest::{
     header::{HeaderMap, HeaderValue},
     Client, Response, StatusCode, Url,
@@ -32,20 +31,13 @@ use crate::{
         html_list_parser::{parse_list_html, Entry, ParsedTable},
         post_error_parser::parse_post_error_html,
     },
+    utils::block_on_this_thread,
 };
 
 pub(crate) struct Http {
     http: Client,
     orna_guide_host: String,
     playorna_host: String,
-}
-
-pub fn block_on<F: Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 /// Perform a POST request on the URL, serializing the form as an urlencoded body and setting the
@@ -96,7 +88,7 @@ fn post_forms_to(
     form: ParsedForm,
     form_root_name: &str,
 ) -> Result<(), Error> {
-    block_on(async_post_forms_to(http, url, form, form_root_name))
+    block_on_this_thread(async_post_forms_to(http, url, form, form_root_name))
 }
 
 /// Send an HTTP GET request and expect that the response will be a 200 OK.
@@ -138,7 +130,7 @@ async fn async_get_and_save(http: &Client, url: &str) -> Result<String, Error> {
 /// We need to have both the `send` and the `text` calls run on the same runtime. We cannot use two
 /// calls to `block_on` in `async_get_and_save`.
 fn get_and_save(http: &Client, url: &str) -> Result<String, Error> {
-    block_on(async_get_and_save(http, url))
+    block_on_this_thread(async_get_and_save(http, url))
 }
 
 /// Cycles through the different pages of the route and reads each table.
@@ -232,9 +224,20 @@ impl Http {
     // --- Guide Admin ---
 
     // Guide Admin Items
-    pub(crate) fn admin_retrieve_item_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
+    pub(crate) async fn async_admin_retrieve_item_by_id(
+        &self,
+        id: u32,
+    ) -> Result<ParsedForm, Error> {
         let url = format!("{}/admin/items/item/{}/change/", self.orna_guide_host, id);
-        parse_item_html(&get_and_save(&self.http, &url)?, ITEM_FORM_FIELD_NAMES)
+        parse_item_html(
+            &async_get_and_save(&self.http, &url).await?,
+            ITEM_FORM_FIELD_NAMES,
+        )
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn admin_retrieve_item_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
+        block_on_this_thread(self.async_admin_retrieve_item_by_id(id))
     }
 
     pub(crate) fn admin_save_item(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
@@ -259,12 +262,23 @@ impl Http {
     }
 
     // Guide Admin Monsters
-    pub(crate) fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
+    pub(crate) async fn async_admin_retrieve_monster_by_id(
+        &self,
+        id: u32,
+    ) -> Result<ParsedForm, Error> {
         let url = format!(
             "{}/admin/monsters/monster/{}/change/",
             self.orna_guide_host, id
         );
-        parse_monster_html(&get_and_save(&self.http, &url)?, MONSTER_FORM_FIELD_NAMES)
+        parse_monster_html(
+            &async_get_and_save(&self.http, &url).await?,
+            MONSTER_FORM_FIELD_NAMES,
+        )
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn admin_retrieve_monster_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
+        block_on_this_thread(self.async_admin_retrieve_monster_by_id(id))
     }
 
     pub(crate) fn admin_save_monster(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
@@ -292,9 +306,20 @@ impl Http {
     }
 
     // Guide Admin Skills
-    pub(crate) fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
+    pub(crate) async fn async_admin_retrieve_skill_by_id(
+        &self,
+        id: u32,
+    ) -> Result<ParsedForm, Error> {
         let url = format!("{}/admin/skills/skill/{}/change/", self.orna_guide_host, id);
-        parse_skill_html(&get_and_save(&self.http, &url)?, SKILL_FORM_FIELD_NAMES)
+        parse_skill_html(
+            &async_get_and_save(&self.http, &url).await?,
+            SKILL_FORM_FIELD_NAMES,
+        )
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn admin_retrieve_skill_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
+        block_on_this_thread(self.async_admin_retrieve_skill_by_id(id))
     }
 
     pub(crate) fn admin_save_skill(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
@@ -319,6 +344,22 @@ impl Http {
     }
 
     // Guide Admin Pets
+    pub(crate) async fn async_admin_retrieve_pet_by_id(
+        &self,
+        id: u32,
+    ) -> Result<ParsedForm, Error> {
+        let url = format!("{}/admin/pets/pet/{}/change/", self.orna_guide_host, id);
+        parse_pet_html(
+            &async_get_and_save(&self.http, &url).await?,
+            PET_FORM_FIELD_NAMES,
+        )
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn admin_retrieve_pet_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
+        block_on_this_thread(self.async_admin_retrieve_pet_by_id(id))
+    }
+
     pub(crate) fn admin_save_pet(&self, id: u32, form: ParsedForm) -> Result<(), Error> {
         post_forms_to(
             &self.http,
@@ -326,11 +367,6 @@ impl Http {
             form,
             "#pet_form",
         )
-    }
-
-    pub(crate) fn admin_retrieve_pet_by_id(&self, id: u32) -> Result<ParsedForm, Error> {
-        let url = format!("{}/admin/pets/pet/{}/change/", self.orna_guide_host, id);
-        parse_pet_html(&get_and_save(&self.http, &url)?, PET_FORM_FIELD_NAMES)
     }
 
     pub(crate) fn admin_retrieve_pets_list(&self) -> Result<Vec<Entry>, Error> {
