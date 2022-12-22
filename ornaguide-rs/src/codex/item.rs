@@ -27,6 +27,7 @@ pub enum Element {
 
 /// Stats of an item.
 #[derive(Debug, Default, Serialize, Deserialize, Clone, Eq, PartialEq)]
+#[serde(default)]
 pub struct Stats {
     /// The base attack stat of the item.
     pub attack: Option<i16>,
@@ -60,6 +61,10 @@ pub struct Stats {
     pub orn_bonus: Option<u8>,
     /// The luck bonus of the item (at common quality).
     pub luck_bonus: Option<u8>,
+    /// Whether the item is two_handed.
+    /// This will be set to false for all items to which this does not apply. The online codex has
+    /// no mention along the lines of "not two-handed".
+    pub two_handed: bool,
 }
 
 /// The ability the item has in off-hand.

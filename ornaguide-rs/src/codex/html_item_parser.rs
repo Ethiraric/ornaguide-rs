@@ -228,6 +228,7 @@ fn parse_stats(node: Option<&NodeRef>) -> Result<Option<Stats>, Error> {
                     "Arcane" => stats.element = Some(Element::Arcane),
                     "Dragon" => stats.element = Some(Element::Dragon),
                     "Physical" => stats.element = Some(Element::Physical),
+                    "Two handed" => stats.two_handed = true,
                     _ => {
                         return Err(Error::HTMLParsingError(format!(
                             "Failed to find ':' when parsing stat: \"{}\"",
