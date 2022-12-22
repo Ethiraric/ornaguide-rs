@@ -15,6 +15,8 @@ use crate::backups::Backup;
 pub struct CodexRemoval {
     /// Skill slugs to remove.
     pub skills: Vec<String>,
+    /// Raid slugs to remove.
+    pub raids: Vec<String>,
 }
 
 /// Removals to be made on a backup.
@@ -88,6 +90,9 @@ impl CodexRemoval {
         data.skills
             .skills
             .retain(|skill| !self.skills.contains(&skill.slug));
+        data.raids
+            .raids
+            .retain(|raid| !self.raids.contains(&raid.slug));
     }
 }
 
