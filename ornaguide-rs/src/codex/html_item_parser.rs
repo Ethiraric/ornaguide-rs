@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use std::{io::BufWriter, ops::Deref};
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
 
@@ -14,10 +14,32 @@ use crate::{
     },
 };
 
+/// Aggregation of all fields that are tagged with the `codex-page-meta` class.
+/// This is kind of a dumpster class where all kinds of fields are put in.
+struct CodexMeta {
+    /// Whether the item is exotic.
+    exotic: bool,
+    /// The tier of the item.
+    tier: u8,
+    /// The rarity of the item, if any.
+    rarity: Option<String>,
+    /// Which classes may use the item.
+    useable_by: Option<String>,
+}
+
+impl Default for CodexMeta {
+    fn default() -> Self {
+        Self {
+            exotic: false,
+            tier: 1,
+            rarity: None,
+            useable_by: None,
+        }
+    }
+}
+
 /// Parse the tier of the skill.
-fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
-    let text = node_to_text(node);
-    let text = text.trim();
+fn parse_tier(text: &str) -> Result<u8, Error> {
     if let Some(pos) = text.find(':') {
         let (_, tier_with_star) = text.split_at(pos + 1);
         let mut it = tier_with_star.trim().chars();
@@ -29,6 +51,53 @@ fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
             text
         )))
     }
+}
+
+/// Parse all `codex-page-meta` nodes and fill a `CodexMeta` struct.
+fn parse_codex_page_meta(page: &NodeRef) -> Result<CodexMeta, Error> {
+    let mut ret = CodexMeta::default();
+    for meta_node in descend_iter(page, ".codex-page-meta", "page")? {
+        // First, check if the node is an `exotic` node.
+        if let Ok(Some(exotic_node)) =
+            try_descend_to(meta_node.as_node(), ".exotic", "codex-page-meta")
+        {
+            let contents = exotic_node.as_node().text_contents();
+            let contents = contents.trim();
+            if contents == "Exotic" {
+                ret.exotic = true;
+            } else {
+                return Err(Error::HTMLParsingError(format!(
+                    "Invalid exotic node contents: {}",
+                    contents
+                )));
+            }
+        } else {
+            let contents = meta_node.text_contents();
+            let contents = contents.trim();
+            // If not, it may be a Tier node.
+            if contents.starts_with("Tier:") {
+                ret.tier = parse_tier(contents)?;
+            }
+            // If not, it may be a Rarity node.
+            else if let Some(rarity) = contents.strip_prefix("Rarity:") {
+                // TODO(ethiraric, 14/11/2022): Make it an enum.
+                ret.rarity = Some(rarity.trim().to_string());
+            }
+            // If not, it may be a Useable By node.
+            else if let Some(useable_by) = contents.strip_prefix("Useable by:") {
+                // TODO(ethiraric, 14/11/2022): Make it a `Vec<Enum>`.
+                ret.useable_by = Some(useable_by.trim().to_string());
+            } else {
+                let mut buf = BufWriter::new(Vec::new());
+                meta_node.as_node().serialize(&mut buf)?;
+                return Err(Error::HTMLParsingError(format!(
+                    "Unknown codex-page-meta: {}",
+                    String::from_utf8(buf.into_inner()?)?
+                )));
+            }
+        }
+    }
+    Ok(ret)
 }
 
 /// Parse a `<a>` node to a `name`, `uri`, `icon` tuple.
@@ -285,7 +354,7 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
     let page = descend_to(&html, ".codex-page", "html")?;
     let icon = descend_to(page.as_node(), ".codex-page-icon", "page")?;
     let mut description_it = descend_iter(page.as_node(), ".codex-page-description", "page")?;
-    let tier = descend_to(page.as_node(), ".codex-page-meta", "page")?;
+    let codex_page_meta = parse_codex_page_meta(page.as_node())?;
     let stats_parent = try_descend_to(page.as_node(), ".codex-stats", "page")?;
 
     let mut causes = vec![];
@@ -334,7 +403,7 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
         name: node_to_text(name.as_node()),
         icon: parse_icon(icon.as_node())?,
         description,
-        tier: parse_tier(tier.as_node())?,
+        tier: codex_page_meta.tier,
         stats: parse_stats(stats_parent.as_ref().map(|n| n.as_node()))?,
         ability: parse_ability(description_it.next().as_ref().map(|n| n.as_node()))?,
         causes,
@@ -350,6 +419,7 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
 /// Parses an item page from `playorna.com` and returns the details about the given item.
 /// The page needs not be in English and only some of the fields are selected.
 /// Fields ignored:
+///   - tier
 ///   - stats
 ///   - causes
 ///   - cures
@@ -366,7 +436,6 @@ pub fn parse_html_codex_item_translation(contents: &str, slug: String) -> Result
     let page = descend_to(&html, ".codex-page", "html")?;
     let icon = descend_to(page.as_node(), ".codex-page-icon", "page")?;
     let mut description_it = descend_iter(page.as_node(), ".codex-page-description", "page")?;
-    let tier = descend_to(page.as_node(), ".codex-page-meta", "page")?;
 
     let description = if let Some(description) = description_it.next() {
         node_to_text(description.as_node())
@@ -381,7 +450,7 @@ pub fn parse_html_codex_item_translation(contents: &str, slug: String) -> Result
         name: node_to_text(name.as_node()),
         icon: parse_icon(icon.as_node())?,
         description,
-        tier: parse_tier(tier.as_node())?,
+        tier: 0,
         stats: None,
         ability: None,
         causes: vec![],
