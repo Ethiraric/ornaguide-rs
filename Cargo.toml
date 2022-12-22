@@ -5,3 +5,7 @@ members = [
   "api",
   "ethi",
 ]
+
+[profile.release-lto]
+inherits = "release"
+lto = true
