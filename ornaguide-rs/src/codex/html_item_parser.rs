@@ -223,7 +223,9 @@ fn parse_stats(node: Option<&NodeRef>) -> Result<Option<Stats>, Error> {
                     "Gold Bonus:" => stats.gold_bonus = Some(value.parse()?),
                     "Orn Bonus:" => stats.orn_bonus = Some(value.parse()?),
                     "Luck Bonus:" => stats.luck_bonus = Some(value.parse()?),
-                    _ => panic!("Failed to parse stat: {}", text),
+                    "View distance:" => stats.view_distance = Some(value.parse()?),
+                    "Monster attraction:" => stats.monster_attraction = Some(value.parse()?),
+                    _ => panic!("Failed to parse stat: {text}"),
                 }
             } else {
                 match text {

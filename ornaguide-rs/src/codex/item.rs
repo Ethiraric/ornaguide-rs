@@ -82,6 +82,10 @@ pub struct Stats {
     pub two_handed: bool,
     /// Equipment slot on which the item is equipped.
     pub place: Option<Place>,
+    /// How much View Distance the item gives (%).
+    pub view_distance: Option<u8>,
+    /// How much Monster Attraction the item gives (%).
+    pub monster_attraction: Option<u8>,
 }
 
 /// The ability the item has in off-hand.
