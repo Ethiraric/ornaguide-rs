@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     data::GuideData,
     error::Error,
@@ -23,6 +25,19 @@ pub enum Element {
     Arcane,
     Dragon,
     Physical,
+}
+
+/// An equipment slot in which the item can be equipped.
+#[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
+pub enum Place {
+    Head,
+    Weapon,
+    Torso,
+    OffHand,
+    Legs,
+    Accessory,
+    Armor,
+    Material,
 }
 
 /// Stats of an item.
@@ -65,6 +80,8 @@ pub struct Stats {
     /// This will be set to false for all items to which this does not apply. The online codex has
     /// no mention along the lines of "not two-handed".
     pub two_handed: bool,
+    /// Equipment slot on which the item is equipped.
+    pub place: Option<Place>,
 }
 
 /// The ability the item has in off-hand.
@@ -306,6 +323,44 @@ impl ToString for Element {
             Element::Arcane => "Arcane".to_string(),
             Element::Dragon => "Dragon".to_string(),
             Element::Physical => "Physical".to_string(),
+        }
+    }
+}
+
+impl ToString for Place {
+    fn to_string(&self) -> String {
+        match self {
+            Place::Head => "Head".to_string(),
+            Place::Weapon => "Weapon".to_string(),
+            Place::Torso => "Torso".to_string(),
+            Place::OffHand => "Off-hand".to_string(),
+            Place::Legs => "Legs".to_string(),
+            Place::Accessory => "Accessory".to_string(),
+            Place::Armor => "Armor".to_string(),
+            // TODO(ethiraric, 26/01/2023): Check if this is a typo.
+            Place::Material => "material".to_string(),
+        }
+    }
+}
+
+impl FromStr for Place {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "Head" => Ok(Place::Head),
+            "Weapon" => Ok(Place::Weapon),
+            "Torso" => Ok(Place::Torso),
+            "Off-hand" => Ok(Place::OffHand),
+            "Legs" => Ok(Place::Legs),
+            "Accessory" => Ok(Place::Accessory),
+            "Armor" => Ok(Place::Armor),
+            "Armor (for adornments)" => Ok(Place::Armor),
+            "material" => Ok(Place::Material),
+            _ => Err(Self::Err::ParseEnumError(
+                "Place".to_string(),
+                format!("Invalid value: {}", s),
+            )),
         }
     }
 }

@@ -4,7 +4,8 @@ use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
 
 use crate::{
     codex::item::{
-        Ability, Cause, Cure, DroppedBy, Element, Give, Immunity, Item, Stats, UpgradeMaterial,
+        Ability, Cause, Cure, DroppedBy, Element, Give, Immunity, Item, Place, Stats,
+        UpgradeMaterial,
     },
     error::Error,
     guide::html_utils::parse_tags,
@@ -25,6 +26,8 @@ struct CodexMeta {
     rarity: Option<String>,
     /// Which classes may use the item.
     useable_by: Option<String>,
+    /// Equipment slot on which the item is equipped.
+    place: Option<Place>,
 }
 
 impl Default for CodexMeta {
@@ -34,6 +37,7 @@ impl Default for CodexMeta {
             tier: 1,
             rarity: None,
             useable_by: None,
+            place: None,
         }
     }
 }
@@ -87,6 +91,10 @@ fn parse_codex_page_meta(page: &NodeRef) -> Result<CodexMeta, Error> {
             else if let Some(useable_by) = contents.strip_prefix("Useable by:") {
                 // TODO(ethiraric, 14/11/2022): Make it a `Vec<Enum>`.
                 ret.useable_by = Some(useable_by.trim().to_string());
+            }
+            // If not, it may be a Place node.
+            else if let Some(place) = contents.strip_prefix("Place:") {
+                ret.place = Some(place.trim().parse()?);
             } else {
                 let mut buf = BufWriter::new(Vec::new());
                 meta_node.as_node().serialize(&mut buf)?;
