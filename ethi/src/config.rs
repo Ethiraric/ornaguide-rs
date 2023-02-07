@@ -41,10 +41,19 @@ lazy_static! {
     pub static ref CONFIG: Result<RwLock<Config>, Error> = load().map(RwLock::new);
 }
 
+fn sanitize_config(config: &mut Config) {
+    if config.playorna_host.ends_with('/') {
+        config.playorna_host = config.playorna_host.trim_end_matches('/').to_string();
+    }
+    if config.ornaguide_host.ends_with('/') {
+        config.ornaguide_host = config.ornaguide_host.trim_end_matches('/').to_string();
+    }
+}
+
 /// Load the config from the environment.
 fn load() -> Result<Config, Error> {
     let _ = dotenv().map_err(|err| Error::Misc(format!("Failed to load .env: {}", err)))?;
-    Ok(Config {
+    let mut config = Config {
         ornaguide_host: dotenv::var("ORNAGUIDE_HOST")
             .unwrap_or_else(|_| "https://orna.guide".to_string()),
         ornaguide_cookie: dotenv::var("ORNAGUIDE_COOKIE").map_err(|err| {
@@ -61,7 +70,10 @@ fn load() -> Result<Config, Error> {
         playorna_sleep: dotenv::var("PLAYORNA_SLEEP")
             .unwrap_or_else(|_| "0".to_string())
             .parse()?,
-    })
+    };
+    sanitize_config(&mut config);
+
+    Ok(config)
 }
 
 /// Run a callable with a reference to the `Config` instance.
