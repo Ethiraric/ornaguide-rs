@@ -1,10 +1,13 @@
+use std::path::PathBuf;
+
 use itertools::Itertools;
 use ornaguide_rs::{data::OrnaData, error::Error, guide::OrnaAdminGuide};
 
 use crate::{backups::Backup, guide_match};
 
-pub fn match_(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
-    let (path, mut merge) = std::fs::read_dir("merges")?
+/// Retrieve the latest merge archive (both its path and contents).
+fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
+    std::fs::read_dir("merges")?
         // Filter out directory entries we can't read.
         .filter_map(|entry| entry.ok())
         // Filter out directories.
@@ -27,11 +30,25 @@ pub fn match_(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
                 None
             }
         })
-        .ok_or_else(|| Error::Misc("Failed to find a merge file".to_string()))?;
+        .ok_or_else(|| Error::Misc("Failed to find a merge file".to_string()))
+}
 
+pub fn match_(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    let (path, mut merge) = get_merge_archive()?;
     println!("Matching with merge archive {}", path.to_string_lossy());
-
     guide_match::all(&mut merge.data, fix, guide)
+}
+
+pub fn match_skills(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    let (path, mut merge) = get_merge_archive()?;
+    println!("Matching with merge archive {}", path.to_string_lossy());
+    guide_match::skills::perform(&mut merge.data, fix, guide)
+}
+
+pub fn match_monsters(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    let (path, mut merge) = get_merge_archive()?;
+    println!("Matching with merge archive {}", path.to_string_lossy());
+    guide_match::monsters::perform(&mut merge.data, fix, guide)
 }
 
 /// Execute a CLI subcommand on merges.
@@ -39,6 +56,10 @@ pub fn cli(args: &[&str], guide: &OrnaAdminGuide, _: OrnaData) -> Result<(), Err
     match args {
         ["match"] => match_(false, guide),
         ["match", "--fix"] => match_(true, guide),
+        ["match", "skills"] => match_skills(false, guide),
+        ["match", "skills", "--fix"] => match_skills(true, guide),
+        ["match", "monsters"] => match_monsters(false, guide),
+        ["match", "monsters", "--fix"] => match_monsters(true, guide),
         _ => Err(Error::Misc(format!(
             "Invalid CLI `merge` arguments: {:?}",
             &args
