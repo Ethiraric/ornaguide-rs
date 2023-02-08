@@ -161,6 +161,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 .sorted()
                 .collect_vec();
             static RISE_OF_KERB_STR: &str = "Rise of Kerberos";
+            static RETURN_OF_KERB_STR: &str = "Return of Kerberos";
             let codex_events = codex_monster
                 .events()
                 .iter()
@@ -168,7 +169,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 // TODO(ethiraric, 14/07/2022): Remove this once codex is updated.
                 .chain({
                     if admin_monster.name.contains("Kerberos") {
-                        vec![RISE_OF_KERB_STR].into_iter()
+                        vec![RISE_OF_KERB_STR, RETURN_OF_KERB_STR].into_iter()
                     } else {
                         vec![].into_iter()
                     }

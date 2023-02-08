@@ -19,7 +19,7 @@ enum CodexGenericMonsterOwned {
     Raid(CodexRaid),
 }
 
-/// Get a generic monster from an URI.
+/// Fetch a generic monster from an URI on the codex.
 fn get_generic_monster(
     guide: &OrnaAdminGuide,
     uri: &str,
@@ -167,22 +167,44 @@ fn swansong_missing_blind(_: &OrnaData, guide: &OrnaAdminGuide) -> Result<Status
     }
 }
 
-/// Check for Kerberos monsters / raids / bosses missing their Rise of Kerberos event.
+/// Check for Kerberos monsters / raids / bosses missing their Rise/Return of Kerberos event.
 fn kerberos_missing_event(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<Status, Error> {
-    for monster in data
-        .guide
-        .monsters
-        .monsters
-        .iter()
-        .filter(|monster| monster.spawns.contains(&18))
-    // Rise of Kerberos
+    for monster in data.guide.monsters.monsters.iter().filter(|monster|
+                // Rise of Kerberos
+                monster.spawns.contains(&18) ||
+                // Return of Kerberos
+                monster.spawns.contains(&50))
     {
         let events = match get_generic_monster(guide, &monster.codex_uri)? {
             CodexGenericMonsterOwned::Monster(x) => x.events,
             CodexGenericMonsterOwned::Boss(x) => x.events,
             CodexGenericMonsterOwned::Raid(x) => x.events,
         };
-        if !events.contains(&"Rise of Kerberos".to_string()) {
+        if !events.contains(&"Rise of Kerberos".to_string())
+            || !events.contains(&"Return of Kerberos".to_string())
+        {
+            return Ok(Status::NotFixed);
+        }
+    }
+    Ok(Status::Fixed)
+}
+
+/// Check for Phoenix monsters / raids / bosses missing their Rise/Return of the Phoenix event.
+fn phoenix_missing_event(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<Status, Error> {
+    for monster in data.guide.monsters.monsters.iter().filter(|monster|
+                // Rise of the Phoenix
+                monster.spawns.contains(&28) ||
+                // Return of the Phoenix
+                monster.spawns.contains(&38))
+    {
+        let events = match get_generic_monster(guide, &monster.codex_uri)? {
+            CodexGenericMonsterOwned::Monster(x) => x.events,
+            CodexGenericMonsterOwned::Boss(x) => x.events,
+            CodexGenericMonsterOwned::Raid(x) => x.events,
+        };
+        if !events.contains(&"Rise of the Phoenix".to_string())
+            || !events.contains(&"Return of the Phoenix".to_string())
+        {
             return Ok(Status::NotFixed);
         }
     }
@@ -236,6 +258,12 @@ pub fn check(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<(), Error> {
         guide,
         "Kerberos missing Rise of Kerberos event",
         kerberos_missing_event,
+    )?;
+    do_check(
+        data,
+        guide,
+        "Phoenix missing Rise of the Phoenix event",
+        phoenix_missing_event,
     )?;
     Ok(())
 }
