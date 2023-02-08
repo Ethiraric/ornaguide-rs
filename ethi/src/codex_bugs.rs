@@ -1,5 +1,5 @@
 use ornaguide_rs::{
-    codex::{Codex, CodexBoss, CodexMonster, CodexRaid},
+    codex::{Codex, CodexBoss, CodexMonster, CodexRaid, Tag},
     data::OrnaData,
     error::Error,
     guide::OrnaAdminGuide,
@@ -211,6 +211,31 @@ fn phoenix_missing_event(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<Stat
     Ok(Status::Fixed)
 }
 
+/// Check for "Of Giants and Titans" raids missing their "World Raid" tag.
+fn giants_titans_tag(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<Status, Error> {
+    for monster in data
+        .guide
+        .monsters
+        .monsters
+        .iter()
+        .filter(|monster| monster.name.ends_with("of Olympia"))
+    {
+        let tags = match get_generic_monster(guide, &monster.codex_uri)? {
+            CodexGenericMonsterOwned::Raid(x) => x.tags,
+            _ => {
+                return Err(Error::Misc(format!(
+                    "Monster {} should be a raid (URI: {})",
+                    monster.name, monster.codex_uri
+                )))
+            }
+        };
+        if !tags.contains(&Tag::WorldRaid) {
+            return Ok(Status::NotFixed);
+        }
+    }
+    Ok(Status::Fixed)
+}
+
 /// Check whether a specific bug we found on the codex has been fixed and display the results.
 fn do_check<F>(data: &OrnaData, guide: &OrnaAdminGuide, name: &str, checker: F) -> Result<(), Error>
 where
@@ -264,6 +289,12 @@ pub fn check(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<(), Error> {
         guide,
         "Phoenix missing Rise of the Phoenix event",
         phoenix_missing_event,
+    )?;
+    do_check(
+        data,
+        guide,
+        "Giants missing their World Raid tag",
+        giants_titans_tag,
     )?;
     Ok(())
 }

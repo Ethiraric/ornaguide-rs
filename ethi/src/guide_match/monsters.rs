@@ -162,6 +162,8 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 .collect_vec();
             static RISE_OF_KERB_STR: &str = "Rise of Kerberos";
             static RETURN_OF_KERB_STR: &str = "Return of Kerberos";
+            static RISE_OF_PHOENIX_STR: &str = "Rise of the Phoenix";
+            static RETURN_OF_PHOENIX_STR: &str = "Return of the Phoenix";
             let codex_events = codex_monster
                 .events()
                 .iter()
@@ -170,6 +172,15 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 .chain({
                     if admin_monster.name.contains("Kerberos") {
                         vec![RISE_OF_KERB_STR, RETURN_OF_KERB_STR].into_iter()
+                    } else {
+                        vec![].into_iter()
+                    }
+                })
+                // TODO(ethiraric, 08/02/2023): Remove this once codex is updated.
+                .chain({
+                    // Rise/Return of the Phoenix
+                    if admin_monster.spawns.contains(&28) || admin_monster.spawns.contains(&38) {
+                        vec![RISE_OF_PHOENIX_STR, RETURN_OF_PHOENIX_STR].into_iter()
                     } else {
                         vec![].into_iter()
                     }
@@ -238,6 +249,14 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                     // TODO(ethiraric, 15/06/2022): Remove this once codex is updated.
                     if admin_monster.name == "Arisen Yggdrasil" || admin_monster.name == "Yggdrasil"
                     {
+                        vec![WRB_STR].into_iter()
+                    } else {
+                        vec![].into_iter()
+                    }
+                })
+                .chain({
+                    // TODO(ethiraric, 08/02/2023): Remove this once codex is updated.
+                    if admin_monster.name.ends_with("of Olympia") {
                         vec![WRB_STR].into_iter()
                     } else {
                         vec![].into_iter()
