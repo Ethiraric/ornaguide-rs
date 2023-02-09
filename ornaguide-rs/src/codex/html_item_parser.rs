@@ -385,6 +385,20 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
         ));
     };
 
+    // Parse stats.
+    let mut stats = parse_stats(stats_parent.as_ref().map(|n| n.as_node()))?;
+    // Though `place` is in the `codex-page-meta` section, it is in the `stat` structure.
+    if let Some(place) = codex_page_meta.place {
+        if let Some(mut stats) = stats.as_mut() {
+            stats.place = Some(place);
+        } else {
+            stats = Some(Stats {
+                place: Some(place),
+                ..Default::default()
+            });
+        }
+    }
+
     for h4 in descend_iter(page.as_node(), "h4", "page")? {
         match h4.text_contents().trim() {
             "Causes:" => {
@@ -415,7 +429,7 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
         icon: parse_icon(icon.as_node())?,
         description,
         tier: codex_page_meta.tier,
-        stats: parse_stats(stats_parent.as_ref().map(|n| n.as_node()))?,
+        stats,
         ability: parse_ability(description_it.next().as_ref().map(|n| n.as_node()))?,
         causes,
         cures,
