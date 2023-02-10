@@ -125,12 +125,15 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
             // Name
             let codex_name = codex_skill.name.as_str();
             let admin_name = admin_skill.name
-                [0..admin_skill.name.find('(').unwrap_or(admin_skill.name.len())]
+                [0..admin_skill.name.find('[').unwrap_or(admin_skill.name.len())]
                 .trim();
-            check.display("name", &admin_name, &codex_name, |skill, name| {
-                skill.name = name.to_string();
-                Ok(())
-            })?;
+            // TODO(ethiraric, 10/02/2023): Remove this once codex is updated.
+            if codex_name != "Twin Attack" {
+                check.display("name", &admin_name, &codex_name, |skill, name| {
+                    skill.name = name.to_string();
+                    Ok(())
+                })?;
+            }
 
             // Description
             let codex_description = if !codex_skill.description.is_empty() {

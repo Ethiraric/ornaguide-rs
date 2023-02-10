@@ -236,6 +236,19 @@ fn giants_titans_tag(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<Status, 
     Ok(Status::Fixed)
 }
 
+/// Check Twin Attack missing its " (Off-hand)" suffix.
+fn twin_attack_missing_offhand_suffix(
+    _: &OrnaData,
+    guide: &OrnaAdminGuide,
+) -> Result<Status, Error> {
+    let twin_attack = guide.codex_fetch_skill("twin-attack")?;
+    if twin_attack.name == "Twin Attack (Off-hand)" {
+        Ok(Status::Fixed)
+    } else {
+        Ok(Status::NotFixed)
+    }
+}
+
 /// Check whether a specific bug we found on the codex has been fixed and display the results.
 fn do_check<F>(data: &OrnaData, guide: &OrnaAdminGuide, name: &str, checker: F) -> Result<(), Error>
 where
@@ -295,6 +308,12 @@ pub fn check(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<(), Error> {
         guide,
         "Giants missing their World Raid tag",
         giants_titans_tag,
+    )?;
+    do_check(
+        data,
+        guide,
+        "Twin attack missing its \" (Off-hand)\" suffix",
+        twin_attack_missing_offhand_suffix,
     )?;
     Ok(())
 }
