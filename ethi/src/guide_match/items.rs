@@ -138,7 +138,13 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
         .find(|type_| type_.name == "Weapon")
         .unwrap()
         .id;
-    for codex_item in data.codex.items.items.iter().sorted_by_key(|item| &item.slug) {
+    for codex_item in data
+        .codex
+        .items
+        .items
+        .iter()
+        .sorted_by_key(|item| &item.slug)
+    {
         if let Ok(guide_item) = data.guide.items.get_by_slug(&codex_item.slug) {
             let check = Checker {
                 entity_name: &guide_item.name,
