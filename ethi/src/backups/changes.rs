@@ -2,7 +2,7 @@ use std::{fs::File, path::Path};
 
 use ornaguide_rs::{
     codex::{CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill},
-    data::CodexData,
+    data::{CodexData, GuideData},
     error::Error,
 };
 use serde::{Deserialize, Serialize};
@@ -19,12 +19,22 @@ pub struct CodexRemoval {
     pub raids: Vec<String>,
 }
 
+/// Removals to be made on orna.guide data.
+#[derive(Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct GuideRemoval {
+    /// Item IDs to remove.
+    pub items: Vec<u32>,
+}
+
 /// Removals to be made on a backup.
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Removal {
     /// Removals to be made on Orna Codex data.
     pub codex: CodexRemoval,
+    /// Removals to be made on orna.guide data.
+    pub guide: GuideRemoval,
 }
 
 /// Overrides to be made on Orna Codex data.
@@ -81,6 +91,7 @@ impl Removal {
     /// Apply the changes from `self` to the data.
     pub fn apply_to(&self, backup: &mut Backup) {
         self.codex.apply_to(&mut backup.data.codex);
+        self.guide.apply_to(&mut backup.data.guide);
     }
 }
 
@@ -93,6 +104,15 @@ impl CodexRemoval {
         data.raids
             .raids
             .retain(|raid| !self.raids.contains(&raid.slug));
+    }
+}
+
+impl GuideRemoval {
+    /// Apply the changes from `self` to the data.
+    pub fn apply_to(&self, data: &mut GuideData) {
+        data.items
+            .items
+            .retain(|item| !self.items.contains(&item.id));
     }
 }
 
