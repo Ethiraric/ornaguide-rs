@@ -21,6 +21,7 @@ use crate::{
         html_skill_parser::{parse_html_codex_skill, parse_html_codex_skill_translation},
         CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill,
     },
+    config::debug_urls,
     error::Error,
     guide::{
         html_form_parser::{
@@ -48,6 +49,10 @@ async fn async_post_forms_to(
     form: ParsedForm,
     form_root_name: &str,
 ) -> Result<(), Error> {
+    if debug_urls()? {
+        eprintln!("--- POST {}", url);
+    }
+
     let mut tmpurl = reqwest::Url::parse("http://x").unwrap();
     tmpurl
         .query_pairs_mut()
@@ -109,6 +114,9 @@ async fn get_expect_200(http: &Client, url: &str) -> Result<Response, Error> {
 
 /// Execute a GET HTTP request and save the output.
 async fn async_get_and_save(http: &Client, url: &str) -> Result<String, Error> {
+    if debug_urls()? {
+        eprintln!("--- GET {}", url);
+    }
     let response = get_expect_200(http, url).await?;
     let body = response.text().await?;
     let url = Url::parse(url).unwrap();

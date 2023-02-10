@@ -1,6 +1,7 @@
 use std::{
     fmt::{Debug, Display},
     num::{ParseFloatError, ParseIntError},
+    str::ParseBoolError,
 };
 
 /// Generic error type.
@@ -23,6 +24,8 @@ pub enum Error {
     InvalidField(String, String, Option<String>),
     /// There was an error with `reqwest`.
     Reqwest(reqwest::Error),
+    /// There was an error parsing a boolean.
+    ParseBoolError(ParseBoolError),
     /// There was an error parsing an integer.
     ParseIntError(ParseIntError),
     /// There was an error parsing a float.
@@ -133,6 +136,7 @@ impl Display for Error {
                 }
             },
             Error::Reqwest(err) => write!(f, "{}", err),
+            Error::ParseBoolError(err) => write!(f, "{}", err),
             Error::ParseIntError(err) => write!(f, "{}", err),
             Error::ParseFloatError(err) => write!(f, "{}", err),
             Error::ResponseError(method, url, status, err) => {
@@ -185,6 +189,12 @@ impl Display for Error {
 impl Debug for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         (self as &dyn Display).fmt(f)
+    }
+}
+
+impl From<ParseBoolError> for Error {
+    fn from(err: ParseBoolError) -> Self {
+        Self::ParseBoolError(err)
     }
 }
 

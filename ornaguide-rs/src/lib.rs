@@ -2,6 +2,7 @@
 extern crate derivative;
 
 pub mod codex;
+pub mod config;
 pub mod data;
 pub mod error;
 pub mod guide;
