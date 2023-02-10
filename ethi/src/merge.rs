@@ -51,6 +51,12 @@ pub fn match_monsters(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     guide_match::monsters::perform(&mut merge.data, fix, guide)
 }
 
+pub fn match_items(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    let (path, mut merge) = get_merge_archive()?;
+    println!("Matching with merge archive {}", path.to_string_lossy());
+    guide_match::items::perform(&mut merge.data, fix, guide)
+}
+
 /// Execute a CLI subcommand on merges.
 pub fn cli(args: &[&str], guide: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
     match args {
@@ -60,6 +66,8 @@ pub fn cli(args: &[&str], guide: &OrnaAdminGuide, _: OrnaData) -> Result<(), Err
         ["match", "skills", "--fix"] => match_skills(true, guide),
         ["match", "monsters"] => match_monsters(false, guide),
         ["match", "monsters", "--fix"] => match_monsters(true, guide),
+        ["match", "items"] => match_items(false, guide),
+        ["match", "items", "--fix"] => match_items(true, guide),
         _ => Err(Error::Misc(format!(
             "Invalid CLI `merge` arguments: {:?}",
             &args
