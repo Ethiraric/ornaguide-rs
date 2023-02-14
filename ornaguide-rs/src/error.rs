@@ -1,7 +1,9 @@
 use std::{
     fmt::{Debug, Display},
+    io::IntoInnerError,
     num::{ParseFloatError, ParseIntError},
     str::ParseBoolError,
+    string::FromUtf8Error,
 };
 
 /// Generic error type.
@@ -24,6 +26,13 @@ pub enum Error {
     InvalidField(String, String, Option<String>),
     /// There was an error with `reqwest`.
     Reqwest(reqwest::Error),
+    /// There was an error parsing an enum.
+    ParseEnumError(
+        /// Name of the enum.
+        String,
+        /// Error message.
+        String,
+    ),
     /// There was an error parsing a boolean.
     ParseBoolError(ParseBoolError),
     /// There was an error parsing an integer.
@@ -102,6 +111,10 @@ pub enum Error {
         /// The event names that were not found on the guide.
         Vec<String>,
     ),
+    /// A conversion from different buffer types failed.
+    BufferConversionError(String),
+    /// An UTF-8 error occured.
+    InvalidUTF8Conversion(String),
     /// Miscellaneous error.
     Misc(String),
 }
@@ -136,6 +149,7 @@ impl Display for Error {
                 }
             },
             Error::Reqwest(err) => write!(f, "{}", err),
+            Error::ParseEnumError(name, err) => write!(f, "Could not parse enum {}: {}", name, err),
             Error::ParseBoolError(err) => write!(f, "{}", err),
             Error::ParseIntError(err) => write!(f, "{}", err),
             Error::ParseFloatError(err) => write!(f, "{}", err),
@@ -181,6 +195,8 @@ impl Display for Error {
                 "Partial codex events conversion: OK {:?}, KO {:?}",
                 found, not_found
             ),
+            Error::InvalidUTF8Conversion(err) => write!(f, "{}", err),
+            Error::BufferConversionError(err) => write!(f, "{}", err),
             Error::Misc(err) => write!(f, "{}", err),
         }
     }
@@ -225,5 +241,17 @@ impl From<serde_json::Error> for Error {
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
         Self::Io(err)
+    }
+}
+
+impl<T> From<IntoInnerError<T>> for Error {
+    fn from(err: IntoInnerError<T>) -> Self {
+        Self::BufferConversionError(err.to_string())
+    }
+}
+
+impl From<FromUtf8Error> for Error {
+    fn from(err: FromUtf8Error) -> Self {
+        Self::InvalidUTF8Conversion(err.to_string())
     }
 }
