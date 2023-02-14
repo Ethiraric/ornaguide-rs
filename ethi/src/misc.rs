@@ -218,7 +218,7 @@ where
 
 /// Turns a PascalCase name into a kebab-case one.
 #[allow(dead_code)]
-fn kebab_casify(slug: &str) -> String {
+pub fn kebab_casify(slug: &str) -> String {
     let mut new_slug = String::new();
     let mut capital = true;
     for c in slug.chars() {
