@@ -385,11 +385,12 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             let codex_ability = codex_item
                 .ability
                 .as_ref()
-                .map(|ability| ability.name.as_str());
+                .map(|ability| ability.name.as_str())
+                .map(|name| format!("{} (Off-hand)", name));
             check.debug(
                 "ability",
                 &guide_ability,
-                &codex_ability,
+                &codex_ability.as_deref(),
                 |item, ability_name| {
                     fix_option_field(
                         item,
