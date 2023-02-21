@@ -135,6 +135,18 @@ pub struct AdminItem {
     pub ability: Option<u32>,
 }
 
+impl AdminItem {
+    /// Return the slug of the item.
+    /// If the item has no `codex_uri`, return an empty string.
+    pub fn slug(&self) -> &str {
+        if self.codex_uri.is_empty() {
+            ""
+        } else {
+            &self.codex_uri["/codex/items/".len()..self.codex_uri.len() - 1]
+        }
+    }
+}
+
 impl Default for AdminItem {
     fn default() -> Self {
         AdminItem {

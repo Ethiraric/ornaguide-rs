@@ -57,6 +57,18 @@ pub struct AdminPet {
     pub skills: Vec<u32>,
 }
 
+impl AdminPet {
+    /// Return the slug of the pet.
+    /// If the pet has no `codex_uri`, return an empty string.
+    pub fn slug(&self) -> &str {
+        if self.codex_uri.is_empty() {
+            ""
+        } else {
+            &self.codex_uri["/codex/followers/".len()..self.codex_uri.len() - 1]
+        }
+    }
+}
+
 impl Default for AdminPet {
     fn default() -> Self {
         AdminPet {

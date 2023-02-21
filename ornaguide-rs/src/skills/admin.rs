@@ -56,6 +56,18 @@ pub struct AdminSkill {
     pub gives: Vec<u32>,
 }
 
+impl AdminSkill {
+    /// Return the slug of the skill.
+    /// If the skill has no `codex_uri`, return an empty string.
+    pub fn slug(&self) -> &str {
+        if self.codex_uri.is_empty() {
+            ""
+        } else {
+            &self.codex_uri["/codex/skills/".len()..self.codex_uri.len() - 1]
+        }
+    }
+}
+
 impl Default for AdminSkill {
     fn default() -> Self {
         AdminSkill {

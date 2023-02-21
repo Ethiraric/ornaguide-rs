@@ -58,6 +58,26 @@ pub struct AdminMonster {
     pub skills: Vec<u32>,
 }
 
+impl AdminMonster {
+    /// Return the slug of the monster.
+    /// If the monster has no `codex_uri`, return an empty string.
+    /// Returns the slug no matter if the monster is considered a monster, raid or boss on the
+    /// codex.
+    pub fn slug(&self) -> &str {
+        if self.codex_uri.is_empty() {
+            ""
+        } else if self.codex_uri.starts_with("/codex/monsters/") {
+            &self.codex_uri["/codex/monsters/".len()..self.codex_uri.len() - 1]
+        } else if self.codex_uri.starts_with("/codex/raids/") {
+            &self.codex_uri["/codex/raids/".len()..self.codex_uri.len() - 1]
+        } else if self.codex_uri.starts_with("/codex/bosses/") {
+            &self.codex_uri["/codex/bosses/".len()..self.codex_uri.len() - 1]
+        } else {
+            panic!("{}: Unknown monster uri to get the slug of", self.codex_uri)
+        }
+    }
+}
+
 impl TryFrom<ParsedForm> for AdminMonster {
     type Error = Error;
 

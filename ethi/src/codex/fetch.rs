@@ -13,36 +13,6 @@ use ornaguide_rs::{
 
 use crate::misc::bar;
 
-/// Loop fetching entities and displaying a progress bar.
-/// Errors out after the first failed fetch.
-fn fetch_loop<Entry, F, Entity>(
-    entries: &[Entry],
-    fetch: F,
-    kind: &str,
-) -> Result<Vec<Entity>, Error>
-where
-    Entry: Sluggable,
-    F: Fn(&str) -> Result<Entity, Error>,
-{
-    let sleep = crate::config::playorna_sleep()? as u64;
-    let mut ret = Vec::with_capacity(entries.len());
-    let bar = bar(entries.len() as u64);
-    for entry in entries.iter() {
-        let slug = entry.slug();
-        bar.set_message(slug.to_string());
-        match fetch(slug) {
-            Ok(item) => ret.push(item),
-            Err(x) => eprintln!("Failed to fetch {} {}: {}\n", kind, slug, x),
-        }
-        bar.inc(1);
-        if sleep > 0 {
-            std::thread::sleep(std::time::Duration::from_secs(sleep));
-        }
-    }
-    bar.finish_with_message(format!("{:7 } fetched", kind));
-    Ok(ret)
-}
-
 /// Retrieve all items from the codex.
 pub fn items(guide: &OrnaAdminGuide) -> Result<CodexItems, Error> {
     fetch_loop(
@@ -482,5 +452,105 @@ pub fn missing_translations(
         ret.locales.insert(locale.clone(), strings);
     }
 
+    Ok(ret)
+}
+
+/// Retrieve items with the given slugs from the codex.
+/// This function ignores errors.
+pub fn item_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexItems, Error> {
+    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_item(slug), "CItems")
+        .map(|items| CodexItems { items })
+}
+
+/// Retrieve monsters with the given slugs from the codex.
+/// This function ignores errors.
+pub fn monster_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexMonsters, Error> {
+    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_monster(slug), "CMnstrs")
+        .map(|monsters| CodexMonsters { monsters })
+}
+
+/// Retrieve bossess with the given slugs from the codex.
+/// This function ignores errors.
+pub fn boss_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexBosses, Error> {
+    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_boss(slug), "CBosses")
+        .map(|bosses| CodexBosses { bosses })
+}
+
+/// Retrieve raids with the given slugs from the codex.
+/// This function ignores errors.
+pub fn raid_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexRaids, Error> {
+    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_raid(slug), "CRaids")
+        .map(|raids| CodexRaids { raids })
+}
+
+/// Retrieve skills with the given slugs from the codex.
+/// This function ignores errors.
+pub fn skill_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexSkills, Error> {
+    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_skill(slug), "CRaids")
+        .map(|skills| CodexSkills { skills })
+}
+
+/// Retrieve followers with the given slugs from the codex.
+/// This function ignores errors.
+pub fn follower_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexFollowers, Error> {
+    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_follower(slug), "CFollwrs")
+        .map(|followers| CodexFollowers { followers })
+}
+
+/// Loop fetching entities and displaying a progress bar.
+/// Errors out after the first failed fetch.
+fn fetch_loop<Entry, F, Entity>(
+    entries: &[Entry],
+    fetch: F,
+    kind: &str,
+) -> Result<Vec<Entity>, Error>
+where
+    Entry: Sluggable,
+    F: Fn(&str) -> Result<Entity, Error>,
+{
+    let sleep = crate::config::playorna_sleep()? as u64;
+    let mut ret = Vec::with_capacity(entries.len());
+    let bar = bar(entries.len() as u64);
+    for entry in entries.iter() {
+        let slug = entry.slug();
+        bar.set_message(slug.to_string());
+        match fetch(slug) {
+            Ok(item) => ret.push(item),
+            Err(x) => eprintln!("Failed to fetch {} {}: {}\n", kind, slug, x),
+        }
+        bar.inc(1);
+        if sleep > 0 {
+            std::thread::sleep(std::time::Duration::from_secs(sleep));
+        }
+    }
+    bar.finish_with_message(format!("{:7 } fetched", kind));
+    Ok(ret)
+}
+
+/// Loop fetching entities and displaying a progress bar.
+/// Ignore errors.
+fn try_fetch_loop_slugs<F, Entity>(
+    slugs: &[&str],
+    fetch: F,
+    kind: &str,
+) -> Result<Vec<Entity>, Error>
+where
+    F: Fn(&str) -> Result<Entity, Error>,
+{
+    let sleep = crate::config::playorna_sleep()? as u64;
+    let mut ret = Vec::with_capacity(slugs.len());
+    let bar = bar(slugs.len() as u64);
+    for slug in slugs.iter() {
+        bar.set_message(slug.to_string());
+        match fetch(slug) {
+            Ok(item) => ret.push(item),
+            Err(x) => eprintln!("Failed to fetch {} {}: {}\n", kind, slug, x),
+        }
+        bar.inc(1);
+        if sleep > 0 {
+            std::thread::sleep(std::time::Duration::from_secs(sleep));
+        }
+    }
+    bar.finish_with_message(format!("{:7 } fetched", kind));
     Ok(ret)
 }
