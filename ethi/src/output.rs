@@ -305,12 +305,102 @@ pub fn refresh_codex_skills(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Or
     Ok(data)
 }
 
+/// Iterate over all of the guide entries and fetch every corresponding entity from the codex that
+/// we have the URI for.
+pub fn fetch_all_matches_from_guide(
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+) -> Result<OrnaData, Error> {
+    let codex = CodexData {
+        items: crate::codex::fetch::item_slugs(
+            guide,
+            &data
+                .guide
+                .items
+                .items
+                .iter()
+                .map(|item| item.slug())
+                .filter(|s| !s.is_empty())
+                .collect_vec(),
+        )?,
+        raids: crate::codex::fetch::raid_slugs(
+            guide,
+            &data
+                .guide
+                .monsters
+                .monsters
+                .iter()
+                .filter(|monster| monster.codex_uri.starts_with("/codex/raids/"))
+                .map(|monster| monster.slug())
+                .filter(|s| !s.is_empty())
+                .collect_vec(),
+        )?,
+        monsters: crate::codex::fetch::monster_slugs(
+            guide,
+            &data
+                .guide
+                .monsters
+                .monsters
+                .iter()
+                .filter(|monster| monster.codex_uri.starts_with("/codex/monsters/"))
+                .map(|monster| monster.slug())
+                .filter(|s| !s.is_empty())
+                .collect_vec(),
+        )?,
+        bosses: crate::codex::fetch::boss_slugs(
+            guide,
+            &data
+                .guide
+                .monsters
+                .monsters
+                .iter()
+                .filter(|monster| monster.codex_uri.starts_with("/codex/bosses/"))
+                .map(|monster| monster.slug())
+                .filter(|s| !s.is_empty())
+                .collect_vec(),
+        )?,
+        skills: crate::codex::fetch::skill_slugs(
+            guide,
+            &data
+                .guide
+                .skills
+                .skills
+                .iter()
+                .map(|skill| skill.slug())
+                .filter(|s| !s.is_empty())
+                .collect_vec(),
+        )?,
+        followers: crate::codex::fetch::follower_slugs(
+            guide,
+            &data
+                .guide
+                .pets
+                .pets
+                .iter()
+                .map(|pet| pet.slug())
+                .filter(|s| !s.is_empty())
+                .collect_vec(),
+        )?,
+    };
+
+    let data = OrnaData {
+        codex,
+        guide: data.guide,
+    };
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
 /// Execute a CLI subcommand on outputs.
 pub fn cli<F>(args: &[&str], guide: &OrnaAdminGuide, data: F) -> Result<(), Error>
 where
     F: FnOnce() -> Result<OrnaData, Error>,
 {
     match args {
+        ["fetch_all_matches_from_guide"] => {
+            fetch_all_matches_from_guide(guide, data()?).map(|_| ())
+        }
         ["refresh"] => refresh(guide).map(|_| ()),
         ["refresh", "guide"] => refresh_guide(guide, data()?.codex).map(|_| ()),
         ["refresh", "guide", "skills"] => refresh_guide_skills(guide, data()?).map(|_| ()),
