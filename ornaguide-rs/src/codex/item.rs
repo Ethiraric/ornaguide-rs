@@ -38,6 +38,7 @@ pub enum Place {
     Accessory,
     Armor,
     Material,
+    Augment,
 }
 
 /// Stats of an item.
@@ -63,7 +64,7 @@ pub struct Stats {
     /// The crit stat of the item.
     pub crit: Option<u8>,
     /// The foresight of the item.
-    pub foresight: Option<i8>,
+    pub foresight: Option<i16>,
     /// The number of adorn slots at level 10, common quality.
     pub adornment_slots: Option<u8>,
     /// The elment of the item.
@@ -341,6 +342,7 @@ impl ToString for Place {
             Place::Legs => "Legs".to_string(),
             Place::Accessory => "Accessory".to_string(),
             Place::Armor => "Armor".to_string(),
+            Place::Augment => "Augment".to_string(),
             // TODO(ethiraric, 26/01/2023): Check if this is a typo.
             Place::Material => "material".to_string(),
         }
@@ -360,6 +362,7 @@ impl FromStr for Place {
             "Accessory" => Ok(Place::Accessory),
             "Armor" => Ok(Place::Armor),
             "Armor (for adornments)" => Ok(Place::Armor),
+            "Augment (for celestial weapons)" => Ok(Place::Augment),
             "material" => Ok(Place::Material),
             _ => Err(Self::Err::ParseEnumError(
                 "Place".to_string(),

@@ -64,7 +64,7 @@ pub struct AdminItem {
     /// Whether crit scales with the quality of the item.
     pub crit_affected_by_quality: bool,
     /// How much foresight the item gives, if equippable.
-    pub foresight: i8,
+    pub foresight: i16,
     /// How much view distance the item gives (%).
     pub view_distance: u32,
     /// How much the item increases the stats of your follower (%).
