@@ -50,7 +50,7 @@ fn iter_backups<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = (PathBuf
         .sorted_by_key(|entry| entry.path())
         // Try to open them. Ignore those we fail to open.
         // Oldest archives have a different format and may not be loadable.
-        .filter_map(|entry| match Backup::load_from(&entry.path()) {
+        .filter_map(|entry| match Backup::load_from(entry.path()) {
             Ok(backup) => Some((entry.path(), backup)),
             Err(x) => {
                 println!("Failed to load {:?}: {}", entry.path(), x);

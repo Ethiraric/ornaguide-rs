@@ -23,7 +23,7 @@ fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
         .sorted_by(|a, b| b.path().cmp(&a.path()))
         // Try to open them. Ignore those we fail to open.
         // Oldest archives have a different format and may not be loadable.
-        .find_map(|entry| match Backup::load_from(&entry.path()) {
+        .find_map(|entry| match Backup::load_from(entry.path()) {
             Ok(backup) => Some((entry.path(), backup)),
             Err(x) => {
                 println!("Failed to load {:?}: {}", entry.path(), x);
