@@ -20,12 +20,8 @@ backup_output:
   mv output-`date "+%Y-%m-%d"`.tar.bz2 backups_output
   rm -r output-`date "+%Y-%m-%d"`
 
-backup_output_now:
+json_refresh:
   cargo run --release --bin ethi json refresh
-  cp -r output output-`date "+%Y-%m-%dT%H-%M"`
-  BZIP2=-9 tar -cjvf output-`date "+%Y-%m-%dT%H-%M"`{.tar.bz2,}
-  mv output-`date "+%Y-%m-%dT%H-%M"`.tar.bz2 backups_output
-  rm -r output-`date "+%Y-%m-%dT%H-%M"`
 
 backup_htmls_now:
   cp -r htmls htmls-`date "+%Y-%m-%dT%H-%M"`
@@ -33,9 +29,17 @@ backup_htmls_now:
   mv htmls-`date "+%Y-%m-%dT%H-%M"`.tar.bz2 backups_html
   rm -r htmls-`date "+%Y-%m-%dT%H-%M"`
 
+backup_output_now:
+  cp -r output output-`date "+%Y-%m-%dT%H-%M"`
+  BZIP2=-9 tar -cjvf output-`date "+%Y-%m-%dT%H-%M"`{.tar.bz2,}
+  mv output-`date "+%Y-%m-%dT%H-%M"`.tar.bz2 backups_output
+  rm -r output-`date "+%Y-%m-%dT%H-%M"`
+
 merge:
   cargo run --release --bin ethi backups merge
 
-new_merge_now: backup_output_now merge
+quick_merge_now: backup_output_now merge
+
+new_merge_now: json_refresh quick_merge_now
 
 cron: new_jsons backup_htmls backup_output
