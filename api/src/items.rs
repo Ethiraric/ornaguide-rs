@@ -74,7 +74,7 @@ pub struct ItemFilters<'a> {
     /// Filter by crit_affected_by_quality.
     pub crit_affected_by_quality: Filter<'a, bool>,
     /// Filter by foresight.
-    pub foresight: Filter<'a, i8>,
+    pub foresight: Filter<'a, i16>,
     /// Filter by view_distance.
     pub view_distance: Filter<'a, u32>,
     /// Filter by follower_stats.
