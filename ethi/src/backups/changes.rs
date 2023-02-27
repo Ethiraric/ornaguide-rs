@@ -17,6 +17,8 @@ pub struct CodexRemoval {
     pub skills: Vec<String>,
     /// Raid slugs to remove.
     pub raids: Vec<String>,
+    /// Item slugs to remove.
+    pub items: Vec<String>,
 }
 
 /// Removals to be made on orna.guide data.
@@ -104,6 +106,9 @@ impl CodexRemoval {
         data.raids
             .raids
             .retain(|raid| !self.raids.contains(&raid.slug));
+        data.items
+            .items
+            .retain(|item| !self.items.contains(&item.slug));
     }
 }
 
