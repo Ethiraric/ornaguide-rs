@@ -39,16 +39,16 @@ pub fn match_(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     guide_match::all(&mut merge.data, fix, guide)
 }
 
+pub fn match_status_effects(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    let (path, mut merge) = get_merge_archive()?;
+    println!("Matching with merge archive {}", path.to_string_lossy());
+    guide_match::status_effects::perform(&mut merge.data, fix, guide)
+}
+
 pub fn match_skills(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     let (path, mut merge) = get_merge_archive()?;
     println!("Matching with merge archive {}", path.to_string_lossy());
     guide_match::skills::perform(&mut merge.data, fix, guide)
-}
-
-pub fn match_monsters(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
-    let (path, mut merge) = get_merge_archive()?;
-    println!("Matching with merge archive {}", path.to_string_lossy());
-    guide_match::monsters::perform(&mut merge.data, fix, guide)
 }
 
 pub fn match_items(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
@@ -57,17 +57,33 @@ pub fn match_items(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     guide_match::items::perform(&mut merge.data, fix, guide)
 }
 
+pub fn match_monsters(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    let (path, mut merge) = get_merge_archive()?;
+    println!("Matching with merge archive {}", path.to_string_lossy());
+    guide_match::monsters::perform(&mut merge.data, fix, guide)
+}
+
+pub fn match_pets(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
+    let (path, mut merge) = get_merge_archive()?;
+    println!("Matching with merge archive {}", path.to_string_lossy());
+    guide_match::pets::perform(&mut merge.data, fix, guide)
+}
+
 /// Execute a CLI subcommand on merges.
 pub fn cli(args: &[&str], guide: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
     match args {
         ["match"] => match_(false, guide),
         ["match", "--fix"] => match_(true, guide),
+        ["match", "status_effects"] => match_status_effects(false, guide),
+        ["match", "status_effects", "--fix"] => match_status_effects(true, guide),
         ["match", "skills"] => match_skills(false, guide),
         ["match", "skills", "--fix"] => match_skills(true, guide),
-        ["match", "monsters"] => match_monsters(false, guide),
-        ["match", "monsters", "--fix"] => match_monsters(true, guide),
         ["match", "items"] => match_items(false, guide),
         ["match", "items", "--fix"] => match_items(true, guide),
+        ["match", "monsters"] => match_monsters(false, guide),
+        ["match", "monsters", "--fix"] => match_monsters(true, guide),
+        ["match", "pets"] => match_pets(false, guide),
+        ["match", "pets", "--fix"] => match_pets(true, guide),
         _ => Err(Error::Misc(format!(
             "Invalid CLI `merge` arguments: {:?}",
             &args
