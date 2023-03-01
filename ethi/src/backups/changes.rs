@@ -17,6 +17,8 @@ pub struct CodexRemoval {
     pub skills: Vec<String>,
     /// Raid slugs to remove.
     pub raids: Vec<String>,
+    /// Monster slugs to remove.
+    pub monsters: Vec<String>,
     /// Item slugs to remove.
     pub items: Vec<String>,
 }
@@ -109,6 +111,9 @@ impl CodexRemoval {
         data.items
             .items
             .retain(|item| !self.items.contains(&item.slug));
+        data.monsters
+            .monsters
+            .retain(|monster| !self.monsters.contains(&monster.slug));
     }
 }
 
