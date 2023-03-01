@@ -27,7 +27,8 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 .find_match_for_codex_generic_monster(*monster)
                 .is_err()
         })
-        .collect::<Vec<_>>();
+        .sorted_by_key(|monster| monster.name())
+        .collect_vec();
 
     let not_on_codex = data
         .guide
@@ -38,7 +39,8 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
             data.find_generic_codex_monster_from_admin_monster(monster)
                 .is_err()
         })
-        .collect::<Vec<_>>();
+        .sorted_by_key(|monster| &monster.name)
+        .collect_vec();
 
     if !missing_on_guide.is_empty() {
         println!("{} monsters missing on guide:", missing_on_guide.len());

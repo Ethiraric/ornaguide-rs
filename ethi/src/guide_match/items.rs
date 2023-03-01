@@ -37,6 +37,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 && item.slug != "super-exp-potion"
         })
         .filter(|item| data.guide.items.get_by_slug(&item.slug).is_err())
+        .sorted_by_key(|item| &item.slug)
         .collect_vec();
     let not_on_codex = data
         .guide
