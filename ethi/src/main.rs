@@ -1,5 +1,6 @@
-use std::time::Instant;
+use std::{path::PathBuf, time::Instant};
 
+use crate::backups::Backup;
 #[allow(unused_imports)]
 use itertools::Itertools;
 use ornaguide_rs::{codex::translation::LocaleDB, data::OrnaData};
@@ -26,13 +27,43 @@ mod sirscor;
 mod thecraigger;
 mod translation;
 
+/// Retrieve the latest merge archive (both its path and contents).
+fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
+    std::fs::read_dir("merges")?
+        // Filter out directory entries we can't read.
+        .filter_map(|entry| entry.ok())
+        // Filter out directories.
+        .filter(|entry| entry.file_type().map(|t| t.is_file()).unwrap_or(false))
+        // Keep only merge files.
+        .filter(|entry| {
+            let name = entry.file_name();
+            let name = name.to_string_lossy();
+            name.starts_with("merge-") && name.ends_with(".tar.bz2")
+        })
+        // Sort them. The names are chronological, so it orders them oldest first, which is why we
+        // compare `b` to `a` and not the other way around.
+        .sorted_by(|a, b| b.path().cmp(&a.path()))
+        // Try to open them. Ignore those we fail to open.
+        // Oldest archives have a different format and may not be loadable.
+        .find_map(|entry| match Backup::load_from(entry.path()) {
+            Ok(backup) => Some((entry.path(), backup)),
+            Err(x) => {
+                println!("Failed to load {:?}: {}", entry.path(), x);
+                None
+            }
+        })
+        .ok_or_else(|| Error::Misc("Failed to find a merge file".to_string()))
+}
+
 #[allow(unused_variables, unused_mut)]
 /// Danger zone. Where I test my code.
 fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
     let fix = false;
 
-    let mut db = LocaleDB::load_from("output/i18n")?;
-    db.merge_with(LocaleDB::load_from("output/i18n/manual")?);
+    // let mut db = LocaleDB::load_from("output/i18n")?;
+    // db.merge_with(LocaleDB::load_from("output/i18n/manual")?);
+
+    let (_, archive) = get_merge_archive()?;
 
     // guide_match::all(&mut data, fix, guide)?;
     // guide_match::status_effects::perform(&mut data, fix, guide)?;
