@@ -15,16 +15,12 @@ mod backups;
 mod codex;
 mod codex_bugs;
 mod config;
-mod ethiraric;
 mod guide;
 mod guide_html;
 mod guide_match;
 mod merge;
 mod misc;
 mod output;
-mod ratakor;
-mod sirscor;
-mod thecraigger;
 mod translation;
 
 /// Retrieve the latest merge archive (both its path and contents).
@@ -94,9 +90,6 @@ fn main2() -> Result<(), Error> {
         match args[1] {
             "json" => output::cli(&args[2..], &guide, data),
             "match" => guide_match::cli(&args[2..], &guide, data()?),
-            "sirscor" => sirscor::cli(&args[2..], &guide, data()?),
-            "ratakor" => ratakor::cli(&args[2..], &guide, data()?),
-            "ethiraric" => ethiraric::cli(&args[2..], &guide, data()?),
             "codex" => codex::cli(&args[2..], &guide, data()?),
             "translation" => translation::cli(&args[2..], &guide, data()?, localedb()?),
             "backups" => backups::cli(&args[2..], &guide, data()?),

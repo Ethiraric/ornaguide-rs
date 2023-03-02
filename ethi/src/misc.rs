@@ -157,6 +157,7 @@ where
 
 /// Parse the given value as a Google Doc boolean value.
 /// Maps `"TRUE"` to `true`, `"FALSE"` to `false`, and any other value to an error.
+#[allow(dead_code)]
 pub fn parse_gdoc_bool<'de, D>(de: D) -> Result<bool, D::Error>
 where
     D: Deserializer<'de>,
@@ -173,6 +174,7 @@ where
 }
 
 /// Parse the given value as an `u8`. If the value is an empty string, return `0` instead.
+#[allow(dead_code)]
 pub fn parse_maybe_empty_u8<'de, D>(de: D) -> Result<u8, D::Error>
 where
     D: Deserializer<'de>,
