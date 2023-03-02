@@ -3,7 +3,11 @@ use std::path::PathBuf;
 use itertools::Itertools;
 use ornaguide_rs::{data::OrnaData, error::Error, guide::OrnaAdminGuide};
 
-use crate::{backups::Backup, guide_match};
+use crate::{
+    backups::Backup,
+    cli::{self, merge::Match},
+    guide_match,
+};
 
 /// Retrieve the latest merge archive (both its path and contents).
 fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
@@ -70,23 +74,18 @@ pub fn match_pets(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
 }
 
 /// Execute a CLI subcommand on merges.
-pub fn cli(args: &[&str], guide: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
-    match args {
-        ["match"] => match_(false, guide),
-        ["match", "--fix"] => match_(true, guide),
-        ["match", "status_effects"] => match_status_effects(false, guide),
-        ["match", "status_effects", "--fix"] => match_status_effects(true, guide),
-        ["match", "skills"] => match_skills(false, guide),
-        ["match", "skills", "--fix"] => match_skills(true, guide),
-        ["match", "items"] => match_items(false, guide),
-        ["match", "items", "--fix"] => match_items(true, guide),
-        ["match", "monsters"] => match_monsters(false, guide),
-        ["match", "monsters", "--fix"] => match_monsters(true, guide),
-        ["match", "pets"] => match_pets(false, guide),
-        ["match", "pets", "--fix"] => match_pets(true, guide),
-        _ => Err(Error::Misc(format!(
-            "Invalid CLI `merge` arguments: {:?}",
-            &args
-        ))),
+pub fn cli(command: cli::merge::Command, guide: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
+    match command {
+        cli::merge::Command::Match(cmd) => {
+            let fix = cmd.fix;
+            match cmd.c {
+                Some(Match::Items) => match_items(fix, guide),
+                Some(Match::Monsters) => match_monsters(fix, guide),
+                Some(Match::Pets) => match_pets(fix, guide),
+                Some(Match::Skills) => match_skills(fix, guide),
+                Some(Match::StatusEffects) => match_status_effects(fix, guide),
+                None => match_(fix, guide),
+            }
+        }
     }
 }

@@ -6,7 +6,13 @@ use ornaguide_rs::{
     guide::{AdminGuide, OrnaAdminGuide},
 };
 
-use crate::misc::bar;
+use crate::{
+    cli::{
+        self,
+        json::{RefreshCodex, RefreshGuide},
+    },
+    misc::bar,
+};
 
 /// Add unlisted monsters / bosses / raids to the data.
 /// Walks through item drops and lists monsters in those drops we couldn't find.
@@ -247,6 +253,42 @@ pub fn refresh_guide_items(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Orn
     Ok(data)
 }
 
+/// Refresh the guide's monsters.
+pub fn refresh_guide_monsters(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: data.codex,
+        guide: GuideData {
+            items: data.guide.items,
+            monsters: crate::guide::fetch::monsters(guide)?,
+            skills: data.guide.skills,
+            pets: data.guide.pets,
+            static_: data.guide.static_,
+        },
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
+/// Refresh the guide's petts.
+pub fn refresh_guide_pets(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: data.codex,
+        guide: GuideData {
+            items: data.guide.items,
+            monsters: data.guide.monsters,
+            skills: data.guide.skills,
+            pets: crate::guide::fetch::pets(guide)?,
+            static_: data.guide.static_,
+        },
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
 /// Refresh the guide's skills.
 pub fn refresh_guide_skills(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
     let data = OrnaData {
@@ -280,6 +322,101 @@ pub fn refresh_codex(guide: &OrnaAdminGuide, guide_data: GuideData) -> Result<Or
     };
     add_unlisted_monsters(guide, &mut data.codex)?;
     add_event_followers(guide, &mut data.codex)?;
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
+/// Refresh the codex's bosses.
+pub fn refresh_codex_bosses(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: CodexData {
+            items: data.codex.items,
+            raids: data.codex.raids,
+            monsters: data.codex.monsters,
+            bosses: crate::codex::fetch::bosses(guide)?,
+            skills: data.codex.skills,
+            followers: data.codex.followers,
+        },
+        guide: data.guide,
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
+/// Refresh the codex's followers.
+pub fn refresh_codex_followers(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: CodexData {
+            items: data.codex.items,
+            raids: data.codex.raids,
+            monsters: data.codex.monsters,
+            bosses: data.codex.bosses,
+            skills: data.codex.skills,
+            followers: crate::codex::fetch::followers(guide)?,
+        },
+        guide: data.guide,
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
+/// Refresh the codex's items.
+pub fn refresh_codex_items(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: CodexData {
+            items: crate::codex::fetch::items(guide)?,
+            raids: data.codex.raids,
+            monsters: data.codex.monsters,
+            bosses: data.codex.bosses,
+            skills: data.codex.skills,
+            followers: data.codex.followers,
+        },
+        guide: data.guide,
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
+/// Refresh the codex's monsters.
+pub fn refresh_codex_monsters(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: CodexData {
+            items: data.codex.items,
+            raids: data.codex.raids,
+            monsters: crate::codex::fetch::monsters(guide)?,
+            bosses: data.codex.bosses,
+            skills: data.codex.skills,
+            followers: data.codex.followers,
+        },
+        guide: data.guide,
+    };
+
+    data.save_to("output")?;
+
+    Ok(data)
+}
+
+/// Refresh the codex's raids.
+pub fn refresh_codex_raids(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
+    let data = OrnaData {
+        codex: CodexData {
+            items: data.codex.items,
+            raids: crate::codex::fetch::raids(guide)?,
+            monsters: data.codex.monsters,
+            bosses: data.codex.bosses,
+            skills: data.codex.skills,
+            followers: data.codex.followers,
+        },
+        guide: data.guide,
+    };
 
     data.save_to("output")?;
 
@@ -393,24 +530,45 @@ pub fn fetch_all_matches_from_guide(
 }
 
 /// Execute a CLI subcommand on outputs.
-pub fn cli<F>(args: &[&str], guide: &OrnaAdminGuide, data: F) -> Result<(), Error>
+fn cli_refresh(
+    command: cli::json::RefreshCmd,
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+) -> Result<(), Error> {
+    match command.c {
+        Some(refresh_cmd) => match refresh_cmd {
+            cli::json::Refresh::Guide(guide_cmd) => match guide_cmd.c {
+                Some(RefreshGuide::Items) => refresh_guide_items(guide, data)?,
+                Some(RefreshGuide::Monsters) => refresh_guide_monsters(guide, data)?,
+                Some(RefreshGuide::Pets) => refresh_guide_pets(guide, data)?,
+                Some(RefreshGuide::Skills) => refresh_guide_skills(guide, data)?,
+                Some(RefreshGuide::Static) => refresh_guide_static(guide, data)?,
+                None => refresh_guide(guide, data.codex)?,
+            },
+            cli::json::Refresh::Codex(codex_cmd) => match codex_cmd.c {
+                Some(RefreshCodex::Bosses) => refresh_codex_bosses(guide, data)?,
+                Some(RefreshCodex::Followers) => refresh_codex_followers(guide, data)?,
+                Some(RefreshCodex::Items) => refresh_codex_items(guide, data)?,
+                Some(RefreshCodex::Monsters) => refresh_codex_monsters(guide, data)?,
+                Some(RefreshCodex::Raids) => refresh_codex_raids(guide, data)?,
+                Some(RefreshCodex::Skills) => refresh_codex_skills(guide, data)?,
+                None => refresh_codex(guide, data.guide)?,
+            },
+        },
+        None => refresh(guide)?,
+    };
+    Ok(())
+}
+
+/// Execute a CLI subcommand on outputs.
+pub fn cli<F>(command: cli::json::Command, guide: &OrnaAdminGuide, data: F) -> Result<(), Error>
 where
     F: FnOnce() -> Result<OrnaData, Error>,
 {
-    match args {
-        ["fetch_all_matches_from_guide"] => {
+    match command {
+        cli::json::Command::FetchAllMatchesFromGuide => {
             fetch_all_matches_from_guide(guide, data()?).map(|_| ())
         }
-        ["refresh"] => refresh(guide).map(|_| ()),
-        ["refresh", "guide"] => refresh_guide(guide, data()?.codex).map(|_| ()),
-        ["refresh", "guide", "skills"] => refresh_guide_skills(guide, data()?).map(|_| ()),
-        ["refresh", "guide", "items"] => refresh_guide_items(guide, data()?).map(|_| ()),
-        ["refresh", "guide", "static"] => refresh_guide_static(guide, data()?).map(|_| ()),
-        ["refresh", "codex"] => refresh_codex(guide, data()?.guide).map(|_| ()),
-        ["refresh", "codex", "skills"] => refresh_codex_skills(guide, data()?).map(|_| ()),
-        _ => Err(Error::Misc(format!(
-            "Invalid CLI `json` arguments: {:?}",
-            &args
-        ))),
+        cli::json::Command::Refresh(cmd) => cli_refresh(cmd, guide, data()?),
     }
 }

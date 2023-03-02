@@ -1,5 +1,7 @@
 use ornaguide_rs::{data::OrnaData, error::Error, guide::OrnaAdminGuide};
 
+use crate::cli;
+
 pub mod checker;
 pub mod items;
 pub mod misc;
@@ -20,21 +22,20 @@ pub fn all(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
 }
 
 /// Execute a CLI subcommand on matching.
-pub fn cli(args: &[&str], guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
-    match args {
-        ["status_effects"] => status_effects::perform(&mut data, false, guide),
-        ["status_effects", "--fix"] => status_effects::perform(&mut data, true, guide),
-        ["skills"] => skills::perform(&mut data, false, guide),
-        ["skills", "--fix"] => skills::perform(&mut data, true, guide),
-        ["items"] => items::perform(&mut data, false, guide),
-        ["items", "--fix"] => items::perform(&mut data, true, guide),
-        ["monsters"] => monsters::perform(&mut data, false, guide),
-        ["monsters", "--fix"] => monsters::perform(&mut data, true, guide),
-        ["pets"] => pets::perform(&mut data, false, guide),
-        ["pets", "--fix"] => pets::perform(&mut data, true, guide),
-        _ => Err(Error::Misc(format!(
-            "Invalid CLI `match` arguments: {:?}",
-            &args
-        ))),
+pub fn cli(
+    command: cli::match_::Command,
+    guide: &OrnaAdminGuide,
+    mut data: OrnaData,
+) -> Result<(), Error> {
+    let fix = command.fix;
+    match command.c {
+        Some(cli::match_::Subcommand::Items) => items::perform(&mut data, fix, guide),
+        Some(cli::match_::Subcommand::Monsters) => monsters::perform(&mut data, fix, guide),
+        Some(cli::match_::Subcommand::Pets) => monsters::perform(&mut data, fix, guide),
+        Some(cli::match_::Subcommand::Skills) => skills::perform(&mut data, fix, guide),
+        Some(cli::match_::Subcommand::StatusEffects) => {
+            status_effects::perform(&mut data, fix, guide)
+        }
+        None => all(&mut data, fix, guide),
     }
 }

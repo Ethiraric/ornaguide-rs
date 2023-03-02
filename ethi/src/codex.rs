@@ -1,15 +1,17 @@
 use ornaguide_rs::{data::OrnaData, error::Error, guide::OrnaAdminGuide};
 
+use crate::cli;
+
 pub mod fetch;
 
 /// Execute a CLI subcommand on the codex.
-pub fn cli(args: &[&str], guide: &OrnaAdminGuide, data: OrnaData) -> Result<(), Error> {
-    match args {
-        ["bugs"] => crate::codex_bugs::check(&data, guide),
-        ["missing"] => fetch::missing(guide, &data).map(|_| ()),
-        _ => Err(Error::Misc(format!(
-            "Invalid CLI `codex` arguments: {:?}",
-            &args
-        ))),
+pub fn cli(
+    command: cli::codex::Command,
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+) -> Result<(), Error> {
+    match command {
+        cli::codex::Command::Bugs => crate::codex_bugs::check(&data, guide),
+        cli::codex::Command::Missing => fetch::missing(guide, &data).map(|_| ()),
     }
 }

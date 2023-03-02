@@ -1,6 +1,7 @@
 use std::{path::PathBuf, time::Instant};
 
 use crate::backups::Backup;
+use clap::Parser;
 #[allow(unused_imports)]
 use itertools::Itertools;
 use ornaguide_rs::{codex::translation::LocaleDB, data::OrnaData};
@@ -12,6 +13,7 @@ use ornaguide_rs::{
 };
 
 mod backups;
+mod cli;
 mod codex;
 mod codex_bugs;
 mod config;
@@ -59,7 +61,8 @@ fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
     // let mut db = LocaleDB::load_from("output/i18n")?;
     // db.merge_with(LocaleDB::load_from("output/i18n/manual")?);
 
-    let (_, archive) = get_merge_archive()?;
+    let (path, archive) = get_merge_archive()?;
+    println!("Found archive {}", path.display());
 
     // guide_match::all(&mut data, fix, guide)?;
     // guide_match::status_effects::perform(&mut data, fix, guide)?;
@@ -82,24 +85,31 @@ fn main2() -> Result<(), Error> {
     let data = || OrnaData::load_from("output");
     let localedb = || LocaleDB::load_from("output/i18n");
 
-    let args = std::env::args().collect::<Vec<_>>();
-    let args = args.iter().map(|s| s.as_str()).collect::<Vec<_>>();
-    if args.len() == 1 {
-        ethi(&guide, data()?)
-    } else {
-        match args[1] {
-            "json" => output::cli(&args[2..], &guide, data),
-            "match" => guide_match::cli(&args[2..], &guide, data()?),
-            "codex" => codex::cli(&args[2..], &guide, data()?),
-            "translation" => translation::cli(&args[2..], &guide, data()?, localedb()?),
-            "backups" => backups::cli(&args[2..], &guide, data()?),
-            "merge" => merge::cli(&args[2..], &guide, data()?),
-            subcommand => Err(Error::Misc(format!(
-                "Invalid CLI subcommand: {}",
-                subcommand
-            ))),
-        }
+    match cli::Cli::parse().command {
+        Some(command) => match command {
+            cli::Command::Backups(cmd) => backups::cli(cmd, &guide, data()?),
+            cli::Command::Codex(cmd) => codex::cli(cmd, &guide, data()?),
+            cli::Command::Json(cmd) => output::cli(cmd, &guide, data),
+            cli::Command::Match(cmd) => guide_match::cli(cmd, &guide, data()?),
+            cli::Command::Merge(cmd) => merge::cli(cmd, &guide, data()?),
+            cli::Command::Translation(cmd) => translation::cli(cmd, &guide, data()?, localedb()?),
+        },
+        None => ethi(&guide, data()?),
     }
+
+    // let args = std::env::args().collect::<Vec<_>>();
+    // let args = args.iter().map(|s| s.as_str()).collect::<Vec<_>>();
+    // if args.len() == 1 {
+    //     ethi(&guide, data()?)
+    // } else {
+    //     match args[1] {
+    //         "translation" => translation::cli(&args[2..], &guide, data()?, localedb()?),
+    //         subcommand => Err(Error::Misc(format!(
+    //             "Invalid CLI subcommand: {}",
+    //             subcommand
+    //         ))),
+    //     }
+    // }
 }
 
 fn main() {
