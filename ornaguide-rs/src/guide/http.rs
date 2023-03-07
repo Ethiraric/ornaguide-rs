@@ -127,7 +127,7 @@ async fn async_get_and_save(http: &Client, url: &str) -> Result<String, Error> {
         } else {
             String::new()
         };
-        let filename = format!("htmls/{}{}{}.html", url.host_str().unwrap(), path, param);
+        let filename = format!("data/htmls/{}{}{}.html", url.host_str().unwrap(), path, param);
         let mut writer = BufWriter::new(File::create(filename)?);
         write!(writer, "{}", body)?;
     }

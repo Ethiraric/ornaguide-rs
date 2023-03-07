@@ -28,9 +28,9 @@ where
 pub(crate) fn generate_locale_data() -> Result<HashMap<String, OrnaData>, Error> {
     with_data(|data| {
         let mut ret = HashMap::new();
-        for (lang, db) in LocaleDB::load_from("output/i18n")
+        for (lang, db) in LocaleDB::load_from("data/current_entries/i18n")
             .and_then(|mut db| {
-                db.merge_with(LocaleDB::load_from("output/i18n/manual")?);
+                db.merge_with(LocaleDB::load_from("data/current_entries/i18n/manual")?);
                 Ok(db)
             })
             .to_internal_server_error()?

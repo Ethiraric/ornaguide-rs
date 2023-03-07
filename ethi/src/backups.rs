@@ -122,7 +122,7 @@ pub fn merge<P: AsRef<Path>>(backups_path: P, output_path: P) -> Result<(), Erro
 /// Execute a CLI subcommand on backups.
 pub fn cli(command: cli::backups::Command, _: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
     match command {
-        cli::backups::Command::Merge => merge("backups_output", "merges"),
-        cli::backups::Command::Prune => prune("backups_output"),
+        cli::backups::Command::Merge => merge("data/backups/current_entries", "data/merges"),
+        cli::backups::Command::Prune => prune("data/backups/current_entries"),
     }
 }

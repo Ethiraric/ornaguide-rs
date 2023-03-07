@@ -10,7 +10,7 @@ mod translations;
 
 lazy_static! {
     pub static ref DATA: Result<RwLock<OrnaData>, OError> =
-        OrnaData::load_from("output").map(RwLock::new);
+        OrnaData::load_from("data/current_entries").map(RwLock::new);
 }
 
 /// Run a callable with a reference to the `OrnaData`.

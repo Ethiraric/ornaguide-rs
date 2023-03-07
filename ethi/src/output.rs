@@ -194,7 +194,7 @@ pub fn refresh(guide: &OrnaAdminGuide) -> Result<OrnaData, Error> {
     add_unlisted_monsters(guide, &mut data.codex)?;
     add_event_followers(guide, &mut data.codex)?;
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -212,7 +212,7 @@ pub fn refresh_guide(guide: &OrnaAdminGuide, codex_data: CodexData) -> Result<Or
         },
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -230,7 +230,7 @@ pub fn refresh_guide_static(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Or
         },
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -248,7 +248,7 @@ pub fn refresh_guide_items(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Orn
         },
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -266,7 +266,7 @@ pub fn refresh_guide_monsters(guide: &OrnaAdminGuide, data: OrnaData) -> Result<
         },
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -284,7 +284,7 @@ pub fn refresh_guide_pets(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Orna
         },
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -302,7 +302,7 @@ pub fn refresh_guide_skills(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Or
         },
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -323,7 +323,7 @@ pub fn refresh_codex(guide: &OrnaAdminGuide, guide_data: GuideData) -> Result<Or
     add_unlisted_monsters(guide, &mut data.codex)?;
     add_event_followers(guide, &mut data.codex)?;
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -342,7 +342,7 @@ pub fn refresh_codex_bosses(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Or
         guide: data.guide,
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -361,7 +361,7 @@ pub fn refresh_codex_followers(guide: &OrnaAdminGuide, data: OrnaData) -> Result
         guide: data.guide,
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -380,7 +380,7 @@ pub fn refresh_codex_items(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Orn
         guide: data.guide,
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -399,7 +399,7 @@ pub fn refresh_codex_monsters(guide: &OrnaAdminGuide, data: OrnaData) -> Result<
         guide: data.guide,
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -418,7 +418,7 @@ pub fn refresh_codex_raids(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Orn
         guide: data.guide,
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -437,7 +437,7 @@ pub fn refresh_codex_skills(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Or
         guide: data.guide,
     };
 
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }
@@ -524,7 +524,7 @@ pub fn fetch_all_matches_from_guide(
         codex,
         guide: data.guide,
     };
-    data.save_to("output")?;
+    data.save_to("data/current_entries")?;
 
     Ok(data)
 }

@@ -27,7 +27,7 @@ mod translation;
 
 /// Retrieve the latest merge archive (both its path and contents).
 fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
-    std::fs::read_dir("merges")?
+    std::fs::read_dir("data/merges")?
         // Filter out directory entries we can't read.
         .filter_map(|entry| entry.ok())
         // Filter out directories.
@@ -58,8 +58,8 @@ fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
 fn ethi(guide: &OrnaAdminGuide, mut data: OrnaData) -> Result<(), Error> {
     let fix = false;
 
-    // let mut db = LocaleDB::load_from("output/i18n")?;
-    // db.merge_with(LocaleDB::load_from("output/i18n/manual")?);
+    // let mut db = LocaleDB::load_from("data/current_entries/i18n")?;
+    // db.merge_with(LocaleDB::load_from("data/current_entries/i18n/manual")?);
 
     let (path, archive) = get_merge_archive()?;
     println!("Found archive {}", path.display());
@@ -82,8 +82,8 @@ fn main2() -> Result<(), Error> {
             config.playorna_host.clone(),
         )
     })?;
-    let data = || OrnaData::load_from("output");
-    let localedb = || LocaleDB::load_from("output/i18n");
+    let data = || OrnaData::load_from("data/current_entries");
+    let localedb = || LocaleDB::load_from("data/current_entries/i18n");
 
     match cli::Cli::parse().command {
         Some(command) => match command {

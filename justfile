@@ -1,45 +1,54 @@
 set dotenv-load := false
 
+export NOW := `date "+%Y-%m-%d"`
+export NOWDT := `date "+%Y-%m-%dT%H-%M"`
+
 default:
   @just --list
 
 new_jsons:
-  (cd jsons && for x in item class specialization skill pet monster quest npc; do curl -X POST https://orna.guide/api/v1/${x} -d "{}" | jq . > ${x}.json; done)
-  cp -r jsons/ jsons-`date "+%Y-%m-%d"` && BZIP2=-9 tar -cjvf jsons-`date "+%Y-%m-%d"`{.tar.bz2,} && mv jsons-`date "+%Y-%m-%d"`.tar.bz2 backups_json/ && rm -r jsons-`date "+%Y-%m-%d"`
+  for x in item class specialization skill pet monster quest npc; do curl -X POST https://orna.guide/api/v1/${x} -d "{}" | jq . > data/current_entries/${x}.json
+  cp -r data/current_entries data/current_entries-${NOW}
+  cd data && BZIP2=-9 tar -cjvf current_entries-${NOW}{.tar.bz2,}
+  mv data/current_entries-${NOW}.tar.bz2 data/backups/current_entries/
+  rm -r data/current_entries-${NOW}
 
 backup_htmls:
-  mv htmls htmls-`date "+%Y-%m-%d"`
-  BZIP2=-9 tar -cjvf htmls-`date "+%Y-%m-%d"`{.tar.bz2,}
-  mv htmls-`date "+%Y-%m-%d"`.tar.bz2 backups_html
-  mv htmls-`date "+%Y-%m-%d"` htmls
+  mv data/htmls data/htmls-${NOW}
+  cd data && BZIP2=-9 tar -cjvf htmls-${NOW}{.tar.bz2,}
+  mv data/htmls-${NOW}.tar.bz2 data/backups/htmls
+  mv data/htmls-${NOW} data/htmls
 
-backup_output:
+backup_current_entries:
   cargo run --release --bin ethi json refresh
-  cp -r output output-`date "+%Y-%m-%d"`
-  BZIP2=-9 tar -cjvf output-`date "+%Y-%m-%d"`{.tar.bz2,}
-  mv output-`date "+%Y-%m-%d"`.tar.bz2 backups_output
-  rm -r output-`date "+%Y-%m-%d"`
+  cp -r data/current_entries data/current_entries-${NOW}
+  cd data && BZIP2=-9 tar -cjvf current_entries-${NOW}{.tar.bz2,}
+  mv data/current_entries-${NOW}.tar.bz2 data/backups/current_entries
+  rm -r data/current_entries-${NOW}
 
 json_refresh:
   cargo run --release --bin ethi json refresh
 
 backup_htmls_now:
-  cp -r htmls htmls-`date "+%Y-%m-%dT%H-%M"`
-  BZIP2=-9 tar -cjvf htmls-`date "+%Y-%m-%dT%H-%M"`{.tar.bz2,}
-  mv htmls-`date "+%Y-%m-%dT%H-%M"`.tar.bz2 backups_html
-  rm -r htmls-`date "+%Y-%m-%dT%H-%M"`
+  mv data/htmls data/htmls-${NOWDT}
+  cd data && BZIP2=-9 tar -cjvf htmls-${NOWDT}{.tar.bz2,}
+  mv data/htmls-${NOWDT}.tar.bz2 data/backups/htmls
+  mv data/htmls-${NOWDT} data/htmls
 
-backup_output_now:
-  cp -r output output-`date "+%Y-%m-%dT%H-%M"`
-  BZIP2=-9 tar -cjvf output-`date "+%Y-%m-%dT%H-%M"`{.tar.bz2,}
-  mv output-`date "+%Y-%m-%dT%H-%M"`.tar.bz2 backups_output
-  rm -r output-`date "+%Y-%m-%dT%H-%M"`
+backup_current_entries_now:
+  cp -r data/current_entries data/current_entries-${NOWDT}
+  cd data && BZIP2=-9 tar -cjvf current_entries-${NOWDT}{.tar.bz2,}
+  mv data/current_entries-${NOWDT}.tar.bz2 data/backups/current_entries
+  rm -r data/current_entries-${NOWDT}
 
 merge:
   cargo run --release --bin ethi backups merge
 
-quick_merge_now: backup_output_now merge
+quick_merge_now: backup_current_entries_now merge
 
 new_merge_now: json_refresh quick_merge_now
 
-cron: new_jsons backup_htmls backup_output
+cron: new_jsons backup_htmls backup_current_entries
+
+t:
+  echo current_entries-${NOW}

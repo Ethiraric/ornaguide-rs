@@ -15,11 +15,11 @@ pub fn cli(
         cli::translation::Command::Missing => {
             let missing = crate::codex::fetch::missing_translations(guide, &data, &locales)?;
             locales.merge_with(missing);
-            locales.save_to("output/i18n")
+            locales.save_to("data/current_entries/i18n")
         }
         cli::translation::Command::Fetch(locale) => {
             crate::codex::fetch::translations(guide, &data, &locale.locale)?
-                .save_to(&format!("output/i18n/{}.json", &locale.locale))
+                .save_to(&format!("data/current_entries/i18n/{}.json", &locale.locale))
         }
     }
 }

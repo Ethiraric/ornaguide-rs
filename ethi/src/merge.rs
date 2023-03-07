@@ -11,7 +11,7 @@ use crate::{
 
 /// Retrieve the latest merge archive (both its path and contents).
 fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
-    std::fs::read_dir("merges")?
+    std::fs::read_dir("data/merges")?
         // Filter out directory entries we can't read.
         .filter_map(|entry| entry.ok())
         // Filter out directories.
