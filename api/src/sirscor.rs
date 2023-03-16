@@ -1,6 +1,5 @@
 use std::fmt::Write;
 
-use lazy_static::__Deref;
 use ornaguide_rs::{
     data::OrnaData, items::admin::AdminItem, monsters::admin::AdminMonster, pets::admin::AdminPet,
     skills::admin::AdminSkill,
@@ -172,9 +171,13 @@ fn check_pet_missing_price(data: &OrnaData, response: &mut String) -> Result<(),
 
 #[get("/sirscor")]
 pub fn get() -> Html<String> {
-    let lock = DATA.as_ref().unwrap();
-    let lock = lock.read();
-    let data = lock.as_ref().unwrap().deref();
+    let data = match DATA.as_ref() {
+        Ok(x) => x,
+        Err(x) => {
+            return format!("Error: {}", x).into();
+        }
+    };
+
     let mut response = format!("<html>{}<body>", STYLE);
 
     Ok(())
