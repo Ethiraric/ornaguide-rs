@@ -1,16 +1,15 @@
-use std::{collections::HashMap, sync::RwLock};
+use std::collections::HashMap;
 
 use ornaguide_rs::{data::OrnaData, error::Error as OError};
 
-use lazy_static::{__Deref, lazy_static};
+use lazy_static::lazy_static;
 
 use crate::error::{Error, ToErrorable};
 
 mod translations;
 
 lazy_static! {
-    pub static ref DATA: Result<RwLock<OrnaData>, OError> =
-        OrnaData::load_from("data/current_entries").map(RwLock::new);
+    pub static ref DATA: Result<OrnaData, OError> = OrnaData::load_from("data/current_entries");
 }
 
 /// Run a callable with a reference to the `OrnaData`.
@@ -18,42 +17,29 @@ lazy_static! {
 /// error is returned.
 pub fn with_data<F, T>(f: F) -> Result<T, Error>
 where
-    F: FnOnce(&OrnaData) -> Result<T, Error>,
+    F: FnOnce(&'static OrnaData) -> Result<T, Error>,
 {
-    let lock = DATA.as_ref().to_internal_server_error()?;
-    let lock2 = lock.read();
-    let data = lock2
-        .as_ref()
-        .map_err(|err| OError::Misc(format!("{}", err)))
-        .to_internal_server_error()?
-        .deref();
-
+    let data = DATA.as_ref().to_internal_server_error()?;
     f(data)
 }
 
 lazy_static! {
-    pub static ref LOCALE_DATA: Result<RwLock<HashMap<String, OrnaData>>, Error> =
-        translations::generate_locale_data().map(RwLock::new);
+    pub static ref LOCALE_DATA: Result<HashMap<String, OrnaData>, Error> =
+        translations::generate_locale_data();
 }
 
 /// Run a callable with a reference to an `OrnaData` instance, translated to the given locale, if
 /// any. The default locale is `en`.
 pub fn with_locale_data<F, T>(f: F, lang: &Option<String>) -> Result<T, Error>
 where
-    F: FnOnce(&OrnaData) -> Result<T, Error>,
+    F: FnOnce(&'static OrnaData) -> Result<T, Error>,
 {
     // If `lang` is `None` or `en`, get the default data. Avoids a `HashMap` lookup for the most
     // common case.
     match lang.as_ref().map(String::as_str) {
         None | Some("en") => with_data(f),
         Some(lang) => {
-            let lock = LOCALE_DATA.as_ref().map_err(Error::clone)?;
-            let lock2 = lock.read();
-            let locale_data = lock2
-                .as_ref()
-                .map_err(|err| OError::Misc(format!("{}", err)))
-                .to_internal_server_error()?
-                .deref();
+            let locale_data = LOCALE_DATA.as_ref().map_err(Error::clone)?;
 
             if let Some(data) = locale_data.get(lang) {
                 f(data)
