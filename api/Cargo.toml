@@ -13,3 +13,4 @@ regex = "1.6.0"
 serde_json = "1.0.59"
 
 proc_macros = { path = "proc_macros" }
+num = "0.4.0"
