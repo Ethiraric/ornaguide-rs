@@ -112,3 +112,11 @@ impl<'r> Responder<'r, 'static> for MaybeResponse {
             })
     }
 }
+
+/// Return an API error wrapping an ornaguide_rs error with the given string and status.
+pub fn og_error(status: Status, contents: String) -> Error {
+    Error {
+        status,
+        error: ornaguide_rs::error::Error::Misc(contents),
+    }
+}

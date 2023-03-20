@@ -9,6 +9,7 @@ use rocket::{routes, Config};
 
 use crate::data::DATA;
 
+mod assessat;
 mod cors;
 mod data;
 mod deref;
@@ -40,6 +41,7 @@ fn rocket() -> _ {
         .mount(
             "/api/v0.1",
             routes![
+                assessat::post,
                 items::options,
                 items::post,
                 monsters::options,
