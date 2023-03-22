@@ -17,6 +17,63 @@ pub struct AssessatRequest {
     quality: u8,
 }
 
+/// Response for an assessat request.
+#[derive(Serialize)]
+pub struct AssessatResponse {
+    /// Base stats for the item.
+    pub base_item: &'static AdminItem,
+    /// Stats for the item at level 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, MF, DF, GF.
+    pub stats: Vec<AssessatStats>,
+}
+
+/// Query for items.
+/// The `Content-Type` header must be set to `application/json` when calling this route.
+/// Even when using no filter, the body should be an empty JSON object (`{}`).
+#[post("/assessat", format = "json", data = "<request>")]
+pub fn post(request: Json<AssessatRequest>) -> MaybeResponse {
+    MaybeResponse {
+        contents: post_impl(request.into_inner()),
+    }
+}
+
+/// Implementation method for `/assessat`.
+/// Performs request checks to ensure the assessment can proceed without error.
+fn post_impl(request: AssessatRequest) -> Result<serde_json::Value, Error> {
+    let quality_tier = QualityTier::from_percent(request.quality);
+    if quality_tier == QualityTier::Impossible {
+        return Err(og_error(
+            Status::BadRequest,
+            format!("{}: Invalid quality", request.quality),
+        ));
+    }
+
+    let response = match with_data(|data| Ok(data.guide.items.find_by_id(request.item)))? {
+        Some(x) => assessat(x, request.quality, quality_tier),
+        None => {
+            return Err(og_error(
+                Status::NotFound,
+                format!("{}: Unknown item id", request.item),
+            ))
+        }
+    };
+
+    serde_json::to_value(response).map_err(|e| Error {
+        status: Status::InternalServerError,
+        error: e.into(),
+    })
+}
+
+/// Assess an item at the given quality.
+/// This function holds the logic behind the `/assessat` call. Logic is extracted here for ease of
+/// testing.
+pub fn assessat(
+    item: &'static AdminItem,
+    quality: u8,
+    quality_tier: QualityTier,
+) -> AssessatResponse {
+    AssessCtx::assess(item, quality, quality_tier)
+}
+
 /// Stats at a specific level.
 #[derive(Serialize)]
 pub struct AssessatStats {
@@ -33,7 +90,7 @@ pub struct AssessatStats {
     /// How much resistance the item gives, if equippable.
     pub resistance: i16,
     /// How much ward the item gives, if equippable (%).
-    pub ward: i8,
+    pub ward: i16,
     /// How much foresight the item gives, if equippable.
     pub foresight: i16,
     /// The number of adornment slots of the item has.
@@ -50,13 +107,211 @@ pub struct AssessatStats {
     pub exp_bonus: f32,
 }
 
-/// Response for an assessat request.
-#[derive(Default, Serialize)]
-pub struct AssessatResponse {
-    /// Base stats for the item.
-    pub base_item: AdminItem,
-    /// Stats for the item at level 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, MF, DF, GF.
-    pub stats: Vec<AssessatStats>,
+/// Item stats, expressed as floats. Used for computations.
+#[derive(Clone, Default)]
+struct FloatStats {
+    pub hp: f32,
+    pub mana: f32,
+    pub attack: f32,
+    pub magic: f32,
+    pub defense: f32,
+    pub resistance: f32,
+    pub ward: f32,
+    pub foresight: f32,
+}
+
+/// Boni granted by an item at level 1.
+#[derive(Default)]
+struct Boni {
+    pub orn_bonus: f32,
+    pub gold_bonus: f32,
+    pub drop_bonus: f32,
+    pub spawn_bonus: f32,
+    pub exp_bonus: f32,
+}
+
+/// Context data for an assessment.
+struct AssessCtx {
+    /// The base stats (100% quality) of the item to assess.
+    item: &'static AdminItem,
+    /// The quality at which to assess.
+    quality: u8,
+    /// The quality tier of the item at levels 1-10.
+    quality_tier: QualityTier,
+    /// Whether the item to assess is an adornment.
+    is_adorn: bool,
+    /// Stats of the item at level 1.
+    lv1_stats: FloatStats,
+    /// Boni granted by the item at level 1.
+    lv1_boni: Boni,
+    /// By how much stats increase per level,
+    increment: FloatStats,
+    /// Route response.
+    response: AssessatResponse,
+}
+
+impl AssessCtx {
+    /// Create a new assess context for the given item and quality.
+    fn new(item: &'static AdminItem, quality: u8, quality_tier: QualityTier) -> Self {
+        AssessCtx {
+            item,
+            quality,
+            quality_tier,
+            lv1_stats: FloatStats::default(),
+            lv1_boni: Boni::default(),
+            increment: FloatStats::default(),
+            is_adorn: item.type_ == 11, /* Adornment */
+            response: AssessatResponse {
+                base_item: item,
+                stats: vec![],
+            },
+        }
+    }
+
+    /// Compute the base stats of the item at the given quality and assign to self.
+    fn compute_lv1_stats(&mut self) {
+        let quality_ratio = 1.0 + (self.quality as f32 / 100.0);
+        self.lv1_stats = FloatStats {
+            hp: base_stat_at(
+                self.item.hp_affected_by_quality,
+                self.item.hp,
+                quality_ratio,
+            ),
+            mana: base_stat_at(
+                self.item.mana_affected_by_quality,
+                self.item.mana,
+                quality_ratio,
+            ),
+            attack: base_stat_at(
+                self.item.attack_affected_by_quality,
+                self.item.attack,
+                quality_ratio,
+            ),
+            magic: base_stat_at(
+                self.item.magic_affected_by_quality,
+                self.item.magic,
+                quality_ratio,
+            ),
+            defense: base_stat_at(
+                self.item.defense_affected_by_quality,
+                self.item.defense,
+                quality_ratio,
+            ),
+            resistance: base_stat_at(
+                self.item.resistance_affected_by_quality,
+                self.item.resistance,
+                quality_ratio,
+            ),
+            ward: base_stat_at(
+                self.item.ward_affected_by_quality,
+                self.item.ward,
+                quality_ratio,
+            ),
+            foresight: base_stat_at(true, self.item.foresight, quality_ratio),
+        };
+    }
+
+    /// Compute the boni granted by the item at level 1.
+    fn compute_lv1_boni(&mut self) {
+        self.lv1_boni = Boni {
+            orn_bonus: self.quality_tier.bonus(self.is_adorn, self.item.orn_bonus),
+            gold_bonus: self.quality_tier.bonus(self.is_adorn, self.item.gold_bonus),
+            drop_bonus: self.quality_tier.bonus(self.is_adorn, self.item.drop_bonus),
+            /// TODO(ethiraric, 22/03/2023): How does that even scale?
+            spawn_bonus: self.item.spawn_bonus,
+            exp_bonus: self.quality_tier.bonus(self.is_adorn, self.item.exp_bonus),
+        };
+    }
+
+    /// Compute the stats increment per level and assign it to self.
+    fn compute_increment(&mut self) {
+        let ratio = if self.item.boss { 0.125f32 } else { 0.1 };
+        self.increment = FloatStats {
+            hp: (self.item.hp as f32 * ratio).ceil(),
+            mana: (self.item.mana as f32 * ratio).ceil(),
+            attack: (self.item.attack as f32 * ratio).ceil(),
+            magic: (self.item.magic as f32 * ratio).ceil(),
+            defense: (self.item.defense as f32 * ratio).ceil(),
+            resistance: (self.item.resistance as f32 * ratio).ceil(),
+            ward: (self.item.ward as f32 * ratio).ceil(),
+            foresight: (self.item.foresight as f32 * ratio).ceil(),
+        }
+    }
+
+    /// Compute stats for each level and add the data in `response`.
+    fn populate_response(&mut self) {
+        // Start with lv1 stats.
+        let mut stats = self.lv1_stats.clone();
+        // We can immediately add them to the response.
+        self.response
+            .stats
+            .push(AssessatStats::new_from(&stats, &self.lv1_boni, 0));
+
+        // Level 1 -> 2 adds the increment twice. We need to add once before looping.
+        stats.add(&self.increment);
+
+        // From level 2 to 10 (included).
+        for level in 2..11 {
+            // Add the increment...
+            stats.add(&self.increment);
+            // ... and push the stats.
+            self.response.stats.push(AssessatStats::new_from(
+                &stats,
+                &self.lv1_boni,
+                adorn_slots_at(self.item, level, self.quality_tier),
+            ));
+        }
+    }
+
+    /// Assess an item at the given quality.
+    fn assess(
+        item: &'static AdminItem,
+        quality: u8,
+        quality_tier: QualityTier,
+    ) -> AssessatResponse {
+        let mut ctx = Self::new(item, quality, quality_tier);
+        ctx.compute_lv1_stats();
+        ctx.compute_lv1_boni();
+        ctx.compute_increment();
+        ctx.populate_response();
+        ctx.response
+    }
+}
+
+impl AssessatStats {
+    /// Create a new `AssessatStats` from fragments of data given as parameters.
+    fn new_from(stats: &FloatStats, boni: &Boni, adornment_slots: u8) -> Self {
+        Self {
+            hp: stats.hp.ceil() as i16,
+            mana: stats.mana.ceil() as i16,
+            attack: stats.attack.ceil() as i16,
+            magic: stats.magic.ceil() as i16,
+            defense: stats.defense.ceil() as i16,
+            resistance: stats.resistance.ceil() as i16,
+            ward: stats.ward.ceil() as i16,
+            foresight: stats.hp.ceil() as i16,
+            adornment_slots,
+            orn_bonus: boni.orn_bonus,
+            gold_bonus: boni.gold_bonus,
+            drop_bonus: boni.drop_bonus,
+            spawn_bonus: boni.spawn_bonus,
+            exp_bonus: boni.exp_bonus,
+        }
+    }
+}
+
+impl FloatStats {
+    /// Add stats to `self`.
+    fn add(&mut self, other: &FloatStats) {
+        self.hp += other.hp;
+        self.mana += other.mana;
+        self.attack += other.attack;
+        self.magic += other.magic;
+        self.defense += other.defense;
+        self.resistance += other.resistance;
+        self.ward += other.ward;
+        self.foresight += other.hp;
+    }
 }
 
 /// Quality tier of an item.
@@ -125,10 +380,10 @@ impl QualityTier {
     pub fn item_bonus(&self, base_bonus: f32) -> f32 {
         // The formula, with the base B expressed as a percent (ranging from 1 to 100) is:
         //      ((base / 100 + 1) * quality - 1) * 100
-        //       |                |           |  ^ rescale to a percentage
-        //       |                |           ^ remove the 1 we added earlier
-        //       |                ^ apply quality modifier
-        //       ^ convert to proportion and add 1 (100%)
+        //       ^                ^           ^  ^ rescale to a percentage
+        //       |                |           ` remove the 1 we added earlier
+        //       |                ` apply quality modifier
+        //       ` convert to proportion and add 1 (100%)
         //         i.e.: get (gain with bonus) / (gain without bonus)
         //               with base = 25%, we get 1.25
         // Courtesy of Rubenir.
@@ -151,188 +406,57 @@ impl QualityTier {
             self.adorn_bonus(base_bonus)
         }
     }
-}
 
-/// Computes a base stat of an item at the given quality.
-fn base_stat_at<T: NumCast>(affected: bool, base_stat: T, quality: u8) -> T {
-    if affected {
-        T::from(<i32 as num::NumCast>::from(base_stat).unwrap() * quality as i32 / 100).unwrap()
-    } else {
-        base_stat
-    }
-}
-
-/// Computes the base stats of an item at the given quality.
-fn base_stats_at(
-    item: &AdminItem,
-    quality: u8,
-    quality_tier: QualityTier,
-    is_adorn: bool,
-) -> AssessatStats {
-    AssessatStats {
-        hp: base_stat_at(item.hp_affected_by_quality, item.hp, quality),
-        mana: base_stat_at(item.mana_affected_by_quality, item.mana, quality),
-        attack: base_stat_at(item.attack_affected_by_quality, item.attack, quality),
-        magic: base_stat_at(item.magic_affected_by_quality, item.magic, quality),
-        defense: base_stat_at(item.defense_affected_by_quality, item.defense, quality),
-        resistance: base_stat_at(
-            item.resistance_affected_by_quality,
-            item.resistance,
-            quality,
-        ),
-        ward: base_stat_at(item.ward_affected_by_quality, item.ward, quality),
-        foresight: base_stat_at(true, item.foresight, quality),
-        adornment_slots: 0,
-        orn_bonus: quality_tier.bonus(is_adorn, item.orn_bonus),
-        gold_bonus: quality_tier.bonus(is_adorn, item.gold_bonus),
-        drop_bonus: quality_tier.bonus(is_adorn, item.drop_bonus),
-        spawn_bonus: item.spawn_bonus,
-        exp_bonus: quality_tier.bonus(is_adorn, item.exp_bonus),
-    }
-}
-
-/// Computes increments to the base stats at each level.
-fn increments_from_base_stats(base_stats: &AssessatStats, boss: bool) -> AssessatStats {
-    AssessatStats {
-        hp: if boss {
-            base_stats.hp / 8
-        } else {
-            base_stats.hp / 10
-        },
-        mana: if boss {
-            base_stats.mana / 8
-        } else {
-            base_stats.mana / 10
-        },
-        attack: if boss {
-            base_stats.attack / 8
-        } else {
-            base_stats.attack / 10
-        },
-        magic: if boss {
-            base_stats.magic / 8
-        } else {
-            base_stats.magic / 10
-        },
-        defense: if boss {
-            base_stats.defense / 8
-        } else {
-            base_stats.defense / 10
-        },
-        resistance: if boss {
-            base_stats.resistance / 8
-        } else {
-            base_stats.resistance / 10
-        },
-        ward: if boss {
-            base_stats.ward / 8
-        } else {
-            base_stats.ward / 10
-        },
-        foresight: if boss {
-            base_stats.foresight / 8
-        } else {
-            base_stats.foresight / 10
-        },
-        adornment_slots: 0,
-        orn_bonus: 0.0,
-        gold_bonus: 0.0,
-        drop_bonus: 0.0,
-        spawn_bonus: 0.0,
-        exp_bonus: 0.0,
-    }
-}
-
-/// Computes the stats of an item at a given level.
-/// The level must be between 1 and 10 (included). This function will return erroneous results for
-/// Masterforged, Demonforged and Godforged items.
-fn stats_at_level_x(
-    item: &AdminItem,
-    base_stats: &AssessatStats,
-    increment: &AssessatStats,
-    level: i16,
-    quality_tier: QualityTier,
-    is_adorn: bool,
-) -> AssessatStats {
-    AssessatStats {
-        hp: base_stats.hp + increment.hp * level,
-        mana: base_stats.mana + increment.mana * level,
-        attack: base_stats.attack + increment.attack * level,
-        magic: base_stats.magic + increment.magic * level,
-        defense: base_stats.defense + increment.defense * level,
-        resistance: base_stats.resistance + increment.resistance * level,
-        ward: base_stats.ward + increment.ward * level as i8,
-        foresight: base_stats.foresight + increment.foresight * level,
-        adornment_slots: 0,
-        orn_bonus: quality_tier.bonus(is_adorn, item.orn_bonus),
-        gold_bonus: quality_tier.bonus(is_adorn, item.gold_bonus),
-        drop_bonus: quality_tier.bonus(is_adorn, item.drop_bonus),
-        /// TODO(ethiraric): How does that even scale?
-        spawn_bonus: item.spawn_bonus,
-        exp_bonus: quality_tier.bonus(is_adorn, item.exp_bonus),
-    }
-}
-
-/// Assess an item at the given quality.
-/// This function holds the logic behind the `/assessat` call. Logic is extracted here for ease of
-/// testing.
-pub fn assessat(item: &AdminItem, quality: u8, quality_tier: QualityTier) -> AssessatResponse {
-    let mut response = AssessatResponse {
-        base_item: item.clone(),
-        ..Default::default()
-    };
-
-    let is_adorn = item.type_ == 11 /* Adornment */;
-    let base_stats = base_stats_at(item, quality, quality_tier, is_adorn);
-    let increment = increments_from_base_stats(&base_stats, item.boss);
-    response.stats.push(base_stats);
-
-    for i in 2..11 {
-        response.stats.push(stats_at_level_x(
-            item,
-            &response.stats[0],
-            &increment,
-            i,
-            quality_tier,
-            is_adorn,
-        ));
-    }
-
-    response
-}
-
-/// Implementation method for `/assessat`.
-fn post_impl(request: AssessatRequest) -> Result<serde_json::Value, Error> {
-    let quality_tier = QualityTier::from_percent(request.quality);
-    if quality_tier == QualityTier::Impossible {
-        return Err(og_error(
-            Status::BadRequest,
-            format!("{}: Invalid quality", request.quality),
-        ));
-    }
-
-    let response = match with_data(|data| Ok(data.guide.items.find_by_id(request.item)))? {
-        Some(x) => assessat(x, request.quality, quality_tier),
-        None => {
-            return Err(og_error(
-                Status::NotFound,
-                format!("{}: Unknown item id", request.item),
-            ))
+    /// Return the number of bonus adornment slots to the item given by the quality tier.
+    pub fn bonus_adorns(&self) -> u8 {
+        match self {
+            QualityTier::Broken => 0,
+            QualityTier::Poor => 0,
+            QualityTier::Common => 0,
+            QualityTier::Superior => 1,
+            QualityTier::Famed => 1,
+            QualityTier::Legendary => 1,
+            QualityTier::Ornate => 2,
+            QualityTier::Masterforged => 3,
+            QualityTier::Demonforged => 3,
+            QualityTier::Godforged => 4,
+            QualityTier::Impossible => 0,
         }
-    };
-
-    serde_json::to_value(response).map_err(|e| Error {
-        status: Status::InternalServerError,
-        error: e.into(),
-    })
+    }
 }
 
-/// Query for items.
-/// The `Content-Type` header must be set to `application/json` when calling this route.
-/// Even when using no filter, the body should be an empty JSON object (`{}`).
-#[post("/assessat", format = "json", data = "<request>")]
-pub fn post(request: Json<AssessatRequest>) -> MaybeResponse {
-    MaybeResponse {
-        contents: post_impl(request.into_inner()),
+/// Compute the number of adornment slots for an item at the given level and quality.
+fn adorn_slots_at(item: &AdminItem, level: i16, quality_tier: QualityTier) -> u8 {
+    // Compute the max adorn slots at level 10.
+    let mut max_adorn_slots = item.base_adornment_slots;
+    // For some reason, items of tiers 1 and 2, and off-hands do not scale their adorn slots with
+    // quality.
+    if item.type_ !=  10 /* Off-hand */ && item.tier > 2 {
+        max_adorn_slots += quality_tier.bonus_adorns()
+    };
+
+    // If the item is level 10, it unlocks all slots. This was an issue with some Ornate items who
+    // could have 10+ slots at level 10. The default formula only allows for up to 9 slots at level
+    // 10.
+    if level == 10
+        || [
+            QualityTier::Masterforged,
+            QualityTier::Demonforged,
+            QualityTier::Godforged,
+        ]
+        .contains(&quality_tier)
+    {
+        max_adorn_slots
+    } else {
+        ((level - 1) as u8).min(max_adorn_slots)
+    }
+}
+
+/// Compute a base stat of an item at the given quality ratio.
+fn base_stat_at<T: NumCast>(affected: bool, base_stat: T, quality_ratio: f32) -> f32 {
+    if affected {
+        <f32 as num::NumCast>::from(base_stat).unwrap() * quality_ratio
+    } else {
+        <f32 as num::NumCast>::from(base_stat).unwrap()
     }
 }
