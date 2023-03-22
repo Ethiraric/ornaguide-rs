@@ -83,7 +83,7 @@ pub struct AdminItem {
     pub has_slots: bool,
     /// The number of adornment slots of the item at common quality level 10.
     /// Bonus slots are added (assuming level 10+, relative to the base adorn slots):
-    ///   * 1 at legendary quality
+    ///   * 1 at superior quality
     ///   * 2 at ornate quality
     ///   * 3 when Masterforged
     ///   * 4 when Godforged
