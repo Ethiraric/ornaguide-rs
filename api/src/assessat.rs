@@ -108,7 +108,7 @@ pub struct AssessatStats {
 }
 
 /// Item stats, expressed as floats. Used for computations.
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 struct FloatStats {
     pub hp: f32,
     pub mana: f32,
@@ -123,11 +123,11 @@ struct FloatStats {
 /// Boni granted by an item at level 1.
 #[derive(Default)]
 struct Boni {
-    pub orn_bonus: f32,
-    pub gold_bonus: f32,
-    pub drop_bonus: f32,
-    pub spawn_bonus: f32,
-    pub exp_bonus: f32,
+    pub orn_bonus: f64,
+    pub gold_bonus: f64,
+    pub drop_bonus: f64,
+    pub spawn_bonus: f64,
+    pub exp_bonus: f64,
 }
 
 /// Context data for an assessment.
@@ -170,7 +170,7 @@ impl AssessCtx {
 
     /// Compute the base stats of the item at the given quality and assign to self.
     fn compute_lv1_stats(&mut self) {
-        let quality_ratio = 1.0 + (self.quality as f32 / 100.0);
+        let quality_ratio = self.quality as f32 / 100.0;
         self.lv1_stats = FloatStats {
             hp: base_stat_at(
                 self.item.hp_affected_by_quality,
@@ -214,12 +214,20 @@ impl AssessCtx {
     /// Compute the boni granted by the item at level 1.
     fn compute_lv1_boni(&mut self) {
         self.lv1_boni = Boni {
-            orn_bonus: self.quality_tier.bonus(self.is_adorn, self.item.orn_bonus),
-            gold_bonus: self.quality_tier.bonus(self.is_adorn, self.item.gold_bonus),
-            drop_bonus: self.quality_tier.bonus(self.is_adorn, self.item.drop_bonus),
+            orn_bonus: self
+                .quality_tier
+                .bonus(self.is_adorn, self.item.orn_bonus as f64),
+            gold_bonus: self
+                .quality_tier
+                .bonus(self.is_adorn, self.item.gold_bonus as f64),
+            drop_bonus: self
+                .quality_tier
+                .bonus(self.is_adorn, self.item.drop_bonus as f64),
             /// TODO(ethiraric, 22/03/2023): How does that even scale?
-            spawn_bonus: self.item.spawn_bonus,
-            exp_bonus: self.quality_tier.bonus(self.is_adorn, self.item.exp_bonus),
+            spawn_bonus: self.item.spawn_bonus as f64,
+            exp_bonus: self
+                .quality_tier
+                .bonus(self.is_adorn, self.item.exp_bonus as f64),
         };
     }
 
@@ -227,14 +235,15 @@ impl AssessCtx {
     fn compute_increment(&mut self) {
         let ratio = if self.item.boss { 0.125f32 } else { 0.1 };
         self.increment = FloatStats {
-            hp: (self.item.hp as f32 * ratio).ceil(),
-            mana: (self.item.mana as f32 * ratio).ceil(),
-            attack: (self.item.attack as f32 * ratio).ceil(),
-            magic: (self.item.magic as f32 * ratio).ceil(),
-            defense: (self.item.defense as f32 * ratio).ceil(),
-            resistance: (self.item.resistance as f32 * ratio).ceil(),
-            ward: (self.item.ward as f32 * ratio).ceil(),
-            foresight: (self.item.foresight as f32 * ratio).ceil(),
+            hp: (self.item.hp as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
+            mana: (self.item.mana as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
+            attack: (self.item.attack as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
+            magic: (self.item.magic as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
+            defense: (self.item.defense as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
+            resistance: (self.item.resistance as f32 * ratio).ceil()
+                * (self.quality as f32 / 100.0),
+            ward: (self.item.ward as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
+            foresight: (self.item.foresight as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
         }
     }
 
@@ -261,6 +270,26 @@ impl AssessCtx {
                 adorn_slots_at(self.item, level, self.quality_tier),
             ));
         }
+
+        // Add Masterforged, Demonforged, Godforged.
+        self.response.stats.push(raw_assessat(
+            self.item,
+            self.quality + 1,
+            QualityTier::Masterforged,
+            11,
+        ));
+        self.response.stats.push(raw_assessat(
+            self.item,
+            self.quality + 2,
+            QualityTier::Demonforged,
+            12,
+        ));
+        self.response.stats.push(raw_assessat(
+            self.item,
+            self.quality + 3,
+            QualityTier::Godforged,
+            13,
+        ));
     }
 
     /// Assess an item at the given quality.
@@ -269,13 +298,110 @@ impl AssessCtx {
         quality: u8,
         quality_tier: QualityTier,
     ) -> AssessatResponse {
+        dbg!(item);
         let mut ctx = Self::new(item, quality, quality_tier);
         ctx.compute_lv1_stats();
+        dbg!(&ctx.lv1_stats);
         ctx.compute_lv1_boni();
         ctx.compute_increment();
+        dbg!(&ctx.increment);
         ctx.populate_response();
         ctx.response
     }
+}
+
+/// Compute the stats of the item at the given quality and level.
+/// No check is performed. level must be 11 if quality is MF, for instance.
+/// This function is not efficient.
+fn raw_assessat(
+    item: &AdminItem,
+    quality: u8,
+    quality_tier: QualityTier,
+    level: i16,
+) -> AssessatStats {
+    let ratio = if item.boss { 0.125f32 } else { 0.1 };
+    let is_adorn = item.type_ == 11 /* Adornment */;
+
+    AssessatStats {
+        hp: raw_assessat_stat(
+            item.hp_affected_by_quality,
+            item.hp,
+            quality as f32 / 100.0,
+            ratio,
+            level,
+        ),
+        mana: raw_assessat_stat(
+            item.mana_affected_by_quality,
+            item.mana,
+            quality as f32 / 100.0,
+            ratio,
+            level,
+        ),
+        attack: raw_assessat_stat(
+            item.attack_affected_by_quality,
+            item.attack,
+            quality as f32 / 100.0,
+            ratio,
+            level,
+        ),
+        magic: raw_assessat_stat(
+            item.magic_affected_by_quality,
+            item.magic,
+            quality as f32 / 100.0,
+            ratio,
+            level,
+        ),
+        defense: raw_assessat_stat(
+            item.defense_affected_by_quality,
+            item.defense,
+            quality as f32 / 100.0,
+            ratio,
+            level,
+        ),
+        resistance: raw_assessat_stat(
+            item.resistance_affected_by_quality,
+            item.resistance,
+            quality as f32 / 100.0,
+            ratio,
+            level,
+        ),
+        ward: raw_assessat_stat(
+            item.ward_affected_by_quality,
+            item.ward as i16,
+            quality as f32 / 100.0,
+            ratio,
+            level,
+        ),
+        foresight: raw_assessat_stat(true, item.foresight, quality as f32 / 100.0, ratio, level),
+        adornment_slots: adorn_slots_at(item, level, quality_tier),
+        orn_bonus: quality_tier.bonus(is_adorn, item.orn_bonus as f64) as f32,
+        gold_bonus: quality_tier.bonus(is_adorn, item.gold_bonus as f64) as f32,
+        drop_bonus: quality_tier.bonus(is_adorn, item.drop_bonus as f64) as f32,
+        /// TODO(ethiraric, 22/03/2023): How does that even scale?
+        spawn_bonus: item.spawn_bonus,
+        exp_bonus: quality_tier.bonus(is_adorn, item.exp_bonus as f64) as f32,
+    }
+}
+
+/// Compute the stat of the item at the given quality and level.
+/// No check is performed. level must be 11 if quality is MF, for instance.
+/// This function is not efficient.
+fn raw_assessat_stat<T: NumCast>(
+    affected: bool,
+    base_stat: T,
+    mut quality_ratio: f32,
+    multiplier: f32,
+    level: i16,
+) -> T {
+    if !affected {
+        quality_ratio = 1.0;
+    }
+
+    let base_stat = <f32 as num::NumCast>::from(base_stat).unwrap();
+    let final_stat = (base_stat * quality_ratio
+        + (base_stat * multiplier).ceil() * level as f32 * quality_ratio)
+        .ceil();
+    <T as num::NumCast>::from(final_stat).unwrap()
 }
 
 impl AssessatStats {
@@ -291,11 +417,11 @@ impl AssessatStats {
             ward: stats.ward.ceil() as i16,
             foresight: stats.hp.ceil() as i16,
             adornment_slots,
-            orn_bonus: boni.orn_bonus,
-            gold_bonus: boni.gold_bonus,
-            drop_bonus: boni.drop_bonus,
-            spawn_bonus: boni.spawn_bonus,
-            exp_bonus: boni.exp_bonus,
+            orn_bonus: boni.orn_bonus as f32,
+            gold_bonus: boni.gold_bonus as f32,
+            drop_bonus: boni.drop_bonus as f32,
+            spawn_bonus: boni.spawn_bonus as f32,
+            exp_bonus: boni.exp_bonus as f32,
         }
     }
 }
@@ -359,7 +485,7 @@ impl QualityTier {
     }
 
     /// Return the bonus multiplier associated to the given quality tier.
-    pub fn bonus_multiplier(&self) -> f32 {
+    pub fn bonus_multiplier(&self) -> f64 {
         match self {
             QualityTier::Broken => 0.1,
             QualityTier::Poor => 1.0,
@@ -377,7 +503,7 @@ impl QualityTier {
 
     /// Return the bonus% of an item of `self` quality tier with the given base bonus percent.
     /// For adornments, use `adorn_bonus`. They follow a different formula.
-    pub fn item_bonus(&self, base_bonus: f32) -> f32 {
+    pub fn item_bonus(&self, base_bonus: f64) -> f64 {
         // The formula, with the base B expressed as a percent (ranging from 1 to 100) is:
         //      ((base / 100 + 1) * quality - 1) * 100
         //       ^                ^           ^  ^ rescale to a percentage
@@ -387,19 +513,23 @@ impl QualityTier {
         //         i.e.: get (gain with bonus) / (gain without bonus)
         //               with base = 25%, we get 1.25
         // Courtesy of Rubenir.
-        (base_bonus / 100.0 + 1.0 * self.bonus_multiplier() - 1.0) * 100.0
+        if base_bonus == 0.0 {
+            0.0
+        } else {
+        ((base_bonus / 100.0 + 1.0) * self.bonus_multiplier() - 1.0) * 100.0
+        }
     }
 
     /// Return the bonus% of an adornment of `self` quality tier with the given base bonus percent.
     /// For items, use `item_bonus`. They follow a different formula.
-    pub fn adorn_bonus(&self, base_bonus: f32) -> f32 {
+    pub fn adorn_bonus(&self, base_bonus: f64) -> f64 {
         // The formula is simply B * quality.
         // Courtesy of Rubenir.
         base_bonus * self.bonus_multiplier()
     }
 
     /// Call either `item_bonus` or `adorn_bonus`.
-    pub fn bonus(&self, is_adorn: bool, base_bonus: f32) -> f32 {
+    pub fn bonus(&self, is_adorn: bool, base_bonus: f64) -> f64 {
         if !is_adorn {
             self.item_bonus(base_bonus)
         } else {
