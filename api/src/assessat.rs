@@ -233,17 +233,52 @@ impl AssessCtx {
 
     /// Compute the stats increment per level and assign it to self.
     fn compute_increment(&mut self) {
-        let ratio = if self.item.boss { 0.125f32 } else { 0.1 };
+        let multiplier = if self.item.boss { 0.125f32 } else { 0.1 };
+        let quality_ratio = self.quality as f32 / 100.0;
         self.increment = FloatStats {
-            hp: (self.item.hp as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
-            mana: (self.item.mana as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
-            attack: (self.item.attack as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
-            magic: (self.item.magic as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
-            defense: (self.item.defense as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
-            resistance: (self.item.resistance as f32 * ratio).ceil()
-                * (self.quality as f32 / 100.0),
-            ward: (self.item.ward as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
-            foresight: (self.item.foresight as f32 * ratio).ceil() * (self.quality as f32 / 100.0),
+            hp: increment_at(
+                self.item.hp_affected_by_quality,
+                self.item.hp,
+                multiplier,
+                quality_ratio,
+            ),
+            mana: increment_at(
+                self.item.mana_affected_by_quality,
+                self.item.mana,
+                multiplier,
+                quality_ratio,
+            ),
+            attack: increment_at(
+                self.item.attack_affected_by_quality,
+                self.item.attack,
+                multiplier,
+                quality_ratio,
+            ),
+            magic: increment_at(
+                self.item.magic_affected_by_quality,
+                self.item.magic,
+                multiplier,
+                quality_ratio,
+            ),
+            defense: increment_at(
+                self.item.defense_affected_by_quality,
+                self.item.defense,
+                multiplier,
+                quality_ratio,
+            ),
+            resistance: increment_at(
+                self.item.resistance_affected_by_quality,
+                self.item.resistance,
+                multiplier,
+                quality_ratio,
+            ),
+            ward: increment_at(
+                self.item.ward_affected_by_quality,
+                self.item.ward,
+                multiplier,
+                quality_ratio,
+            ),
+            foresight: increment_at(true, self.item.foresight, multiplier, quality_ratio),
         }
     }
 
@@ -398,10 +433,14 @@ fn raw_assessat_stat<T: NumCast>(
     }
 
     let base_stat = <f32 as num::NumCast>::from(base_stat).unwrap();
-    let final_stat = (base_stat * quality_ratio
-        + (base_stat * multiplier).ceil() * level as f32 * quality_ratio)
-        .ceil();
-    <T as num::NumCast>::from(final_stat).unwrap()
+    if base_stat >= 0.0 {
+        let final_stat = (base_stat * quality_ratio
+            + (base_stat * multiplier).ceil() * level as f32 * quality_ratio)
+            .ceil();
+        <T as num::NumCast>::from(final_stat).unwrap()
+    } else {
+        <T as num::NumCast>::from((base_stat + level as f32) * quality_ratio).unwrap()
+    }
 }
 
 impl AssessatStats {
@@ -516,7 +555,7 @@ impl QualityTier {
         if base_bonus == 0.0 {
             0.0
         } else {
-        ((base_bonus / 100.0 + 1.0) * self.bonus_multiplier() - 1.0) * 100.0
+            ((base_bonus / 100.0 + 1.0) * self.bonus_multiplier() - 1.0) * 100.0
         }
     }
 
@@ -579,6 +618,24 @@ fn adorn_slots_at(item: &AdminItem, level: i16, quality_tier: QualityTier) -> u8
         max_adorn_slots
     } else {
         ((level - 1) as u8).min(max_adorn_slots)
+    }
+}
+
+/// Compute a stat level increment of an item at the given quality ratio.
+fn increment_at<T: NumCast + num::Signed>(
+    affected: bool,
+    base_stat: T,
+    multiplier: f32,
+    quality_ratio: f32,
+) -> f32 {
+    if affected {
+        if !base_stat.is_negative() {
+            (<f32 as num::NumCast>::from(base_stat).unwrap() * multiplier).ceil() * quality_ratio
+        } else {
+            1.0 * quality_ratio
+        }
+    } else {
+        0.0
     }
 }
 
