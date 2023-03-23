@@ -48,6 +48,7 @@ where
 
     /// Return a closure capturing `self` and whose invocation runs the filter.
     /// If `self.is_none()` return `None`.
+    #[allow(clippy::type_complexity)]
     pub fn into_fn<U, F>(self, f: F) -> Option<Box<dyn Fn(&U) -> bool + 'a>>
     where
         F: Fn(&U) -> &T + 'a,
