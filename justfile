@@ -7,7 +7,7 @@ default:
   @just --list
 
 new_jsons:
-  for x in item class specialization skill pet monster quest npc; do curl -X POST https://orna.guide/api/v1/${x} -d "{}" | jq . > data/current_entries/${x}.json
+  for x in item class specialization skill pet monster quest npc; do curl -X POST https://orna.guide/api/v1/${x} -d "{}" | jq . > data/current_entries/${x}.json; done
   cp -r data/current_entries data/current_entries-${NOW}
   cd data && BZIP2=-9 tar -cjvf current_entries-${NOW}{.tar.bz2,}
   mv data/current_entries-${NOW}.tar.bz2 data/backups/current_entries/
