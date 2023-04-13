@@ -393,6 +393,10 @@ impl Codex for OrnaAdminGuide {
             .collect())
     }
 
+    fn codex_fetch_skill_page(&self, skill_name: &str) -> Result<String, Error> {
+        self.guide.http().codex_retrieve_skill_page(skill_name)
+    }
+
     fn codex_fetch_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
         self.guide.http().codex_retrieve_skill(skill_name)
     }
@@ -417,6 +421,10 @@ impl Codex for OrnaAdminGuide {
             .collect()
     }
 
+    fn codex_fetch_monster_page(&self, monster_name: &str) -> Result<String, Error> {
+        self.guide.http().codex_retrieve_monster_page(monster_name)
+    }
+
     fn codex_fetch_monster(&self, monster_name: &str) -> Result<CodexMonster, Error> {
         self.guide.http().codex_retrieve_monster(monster_name)
     }
@@ -439,6 +447,10 @@ impl Codex for OrnaAdminGuide {
             .collect()
     }
 
+    fn codex_fetch_boss_page(&self, boss_name: &str) -> Result<String, Error> {
+        self.guide.http().codex_retrieve_boss_page(boss_name)
+    }
+
     fn codex_fetch_boss(&self, boss_name: &str) -> Result<crate::codex::CodexBoss, Error> {
         self.guide.http().codex_retrieve_boss(boss_name)
     }
@@ -456,6 +468,10 @@ impl Codex for OrnaAdminGuide {
                 })
             })
             .collect()
+    }
+
+    fn codex_fetch_raid_page(&self, raid_name: &str) -> Result<String, Error> {
+        self.guide.http().codex_retrieve_raid_page(raid_name)
     }
 
     fn codex_fetch_raid(&self, raid_name: &str) -> Result<crate::codex::CodexRaid, Error> {
@@ -477,6 +493,10 @@ impl Codex for OrnaAdminGuide {
             .collect()
     }
 
+    fn codex_fetch_item_page(&self, item_name: &str) -> Result<String, Error> {
+        self.guide.http().codex_retrieve_item_page(item_name)
+    }
+
     fn codex_fetch_item(&self, item_name: &str) -> Result<crate::codex::CodexItem, Error> {
         self.guide.http().codex_retrieve_item(item_name)
     }
@@ -494,6 +514,12 @@ impl Codex for OrnaAdminGuide {
                 })
             })
             .collect()
+    }
+
+    fn codex_fetch_follower_page(&self, follower_name: &str) -> Result<String, Error> {
+        self.guide
+            .http()
+            .codex_retrieve_follower_page(follower_name)
     }
 
     fn codex_fetch_follower(

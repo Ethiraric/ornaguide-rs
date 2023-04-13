@@ -78,6 +78,10 @@ pub mod json {
     /// Makes `json refresh codex` a valid command.
     #[derive(clap::Args, Debug)]
     pub struct RefreshCodexCmd {
+        /// Whether we should stop after just downloading the pages and skip the parsing of the
+        /// pages.
+        #[arg(short, long, default_value_t = false)]
+        pub noparse: bool,
         /// Subcommand, if any.
         #[command(subcommand)]
         pub c: Option<RefreshCodex>,

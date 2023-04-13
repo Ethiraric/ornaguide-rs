@@ -127,7 +127,12 @@ async fn async_get_and_save(http: &Client, url: &str) -> Result<String, Error> {
         } else {
             String::new()
         };
-        let filename = format!("data/htmls/{}{}{}.html", url.host_str().unwrap(), path, param);
+        let filename = format!(
+            "data/htmls/{}{}{}.html",
+            url.host_str().unwrap(),
+            path,
+            param
+        );
         let mut writer = BufWriter::new(File::create(filename)?);
         write!(writer, "{}", body)?;
     }
@@ -444,9 +449,16 @@ impl Http {
         query_all_codex_pages(&url, &self.http)
     }
 
-    pub(crate) fn codex_retrieve_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
+    pub(crate) fn codex_retrieve_skill_page(&self, skill_name: &str) -> Result<String, Error> {
         let url = format!("{}/codex/spells/{}", self.playorna_host, skill_name);
-        parse_html_codex_skill(&get_and_save(&self.http, &url)?, skill_name.to_string())
+        get_and_save(&self.http, &url)
+    }
+
+    pub(crate) fn codex_retrieve_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
+        parse_html_codex_skill(
+            &self.codex_retrieve_skill_page(skill_name)?,
+            skill_name.to_string(),
+        )
     }
 
     // Codex Monsters
@@ -455,9 +467,16 @@ impl Http {
         query_all_codex_pages(&url, &self.http)
     }
 
-    pub(crate) fn codex_retrieve_monster(&self, monster_name: &str) -> Result<CodexMonster, Error> {
+    pub(crate) fn codex_retrieve_monster_page(&self, monster_name: &str) -> Result<String, Error> {
         let url = format!("{}/codex/monsters/{}", self.playorna_host, monster_name);
-        parse_html_codex_monster(&get_and_save(&self.http, &url)?, monster_name.to_string())
+        get_and_save(&self.http, &url)
+    }
+
+    pub(crate) fn codex_retrieve_monster(&self, monster_name: &str) -> Result<CodexMonster, Error> {
+        parse_html_codex_monster(
+            &self.codex_retrieve_monster_page(monster_name)?,
+            monster_name.to_string(),
+        )
     }
 
     // Codex Bosses
@@ -466,9 +485,16 @@ impl Http {
         query_all_codex_pages(&url, &self.http)
     }
 
-    pub(crate) fn codex_retrieve_boss(&self, boss_name: &str) -> Result<CodexBoss, Error> {
+    pub(crate) fn codex_retrieve_boss_page(&self, boss_name: &str) -> Result<String, Error> {
         let url = format!("{}/codex/bosses/{}", self.playorna_host, boss_name);
-        parse_html_codex_boss(&get_and_save(&self.http, &url)?, boss_name.to_string())
+        get_and_save(&self.http, &url)
+    }
+
+    pub(crate) fn codex_retrieve_boss(&self, boss_name: &str) -> Result<CodexBoss, Error> {
+        parse_html_codex_boss(
+            &self.codex_retrieve_boss_page(boss_name)?,
+            boss_name.to_string(),
+        )
     }
 
     // Codex Raids
@@ -477,9 +503,16 @@ impl Http {
         query_all_codex_pages(&url, &self.http)
     }
 
-    pub(crate) fn codex_retrieve_raid(&self, raid_name: &str) -> Result<CodexRaid, Error> {
+    pub(crate) fn codex_retrieve_raid_page(&self, raid_name: &str) -> Result<String, Error> {
         let url = format!("{}/codex/raids/{}", self.playorna_host, raid_name);
-        parse_html_codex_raid(&get_and_save(&self.http, &url)?, raid_name.to_string())
+        get_and_save(&self.http, &url)
+    }
+
+    pub(crate) fn codex_retrieve_raid(&self, raid_name: &str) -> Result<CodexRaid, Error> {
+        parse_html_codex_raid(
+            &self.codex_retrieve_raid_page(raid_name)?,
+            raid_name.to_string(),
+        )
     }
 
     // Codex Items
@@ -488,9 +521,16 @@ impl Http {
         query_all_codex_pages(&url, &self.http)
     }
 
-    pub(crate) fn codex_retrieve_item(&self, item_name: &str) -> Result<CodexItem, Error> {
+    pub(crate) fn codex_retrieve_item_page(&self, item_name: &str) -> Result<String, Error> {
         let url = format!("{}/codex/items/{}", self.playorna_host, item_name);
-        parse_html_codex_item(&get_and_save(&self.http, &url)?, item_name.to_string())
+        get_and_save(&self.http, &url)
+    }
+
+    pub(crate) fn codex_retrieve_item(&self, item_name: &str) -> Result<CodexItem, Error> {
+        parse_html_codex_item(
+            &self.codex_retrieve_item_page(item_name)?,
+            item_name.to_string(),
+        )
     }
 
     // Codex Followers
@@ -499,12 +539,22 @@ impl Http {
         query_all_codex_pages(&url, &self.http)
     }
 
+    pub(crate) fn codex_retrieve_follower_page(
+        &self,
+        follower_name: &str,
+    ) -> Result<String, Error> {
+        let url = format!("{}/codex/followers/{}", self.playorna_host, follower_name);
+        get_and_save(&self.http, &url)
+    }
+
     pub(crate) fn codex_retrieve_follower(
         &self,
         follower_name: &str,
     ) -> Result<CodexFollower, Error> {
-        let url = format!("{}/codex/followers/{}", self.playorna_host, follower_name);
-        parse_html_codex_follower(&get_and_save(&self.http, &url)?, follower_name.to_string())
+        parse_html_codex_follower(
+            &self.codex_retrieve_follower_page(follower_name)?,
+            follower_name.to_string(),
+        )
     }
 
     // --- Codex i18n ---

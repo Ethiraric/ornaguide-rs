@@ -308,225 +308,289 @@ pub fn refresh_guide_skills(guide: &OrnaAdminGuide, data: OrnaData) -> Result<Or
 }
 
 /// Refresh all codex output jsons. Fetches all codex entities.
-pub fn refresh_codex(guide: &OrnaAdminGuide, guide_data: GuideData) -> Result<OrnaData, Error> {
-    let mut data = OrnaData {
-        codex: CodexData {
-            items: crate::codex::fetch::items(guide)?,
-            raids: crate::codex::fetch::raids(guide)?,
-            monsters: crate::codex::fetch::monsters(guide)?,
-            bosses: crate::codex::fetch::bosses(guide)?,
-            skills: crate::codex::fetch::skills(guide)?,
-            followers: crate::codex::fetch::followers(guide)?,
-        },
-        guide: guide_data,
-    };
-    add_unlisted_monsters(guide, &mut data.codex)?;
-    add_event_followers(guide, &mut data.codex)?;
+pub fn refresh_codex(
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+    parse: bool,
+) -> Result<OrnaData, Error> {
+    if parse {
+        let guide_data = data.guide;
+        let mut data = OrnaData {
+            codex: CodexData {
+                items: crate::codex::fetch::items(guide)?,
+                raids: crate::codex::fetch::raids(guide)?,
+                monsters: crate::codex::fetch::monsters(guide)?,
+                bosses: crate::codex::fetch::bosses(guide)?,
+                skills: crate::codex::fetch::skills(guide)?,
+                followers: crate::codex::fetch::followers(guide)?,
+            },
+            guide: guide_data,
+        };
+        add_unlisted_monsters(guide, &mut data.codex)?;
+        add_event_followers(guide, &mut data.codex)?;
 
-    data.save_to("data/current_entries")?;
+        data.save_to("data/current_entries")?;
 
-    Ok(data)
+        Ok(data)
+    } else {
+        crate::codex::fetch::items(guide)?;
+        crate::codex::fetch::raids(guide)?;
+        crate::codex::fetch::monsters(guide)?;
+        crate::codex::fetch::bosses(guide)?;
+        crate::codex::fetch::skills(guide)?;
+        crate::codex::fetch::followers(guide)?;
+        Ok(data)
+    }
 }
 
 /// Refresh the codex's bosses.
-pub fn refresh_codex_bosses(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
-    let data = OrnaData {
-        codex: CodexData {
-            items: data.codex.items,
-            raids: data.codex.raids,
-            monsters: data.codex.monsters,
-            bosses: crate::codex::fetch::bosses(guide)?,
-            skills: data.codex.skills,
-            followers: data.codex.followers,
-        },
-        guide: data.guide,
-    };
+pub fn refresh_codex_bosses(
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+    parse: bool,
+) -> Result<OrnaData, Error> {
+    if parse {
+        let data = OrnaData {
+            codex: CodexData {
+                items: data.codex.items,
+                raids: data.codex.raids,
+                monsters: data.codex.monsters,
+                bosses: crate::codex::fetch::bosses(guide)?,
+                skills: data.codex.skills,
+                followers: data.codex.followers,
+            },
+            guide: data.guide,
+        };
 
-    data.save_to("data/current_entries")?;
+        data.save_to("data/current_entries")?;
 
-    Ok(data)
+        Ok(data)
+    } else {
+        crate::codex::fetch::bosses_no_parse(guide)?;
+        Ok(data)
+    }
 }
 
 /// Refresh the codex's followers.
-pub fn refresh_codex_followers(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
-    let data = OrnaData {
-        codex: CodexData {
-            items: data.codex.items,
-            raids: data.codex.raids,
-            monsters: data.codex.monsters,
-            bosses: data.codex.bosses,
-            skills: data.codex.skills,
-            followers: crate::codex::fetch::followers(guide)?,
-        },
-        guide: data.guide,
-    };
+pub fn refresh_codex_followers(
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+    parse: bool,
+) -> Result<OrnaData, Error> {
+    if parse {
+        let data = OrnaData {
+            codex: CodexData {
+                items: data.codex.items,
+                raids: data.codex.raids,
+                monsters: data.codex.monsters,
+                bosses: data.codex.bosses,
+                skills: data.codex.skills,
+                followers: crate::codex::fetch::followers(guide)?,
+            },
+            guide: data.guide,
+        };
 
-    data.save_to("data/current_entries")?;
+        data.save_to("data/current_entries")?;
 
-    Ok(data)
+        Ok(data)
+    } else {
+        crate::codex::fetch::followers_no_parse(guide)?;
+        Ok(data)
+    }
 }
 
 /// Refresh the codex's items.
-pub fn refresh_codex_items(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
-    let data = OrnaData {
-        codex: CodexData {
-            items: crate::codex::fetch::items(guide)?,
-            raids: data.codex.raids,
-            monsters: data.codex.monsters,
-            bosses: data.codex.bosses,
-            skills: data.codex.skills,
-            followers: data.codex.followers,
-        },
-        guide: data.guide,
-    };
+pub fn refresh_codex_items(
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+    parse: bool,
+) -> Result<OrnaData, Error> {
+    if parse {
+        let data = OrnaData {
+            codex: CodexData {
+                items: crate::codex::fetch::items(guide)?,
+                raids: data.codex.raids,
+                monsters: data.codex.monsters,
+                bosses: data.codex.bosses,
+                skills: data.codex.skills,
+                followers: data.codex.followers,
+            },
+            guide: data.guide,
+        };
 
-    data.save_to("data/current_entries")?;
+        data.save_to("data/current_entries")?;
 
-    Ok(data)
+        Ok(data)
+    } else {
+        crate::codex::fetch::items_no_parse(guide)?;
+        Ok(data)
+    }
 }
 
 /// Refresh the codex's monsters.
-pub fn refresh_codex_monsters(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
-    let data = OrnaData {
-        codex: CodexData {
-            items: data.codex.items,
-            raids: data.codex.raids,
-            monsters: crate::codex::fetch::monsters(guide)?,
-            bosses: data.codex.bosses,
-            skills: data.codex.skills,
-            followers: data.codex.followers,
-        },
-        guide: data.guide,
-    };
+pub fn refresh_codex_monsters(
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+    parse: bool,
+) -> Result<OrnaData, Error> {
+    if parse {
+        let data = OrnaData {
+            codex: CodexData {
+                items: data.codex.items,
+                raids: data.codex.raids,
+                monsters: crate::codex::fetch::monsters(guide)?,
+                bosses: data.codex.bosses,
+                skills: data.codex.skills,
+                followers: data.codex.followers,
+            },
+            guide: data.guide,
+        };
 
-    data.save_to("data/current_entries")?;
+        data.save_to("data/current_entries")?;
 
-    Ok(data)
+        Ok(data)
+    } else {
+        crate::codex::fetch::monsters_no_parse(guide)?;
+        Ok(data)
+    }
 }
 
 /// Refresh the codex's raids.
-pub fn refresh_codex_raids(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
-    let data = OrnaData {
-        codex: CodexData {
-            items: data.codex.items,
-            raids: crate::codex::fetch::raids(guide)?,
-            monsters: data.codex.monsters,
-            bosses: data.codex.bosses,
-            skills: data.codex.skills,
-            followers: data.codex.followers,
-        },
-        guide: data.guide,
-    };
+pub fn refresh_codex_raids(
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+    parse: bool,
+) -> Result<OrnaData, Error> {
+    if parse {
+        let data = OrnaData {
+            codex: CodexData {
+                items: data.codex.items,
+                raids: crate::codex::fetch::raids(guide)?,
+                monsters: data.codex.monsters,
+                bosses: data.codex.bosses,
+                skills: data.codex.skills,
+                followers: data.codex.followers,
+            },
+            guide: data.guide,
+        };
 
-    data.save_to("data/current_entries")?;
+        data.save_to("data/current_entries")?;
 
-    Ok(data)
+        Ok(data)
+    } else {
+        crate::codex::fetch::raids_no_parse(guide)?;
+        Ok(data)
+    }
 }
 
 /// Refresh the codex's skills.
-pub fn refresh_codex_skills(guide: &OrnaAdminGuide, data: OrnaData) -> Result<OrnaData, Error> {
-    let data = OrnaData {
-        codex: CodexData {
-            items: data.codex.items,
-            raids: data.codex.raids,
-            monsters: data.codex.monsters,
-            bosses: data.codex.bosses,
-            skills: crate::codex::fetch::skills(guide)?,
-            followers: data.codex.followers,
-        },
-        guide: data.guide,
-    };
+pub fn refresh_codex_skills(
+    guide: &OrnaAdminGuide,
+    data: OrnaData,
+    parse: bool,
+) -> Result<OrnaData, Error> {
+    if parse {
+        let data = OrnaData {
+            codex: CodexData {
+                items: data.codex.items,
+                raids: data.codex.raids,
+                monsters: data.codex.monsters,
+                bosses: data.codex.bosses,
+                skills: crate::codex::fetch::skills(guide)?,
+                followers: data.codex.followers,
+            },
+            guide: data.guide,
+        };
 
-    data.save_to("data/current_entries")?;
+        data.save_to("data/current_entries")?;
 
-    Ok(data)
+        Ok(data)
+    } else {
+        crate::codex::fetch::skills_no_parse(guide)?;
+        Ok(data)
+    }
 }
 
 /// Iterate over all of the guide entries and fetch every corresponding entity from the codex that
 /// we have the URI for.
-pub fn fetch_all_matches_from_guide(
-    guide: &OrnaAdminGuide,
-    data: OrnaData,
-) -> Result<OrnaData, Error> {
-    let codex = CodexData {
-        items: crate::codex::fetch::item_slugs(
-            guide,
-            &data
-                .guide
-                .items
-                .items
-                .iter()
-                .map(|item| item.slug())
-                .filter(|s| !s.is_empty())
-                .collect_vec(),
-        )?,
-        raids: crate::codex::fetch::raid_slugs(
-            guide,
-            &data
-                .guide
-                .monsters
-                .monsters
-                .iter()
-                .filter(|monster| monster.codex_uri.starts_with("/codex/raids/"))
-                .map(|monster| monster.slug())
-                .filter(|s| !s.is_empty())
-                .collect_vec(),
-        )?,
-        monsters: crate::codex::fetch::monster_slugs(
-            guide,
-            &data
-                .guide
-                .monsters
-                .monsters
-                .iter()
-                .filter(|monster| monster.codex_uri.starts_with("/codex/monsters/"))
-                .map(|monster| monster.slug())
-                .filter(|s| !s.is_empty())
-                .collect_vec(),
-        )?,
-        bosses: crate::codex::fetch::boss_slugs(
-            guide,
-            &data
-                .guide
-                .monsters
-                .monsters
-                .iter()
-                .filter(|monster| monster.codex_uri.starts_with("/codex/bosses/"))
-                .map(|monster| monster.slug())
-                .filter(|s| !s.is_empty())
-                .collect_vec(),
-        )?,
-        skills: crate::codex::fetch::skill_slugs(
-            guide,
-            &data
-                .guide
-                .skills
-                .skills
-                .iter()
-                .map(|skill| skill.slug())
-                .filter(|s| !s.is_empty())
-                .collect_vec(),
-        )?,
-        followers: crate::codex::fetch::follower_slugs(
-            guide,
-            &data
-                .guide
-                .pets
-                .pets
-                .iter()
-                .map(|pet| pet.slug())
-                .filter(|s| !s.is_empty())
-                .collect_vec(),
-        )?,
-    };
+pub fn fetch_all_matches_from_guide(guide: &OrnaAdminGuide, data: OrnaData) -> Result<(), Error> {
+    crate::codex::fetch::try_fetch_loop_slugs(
+        &data
+            .guide
+            .items
+            .items
+            .iter()
+            .map(|item| item.slug())
+            .filter(|s| !s.is_empty())
+            .collect_vec(),
+        |slug| guide.codex_fetch_item_page(slug).map(|_| ()),
+        "CItems",
+    )?;
+    crate::codex::fetch::try_fetch_loop_slugs(
+        &data
+            .guide
+            .monsters
+            .monsters
+            .iter()
+            .filter(|monster| monster.codex_uri.starts_with("/codex/raids/"))
+            .map(|monster| monster.slug())
+            .filter(|s| !s.is_empty())
+            .collect_vec(),
+        |slug| guide.codex_fetch_raid_page(slug).map(|_| ()),
+        "CRaids",
+    )?;
+    crate::codex::fetch::try_fetch_loop_slugs(
+        &data
+            .guide
+            .monsters
+            .monsters
+            .iter()
+            .filter(|monster| monster.codex_uri.starts_with("/codex/monsters/"))
+            .map(|monster| monster.slug())
+            .filter(|s| !s.is_empty())
+            .collect_vec(),
+        |slug| guide.codex_fetch_monster_page(slug).map(|_| ()),
+        "CMnstrs",
+    )?;
+    crate::codex::fetch::try_fetch_loop_slugs(
+        &data
+            .guide
+            .monsters
+            .monsters
+            .iter()
+            .filter(|monster| monster.codex_uri.starts_with("/codex/bosses/"))
+            .map(|monster| monster.slug())
+            .filter(|s| !s.is_empty())
+            .collect_vec(),
+        |slug| guide.codex_fetch_monster_page(slug).map(|_| ()),
+        "CBosses",
+    )?;
+    crate::codex::fetch::try_fetch_loop_slugs(
+        &data
+            .guide
+            .skills
+            .skills
+            .iter()
+            .map(|skill| skill.slug())
+            .filter(|s| !s.is_empty())
+            .collect_vec(),
+        |slug| guide.codex_fetch_skill_page(slug).map(|_| ()),
+        "CSkills",
+    )?;
+    crate::codex::fetch::try_fetch_loop_slugs(
+        &data
+            .guide
+            .pets
+            .pets
+            .iter()
+            .map(|pet| pet.slug())
+            .filter(|s| !s.is_empty())
+            .collect_vec(),
+        |slug| guide.codex_fetch_skill_page(slug).map(|_| ()),
+        "CSkills",
+    )?;
 
-    let data = OrnaData {
-        codex,
-        guide: data.guide,
-    };
-    data.save_to("data/current_entries")?;
-
-    Ok(data)
+    Ok(())
 }
 
 /// Execute a CLI subcommand on outputs.
@@ -546,13 +610,21 @@ fn cli_refresh(
                 None => refresh_guide(guide, data.codex)?,
             },
             cli::json::Refresh::Codex(codex_cmd) => match codex_cmd.c {
-                Some(RefreshCodex::Bosses) => refresh_codex_bosses(guide, data)?,
-                Some(RefreshCodex::Followers) => refresh_codex_followers(guide, data)?,
-                Some(RefreshCodex::Items) => refresh_codex_items(guide, data)?,
-                Some(RefreshCodex::Monsters) => refresh_codex_monsters(guide, data)?,
-                Some(RefreshCodex::Raids) => refresh_codex_raids(guide, data)?,
-                Some(RefreshCodex::Skills) => refresh_codex_skills(guide, data)?,
-                None => refresh_codex(guide, data.guide)?,
+                Some(RefreshCodex::Bosses) => {
+                    refresh_codex_bosses(guide, data, !codex_cmd.noparse)?
+                }
+                Some(RefreshCodex::Followers) => {
+                    refresh_codex_followers(guide, data, !codex_cmd.noparse)?
+                }
+                Some(RefreshCodex::Items) => refresh_codex_items(guide, data, !codex_cmd.noparse)?,
+                Some(RefreshCodex::Monsters) => {
+                    refresh_codex_monsters(guide, data, !codex_cmd.noparse)?
+                }
+                Some(RefreshCodex::Raids) => refresh_codex_raids(guide, data, !codex_cmd.noparse)?,
+                Some(RefreshCodex::Skills) => {
+                    refresh_codex_skills(guide, data, !codex_cmd.noparse)?
+                }
+                None => refresh_codex(guide, data, !codex_cmd.noparse)?,
             },
         },
         None => refresh(guide)?,
@@ -567,7 +639,7 @@ where
 {
     match command {
         cli::json::Command::FetchAllMatchesFromGuide => {
-            fetch_all_matches_from_guide(guide, data()?).map(|_| ())
+            fetch_all_matches_from_guide(guide, data()?)
         }
         cli::json::Command::Refresh(cmd) => cli_refresh(cmd, guide, data()?),
     }

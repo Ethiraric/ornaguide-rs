@@ -23,6 +23,16 @@ pub fn items(guide: &OrnaAdminGuide) -> Result<CodexItems, Error> {
     .map(|items| CodexItems { items })
 }
 
+/// Retrieve all items from the codex without HTML parsing.
+pub fn items_no_parse(guide: &OrnaAdminGuide) -> Result<(), Error> {
+    fetch_loop(
+        &guide.codex_fetch_item_list()?,
+        |slug| guide.codex_fetch_item_page(slug).map(|_| ()),
+        "CItems",
+    )
+    .map(|_| ())
+}
+
 /// Retrieve all searchable monsters from the codex.
 /// This does not fetch monsters from non-active events.
 pub fn monsters(guide: &OrnaAdminGuide) -> Result<CodexMonsters, Error> {
@@ -32,6 +42,17 @@ pub fn monsters(guide: &OrnaAdminGuide) -> Result<CodexMonsters, Error> {
         "CMnstrs",
     )
     .map(|monsters| CodexMonsters { monsters })
+}
+
+/// Retrieve all searchable monsters from the codex without HTML parsing.
+/// This does not fetch monsters from non-active events.
+pub fn monsters_no_parse(guide: &OrnaAdminGuide) -> Result<(), Error> {
+    fetch_loop(
+        &guide.codex_fetch_monster_list()?,
+        |slug| guide.codex_fetch_monster_page(slug).map(|_| ()),
+        "CMnstrs",
+    )
+    .map(|_| ())
 }
 
 /// Retrieve all searchable bosses from the codex.
@@ -45,6 +66,17 @@ pub fn bosses(guide: &OrnaAdminGuide) -> Result<CodexBosses, Error> {
     .map(|bosses| CodexBosses { bosses })
 }
 
+/// Retrieve all searchable bosses from the codex without HTML parsing.
+/// This does not fetch bosses from non-active events.
+pub fn bosses_no_parse(guide: &OrnaAdminGuide) -> Result<(), Error> {
+    fetch_loop(
+        &guide.codex_fetch_boss_list()?,
+        |slug| guide.codex_fetch_boss_page(slug).map(|_| ()),
+        "CBosses",
+    )
+    .map(|_| ())
+}
+
 /// Retrieve all searchable raids from the codex.
 /// This does not fetch raids from non-active events.
 pub fn raids(guide: &OrnaAdminGuide) -> Result<CodexRaids, Error> {
@@ -56,6 +88,17 @@ pub fn raids(guide: &OrnaAdminGuide) -> Result<CodexRaids, Error> {
     .map(|raids| CodexRaids { raids })
 }
 
+/// Retrieve all searchable raids from the codex without HTML parsing.
+/// This does not fetch raids from non-active events.
+pub fn raids_no_parse(guide: &OrnaAdminGuide) -> Result<(), Error> {
+    fetch_loop(
+        &guide.codex_fetch_raid_list()?,
+        |slug| guide.codex_fetch_raid_page(slug).map(|_| ()),
+        "CRaids",
+    )
+    .map(|_| ())
+}
+
 /// Retrieve all skills from the codex.
 pub fn skills(guide: &OrnaAdminGuide) -> Result<CodexSkills, Error> {
     fetch_loop(
@@ -64,6 +107,16 @@ pub fn skills(guide: &OrnaAdminGuide) -> Result<CodexSkills, Error> {
         "CSkills",
     )
     .map(|skills| CodexSkills { skills })
+}
+
+/// Retrieve all skills from the codex without HTML parsing.
+pub fn skills_no_parse(guide: &OrnaAdminGuide) -> Result<(), Error> {
+    fetch_loop(
+        &guide.codex_fetch_skill_list()?,
+        |slug| guide.codex_fetch_skill_page(slug).map(|_| ()),
+        "CSkills",
+    )
+    .map(|_| ())
 }
 
 /// Retrieve all searchable followers from the codex.
@@ -77,8 +130,19 @@ pub fn followers(guide: &OrnaAdminGuide) -> Result<CodexFollowers, Error> {
     .map(|followers| CodexFollowers { followers })
 }
 
+/// Retrieve all searchable followers from the codex without HTML parsing.
+/// This does not fetch followers from non-active events.
+pub fn followers_no_parse(guide: &OrnaAdminGuide) -> Result<(), Error> {
+    fetch_loop(
+        &guide.codex_fetch_follower_list()?,
+        |slug| guide.codex_fetch_follower_page(slug).map(|_| ()),
+        "CFollwrs",
+    )
+    .map(|_| ())
+}
+
 /// Retrieve all missing items from the codex.
-pub fn missing_items(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexItems, Error> {
+pub fn missing_items(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
     fetch_loop(
         &guide
             .codex_fetch_item_list()?
@@ -92,15 +156,15 @@ pub fn missing_items(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexIte
                     .any(|item| item.slug == entry.slug())
             })
             .collect_vec(),
-        |slug| guide.codex_fetch_item(slug),
+        |slug| guide.codex_fetch_item_page(slug).map(|_| ()),
         "CItems",
     )
-    .map(|items| CodexItems { items })
+    .map(|_| ())
 }
 
 /// Retrieve all missing searchable monsters from the codex.
 /// This does not fetch monsters from non-active events.
-pub fn missing_monsters(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexMonsters, Error> {
+pub fn missing_monsters(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
     fetch_loop(
         &guide
             .codex_fetch_monster_list()?
@@ -114,15 +178,15 @@ pub fn missing_monsters(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<Codex
                     .any(|monster| monster.slug == entry.slug())
             })
             .collect_vec(),
-        |slug| guide.codex_fetch_monster(slug),
+        |slug| guide.codex_fetch_monster_page(slug).map(|_| ()),
         "CMnstrs",
     )
-    .map(|monsters| CodexMonsters { monsters })
+    .map(|_| ())
 }
 
 /// Retrieve all missing searchable bosses from the codex.
 /// This does not fetch bosses from non-active events.
-pub fn missing_bosses(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexBosses, Error> {
+pub fn missing_bosses(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
     fetch_loop(
         &guide
             .codex_fetch_boss_list()?
@@ -136,15 +200,15 @@ pub fn missing_bosses(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexBo
                     .any(|boss| boss.slug == entry.slug())
             })
             .collect_vec(),
-        |slug| guide.codex_fetch_boss(slug),
+        |slug| guide.codex_fetch_boss_page(slug).map(|_| ()),
         "CBosses",
     )
-    .map(|bosses| CodexBosses { bosses })
+    .map(|_| ())
 }
 
 /// Retrieve all missing searchable raids from the codex.
 /// This does not fetch raids from non-active events.
-pub fn missing_raids(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexRaids, Error> {
+pub fn missing_raids(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
     fetch_loop(
         &guide
             .codex_fetch_raid_list()?
@@ -158,14 +222,14 @@ pub fn missing_raids(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexRai
                     .any(|raid| raid.slug == entry.slug())
             })
             .collect_vec(),
-        |slug| guide.codex_fetch_raid(slug),
+        |slug| guide.codex_fetch_raid_page(slug).map(|_| ()),
         "CRaids",
     )
-    .map(|raids| CodexRaids { raids })
+    .map(|_| ())
 }
 
 /// Retrieve all missing skills from the codex.
-pub fn missing_skills(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexSkills, Error> {
+pub fn missing_skills(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
     fetch_loop(
         &guide
             .codex_fetch_skill_list()?
@@ -179,15 +243,15 @@ pub fn missing_skills(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexSk
                     .any(|skill| skill.slug == entry.slug())
             })
             .collect_vec(),
-        |slug| guide.codex_fetch_skill(slug),
+        |slug| guide.codex_fetch_skill_page(slug).map(|_| ()),
         "CSkills",
     )
-    .map(|skills| CodexSkills { skills })
+    .map(|_| ())
 }
 
 /// Retrieve all missing searchable followers from the codex.
 /// This does not fetch followers from non-active events.
-pub fn missing_followers(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexFollowers, Error> {
+pub fn missing_followers(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
     fetch_loop(
         &guide
             .codex_fetch_follower_list()?
@@ -201,22 +265,21 @@ pub fn missing_followers(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<Code
                     .any(|follower| follower.slug == entry.slug())
             })
             .collect_vec(),
-        |slug| guide.codex_fetch_follower(slug),
+        |slug| guide.codex_fetch_follower_page(slug).map(|_| ()),
         "CFollwrs",
     )
-    .map(|followers| CodexFollowers { followers })
+    .map(|_| ())
 }
 
 /// Retrieve all missing accessible data from the codex.
-pub fn missing(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<CodexData, Error> {
-    Ok(CodexData {
-        items: missing_items(guide, data)?,
-        raids: missing_raids(guide, data)?,
-        monsters: missing_monsters(guide, data)?,
-        bosses: missing_bosses(guide, data)?,
-        skills: missing_skills(guide, data)?,
-        followers: missing_followers(guide, data)?,
-    })
+pub fn missing(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
+    missing_items(guide, data)?;
+    missing_raids(guide, data)?;
+    missing_monsters(guide, data)?;
+    missing_bosses(guide, data)?;
+    missing_skills(guide, data)?;
+    missing_followers(guide, data)?;
+    Ok(())
 }
 
 /// Retrieve all items from the codex.
@@ -486,7 +549,7 @@ pub fn raid_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexRaids, 
 /// Retrieve skills with the given slugs from the codex.
 /// This function ignores errors.
 pub fn skill_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexSkills, Error> {
-    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_skill(slug), "CRaids")
+    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_skill(slug), "CSkills")
         .map(|skills| CodexSkills { skills })
 }
 
@@ -499,7 +562,7 @@ pub fn follower_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexFol
 
 /// Loop fetching entities and displaying a progress bar.
 /// Errors out after the first failed fetch.
-fn fetch_loop<Entry, F, Entity>(
+pub fn fetch_loop<Entry, F, Entity>(
     entries: &[Entry],
     fetch: F,
     kind: &str,
@@ -529,7 +592,7 @@ where
 
 /// Loop fetching entities and displaying a progress bar.
 /// Ignore errors.
-fn try_fetch_loop_slugs<F, Entity>(
+pub fn try_fetch_loop_slugs<F, Entity>(
     slugs: &[&str],
     fetch: F,
     kind: &str,
