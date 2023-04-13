@@ -54,10 +54,10 @@ pub fn parse_name_and_chance<'a>(text: &'a str, kind: &str) -> Result<(&'a str, 
                 .parse()?,
         ))
     } else {
-        return Err(Error::HTMLParsingError(format!(
+        Err(Error::HTMLParsingError(format!(
             "Failed to find '(' when parsing {} chance: \"{}\"",
             kind, text
-        )));
+        )))
     }
 }
 

@@ -139,7 +139,6 @@ fn parse_name_uri_icon_list(
 ) -> impl Iterator<Item = Result<(String, String, String), Error>> {
     iter_node
         .following_siblings()
-        .into_iter()
         .filter(|node| matches!(node.data(), NodeData::Element(_)))
         .map_while(|node| {
             if let NodeData::Element(ElementData {
@@ -172,7 +171,6 @@ fn parse_name_icon_list(
 ) -> impl Iterator<Item = Result<(String, String), Error>> {
     iter_node
         .following_siblings()
-        .into_iter()
         .filter(|node| matches!(node.data(), NodeData::Element(_)))
         .map_while(|node| {
             if let NodeData::Element(ElementData {

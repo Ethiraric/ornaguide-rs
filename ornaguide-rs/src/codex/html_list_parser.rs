@@ -35,7 +35,6 @@ fn node_to_entry(node: &NodeRef) -> Result<Entry, Error> {
 
     let it = node
         .children()
-        .into_iter()
         .filter(|n| n.as_element().is_some())
         .skip(1); // Skip over image.
     let mut it = it.peekable();
