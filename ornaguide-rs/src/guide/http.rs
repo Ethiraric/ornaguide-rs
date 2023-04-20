@@ -22,7 +22,7 @@ use crate::{
         CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill,
     },
     config::debug_urls,
-    error::Error,
+    error::{Error, ErrorKind},
     guide::{
         html_form_parser::{
             parse_item_html, parse_monster_html, parse_pet_html, parse_skill_html,
@@ -76,12 +76,10 @@ async fn async_post_forms_to(
     if status.is_success() {
         Ok(())
     } else {
-        Err(Error::ResponseError(
-            "POST".to_string(),
-            url.to_string(),
-            status.as_u16(),
-            text,
-        ))
+        Err(
+            ErrorKind::ResponseError("POST".to_string(), url.to_string(), status.as_u16(), text)
+                .into(),
+        )
     }
 }
 
@@ -103,12 +101,13 @@ async fn get_expect_200(http: &Client, url: &str) -> Result<Response, Error> {
     if response.status() == StatusCode::OK {
         Ok(response)
     } else {
-        Err(Error::ResponseError(
+        Err(ErrorKind::ResponseError(
             "GET".to_string(),
             url.to_string(),
             response.status().as_u16(),
             response.text().await?,
-        ))
+        )
+        .into())
     }
 }
 

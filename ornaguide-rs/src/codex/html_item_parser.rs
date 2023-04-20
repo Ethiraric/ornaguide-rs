@@ -7,7 +7,7 @@ use crate::{
         Ability, Cause, Cure, DroppedBy, Element, Give, Immunity, Item, Place, Stats,
         UpgradeMaterial,
     },
-    error::Error,
+    error::{Error, ErrorKind},
     guide::html_utils::parse_tags,
     utils::html::{
         descend_iter, descend_to, get_attribute_from_node, icon_url_to_path, node_to_text,
@@ -50,10 +50,11 @@ fn parse_tier(text: &str) -> Result<u8, Error> {
         it.next(); // Skip over the star.
         Ok(it.as_str().parse()?)
     } else {
-        Err(Error::HTMLParsingError(format!(
+        Err(ErrorKind::HTMLParsingError(format!(
             "Failed to find ':' when parsing item tier: \"{}\"",
             text
-        )))
+        ))
+        .into())
     }
 }
 
@@ -70,10 +71,11 @@ fn parse_codex_page_meta(page: &NodeRef) -> Result<CodexMeta, Error> {
             if contents == "Exotic" {
                 ret.exotic = true;
             } else {
-                return Err(Error::HTMLParsingError(format!(
+                return Err(ErrorKind::HTMLParsingError(format!(
                     "Invalid exotic node contents: {}",
                     contents
-                )));
+                ))
+                .into());
             }
         } else {
             let contents = meta_node.text_contents();
@@ -98,10 +100,11 @@ fn parse_codex_page_meta(page: &NodeRef) -> Result<CodexMeta, Error> {
             } else {
                 let mut buf = BufWriter::new(Vec::new());
                 meta_node.as_node().serialize(&mut buf)?;
-                return Err(Error::HTMLParsingError(format!(
+                return Err(ErrorKind::HTMLParsingError(format!(
                     "Unknown codex-page-meta: {}",
                     String::from_utf8(buf.into_inner()?)?
-                )));
+                ))
+                .into());
             }
         }
     }
@@ -154,10 +157,11 @@ fn parse_name_uri_icon_list(
                         descend_to(&node, "a", "div drop or ability")
                             .and_then(|node| a_to_name_uri_icon(node.as_node())),
                     ),
-                    _ => Some(Err(Error::HTMLParsingError(format!(
+                    _ => Some(Err(ErrorKind::HTMLParsingError(format!(
                         "Unknown node tag when parsing drop or ability: {}",
                         &tag
-                    )))),
+                    ))
+                    .into())),
                 }
             } else {
                 panic!("Cannot happen due to previous filter");
@@ -183,10 +187,11 @@ fn parse_name_icon_list(
                 match tag.deref() {
                     "h4" | "hr" => None,
                     "div" => Some(div_to_name_icon(&node)),
-                    _ => Some(Err(Error::HTMLParsingError(format!(
+                    _ => Some(Err(ErrorKind::HTMLParsingError(format!(
                         "Unknown node tag when parsing drop or ability: {}",
                         &tag
-                    )))),
+                    ))
+                    .into())),
                 }
             } else {
                 panic!("Cannot happen due to previous filter");
@@ -238,10 +243,11 @@ fn parse_stats(node: Option<&NodeRef>) -> Result<Option<Stats>, Error> {
                     "Physical" => stats.element = Some(Element::Physical),
                     "Two handed" => stats.two_handed = true,
                     _ => {
-                        return Err(Error::HTMLParsingError(format!(
+                        return Err(ErrorKind::HTMLParsingError(format!(
                             "Failed to find ':' when parsing stat: \"{}\"",
                             text
-                        )));
+                        ))
+                        .into());
                     }
                 }
             }
@@ -266,10 +272,11 @@ fn split_status_chance(text: &str) -> Result<(String, i8), Error> {
                 .parse()?,
         ))
     } else {
-        Err(Error::HTMLParsingError(format!(
+        Err(ErrorKind::HTMLParsingError(format!(
             "Failed to find '(' when parsing status effect: \"{}\"",
             text
-        )))
+        ))
+        .into())
     }
 }
 
@@ -334,21 +341,24 @@ fn parse_ability(node: Option<&NodeRef>) -> Result<Option<Ability>, Error> {
                         description: node_to_text(node),
                     }))
                 } else {
-                    Err(Error::HTMLParsingError(format!(
+                    Err(ErrorKind::HTMLParsingError(format!(
                         "Failed to find 'Ability:' when parsing: \"{}\"",
                         text
-                    )))
+                    ))
+                    .into())
                 }
             } else {
-                Err(Error::HTMLParsingError(format!(
+                Err(ErrorKind::HTMLParsingError(format!(
                     "Failed to find ':' when parsing ability name: \"{}\"",
                     text
-                )))
+                ))
+                .into())
             }
         } else {
-            Err(Error::HTMLParsingError(
+            Err(ErrorKind::HTMLParsingError(
                 "Failed to find previous node when parsing ability".to_string(),
-            ))
+            )
+            .into())
         }
     } else {
         Ok(None)
@@ -378,9 +388,7 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
     let description = if let Some(description) = description_it.next() {
         node_to_text(description.as_node())
     } else {
-        return Err(Error::HTMLParsingError(
-            "Failed to find description".to_string(),
-        ));
+        return Err(ErrorKind::HTMLParsingError("Failed to find description".to_string()).into());
     };
 
     // Parse stats.
@@ -463,9 +471,7 @@ pub fn parse_html_codex_item_translation(contents: &str, slug: String) -> Result
     let description = if let Some(description) = description_it.next() {
         node_to_text(description.as_node())
     } else {
-        return Err(Error::HTMLParsingError(
-            "Failed to find description".to_string(),
-        ));
+        return Err(ErrorKind::HTMLParsingError("Failed to find description".to_string()).into());
     };
 
     Ok(Item {

@@ -1,7 +1,11 @@
 use std::path::PathBuf;
 
 use itertools::Itertools;
-use ornaguide_rs::{data::OrnaData, error::Error, guide::OrnaAdminGuide};
+use ornaguide_rs::{
+    data::OrnaData,
+    error::{Error, ErrorKind},
+    guide::OrnaAdminGuide,
+};
 
 use crate::{
     backups::Backup,
@@ -34,7 +38,7 @@ fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
                 None
             }
         })
-        .ok_or_else(|| Error::Misc("Failed to find a merge file".to_string()))
+        .ok_or_else(|| ErrorKind::Misc("Failed to find a merge file".to_string()).into())
 }
 
 pub fn match_(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {

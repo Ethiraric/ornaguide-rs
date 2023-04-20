@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, guide::html_form_parser::ParsedForm};
+use crate::{
+    error::{Error, ErrorKind},
+    guide::html_form_parser::ParsedForm,
+};
 
 /// The kind of currency a pet costs.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -130,7 +133,7 @@ impl TryFrom<ParsedForm> for AdminPet {
                 "limited_details" => pet.limited_details = value,
                 "skills" => pet.skills.push(value.parse()?),
                 key => {
-                    return Err(Error::ExtraField(key.to_string(), value));
+                    return Err(ErrorKind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
@@ -203,10 +206,11 @@ impl<'a> AdminPets {
     /// If there is no match, return an `Err`.
     pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a AdminPet, Error> {
         self.find_by_slug(needle).ok_or_else(|| {
-            Error::Misc(format!(
+            ErrorKind::Misc(format!(
                 "No match for admin pet with codex slug '{}'",
                 needle
             ))
+            .into()
         })
     }
 
@@ -218,7 +222,8 @@ impl<'a> AdminPets {
     /// Find the admin pet associated with the given id.
     /// If there is no match, return an `Err`.
     pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminPet, Error> {
-        self.find_by_id(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for admin pet with id #{}", needle)))
+        self.find_by_id(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for admin pet with id #{}", needle)).into()
+        })
     }
 }

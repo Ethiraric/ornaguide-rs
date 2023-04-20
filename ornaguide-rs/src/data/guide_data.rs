@@ -1,7 +1,7 @@
 use crate::{
     codex::{CodexBoss, CodexMonster, CodexRaid},
     data::CodexGenericMonster,
-    error::Error,
+    error::{Error, ErrorKind},
     guide::Static,
     items::admin::AdminItems,
     monsters::admin::{AdminMonster, AdminMonsters},
@@ -56,10 +56,11 @@ impl GuideData {
                         == needle.slug
             })
             .ok_or_else(|| {
-                Error::Misc(format!(
+                ErrorKind::Misc(format!(
                     "No match for codex regular monster '{}'",
                     needle.slug
                 ))
+                .into()
             })
     }
 
@@ -78,7 +79,9 @@ impl GuideData {
                     && admin.codex_uri["/codex/bosses/".len()..].trim_end_matches('/')
                         == needle.slug
             })
-            .ok_or_else(|| Error::Misc(format!("No match for codex boss '{}'", needle.slug)))
+            .ok_or_else(|| {
+                ErrorKind::Misc(format!("No match for codex boss '{}'", needle.slug)).into()
+            })
     }
 
     /// Find the admin monster associated with the given codex raid.
@@ -95,6 +98,8 @@ impl GuideData {
                     && admin.is_raid(&self.static_.spawns)
                     && admin.codex_uri["/codex/raids/".len()..].trim_end_matches('/') == needle.slug
             })
-            .ok_or_else(|| Error::Misc(format!("No match for codex raid '{}'", needle.slug)))
+            .ok_or_else(|| {
+                ErrorKind::Misc(format!("No match for codex raid '{}'", needle.slug)).into()
+            })
     }
 }

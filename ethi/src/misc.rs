@@ -6,7 +6,10 @@ use std::{
 use futures::Future;
 use indicatif::{ProgressBar, ProgressStyle};
 use itertools::Itertools;
-use ornaguide_rs::{data::OrnaData, error::Error};
+use ornaguide_rs::{
+    data::OrnaData,
+    error::{Error, ErrorKind},
+};
 use serde::{
     de::{Unexpected, Visitor},
     Deserialize, Deserializer,
@@ -142,7 +145,7 @@ where
     R: Read,
     T: serde::de::DeserializeOwned,
 {
-    serde_json::from_reader(rdr).map_err(|err| Error::SerdeJson(err, path.to_string()))
+    serde_json::from_reader(rdr).map_err(|err| ErrorKind::SerdeJson(err, path.to_string()).into())
 }
 
 /// Same as a `serde_json::from_reader` with a file, but adds the filename to the error message, if any.

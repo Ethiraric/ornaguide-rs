@@ -8,7 +8,7 @@ use ornaguide_rs::{codex::translation::LocaleDB, data::OrnaData};
 #[allow(unused_imports)]
 use ornaguide_rs::{
     codex::{Codex, CodexItem},
-    error::Error,
+    error::{Error, ErrorKind},
     guide::{AdminGuide, OrnaAdminGuide},
 };
 
@@ -50,7 +50,7 @@ fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
                 None
             }
         })
-        .ok_or_else(|| Error::Misc("Failed to find a merge file".to_string()))
+        .ok_or_else(|| ErrorKind::Misc("Failed to find a merge file".to_string()).into())
 }
 
 #[allow(unused_variables, unused_mut)]

@@ -2,7 +2,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::Error,
+    error::{Error, ErrorKind},
     guide::{html_form_parser::ParsedForm, Spawn},
     misc::sanitize_guide_name,
 };
@@ -113,7 +113,7 @@ impl TryFrom<ParsedForm> for AdminMonster {
                 "drops" => item.drops.push(value.parse()?),
                 "skills" => item.skills.push(value.parse()?),
                 key => {
-                    return Err(Error::ExtraField(key.to_string(), value));
+                    return Err(ErrorKind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
@@ -314,8 +314,9 @@ impl<'a> AdminMonsters {
     /// Find the monster with the given id
     /// If there is no match, return an `Err`.
     pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminMonster, Error> {
-        self.find_by_id(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for admin monster with id {}", needle)))
+        self.find_by_id(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for admin monster with id {}", needle)).into()
+        })
     }
 
     /// Find the monster with the given codex uri.
@@ -329,10 +330,11 @@ impl<'a> AdminMonsters {
     /// If there is no match, return an `Err`.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminMonster, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            Error::Misc(format!(
+            ErrorKind::Misc(format!(
                 "No match for admin monster with codex_uri '{}'",
                 needle
             ))
+            .into()
         })
     }
 }

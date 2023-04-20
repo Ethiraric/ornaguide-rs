@@ -1,5 +1,5 @@
 use crate::{
-    error::Error, items::admin::AdminItem, monsters::admin::AdminMonster, pets::admin::AdminPet,
+    error::{Error}, items::admin::AdminItem, monsters::admin::AdminMonster, pets::admin::AdminPet,
     skills::admin::AdminSkill,
 };
 

@@ -2,7 +2,7 @@ use kuchiki::{parse_html, traits::TendrilSink, NodeRef};
 
 use crate::{
     codex::{CodexSkill, SkillStatusEffect, SkillSummon},
-    error::Error,
+    error::{Error, ErrorKind},
     guide::html_utils::{descend_if_tag, is_html_tag_node, parse_name_and_chance, parse_tags},
     utils::html::{descend_iter, descend_to, node_to_text, parse_icon},
 };
@@ -17,10 +17,11 @@ fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
         it.next(); // Skip over the star.
         Ok(it.as_str().parse()?)
     } else {
-        Err(Error::HTMLParsingError(format!(
+        Err(ErrorKind::HTMLParsingError(format!(
             "Failed to find ':' when parsing skill tier: \"{}\"",
             text
-        )))
+        ))
+        .into())
     }
 }
 

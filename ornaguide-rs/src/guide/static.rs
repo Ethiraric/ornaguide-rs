@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::error::Error;
+use crate::error::{Error, ErrorKind};
 
 /// A spawn for monsters.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -143,7 +143,7 @@ impl VecElements for Vec<Element> {
 
     fn get_element_by_id(&self, needle: u32) -> Result<&Element, Error> {
         self.find_element_by_id(needle)
-            .ok_or_else(|| Error::Misc(format!("No element with id {}", needle)))
+            .ok_or_else(|| ErrorKind::Misc(format!("No element with id {}", needle)).into())
     }
 
     fn find_element_by_name(&self, needle: &str) -> Option<&Element> {
@@ -152,6 +152,6 @@ impl VecElements for Vec<Element> {
 
     fn get_element_by_name(&self, needle: &str) -> Result<&Element, Error> {
         self.find_element_by_name(needle)
-            .ok_or_else(|| Error::Misc(format!("No element with name {}", needle)))
+            .ok_or_else(|| ErrorKind::Misc(format!("No element with name {}", needle)).into())
     }
 }

@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     data::GuideData,
-    error::Error,
+    error::{Error, ErrorKind},
     guide::{html_utils::Tag, Static, VecElements},
     items::admin::AdminItem,
     misc::{
@@ -364,10 +364,11 @@ impl FromStr for Place {
             "Armor (for adornments)" => Ok(Place::Armor),
             "Augment (for celestial weapons)" => Ok(Place::Augment),
             "material" => Ok(Place::Material),
-            _ => Err(Self::Err::ParseEnumError(
+            _ => Err(ErrorKind::ParseEnumError(
                 "Place".to_string(),
                 format!("Invalid value: {}", s),
-            )),
+            )
+            .into()),
         }
     }
 }
@@ -375,7 +376,7 @@ impl FromStr for Place {
 /// A trait to extend `Vec`s of `Cure`s, `Give`s, ....
 pub trait ItemStatusEffects {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide status_effect ids.
-    /// Returns `Error::PartialCodexStatusEffectConversion` if all fields have not been
+    /// Returns `ErrorKind::PartialCodexStatusEffectConversion` if all fields have not been
     /// successfully converted.
     fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error>;
     /// Convert the list of status effects to a list of effect names, matching those of the guide.
@@ -396,9 +397,7 @@ macro_rules! make_impl_for_status_effect_struct_vec {
                 if failures.is_empty() {
                     Ok(successes)
                 } else {
-                    Err(Error::PartialCodexStatusEffectsConversion(
-                        successes, failures,
-                    ))
+                    Err(ErrorKind::PartialCodexStatusEffectsConversion(successes, failures).into())
                 }
             }
 
@@ -439,8 +438,9 @@ impl<'a> Items {
     /// Find the codex item associated with the given uri.
     /// If there is no match, return an `Err`.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Item, Error> {
-        self.find_by_uri(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for codex item with uri '{}'", needle)))
+        self.find_by_uri(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for codex item with uri '{}'", needle)).into()
+        })
     }
 
     /// Find the codex item associated with the given slug.
@@ -451,7 +451,8 @@ impl<'a> Items {
     /// Find the codex item associated with the given slug.
     /// If there is no match, return an `Err`.
     pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a Item, Error> {
-        self.find_by_slug(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for codex item with slug '{}'", needle)))
+        self.find_by_slug(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for codex item with slug '{}'", needle)).into()
+        })
     }
 }

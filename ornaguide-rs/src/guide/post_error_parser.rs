@@ -2,7 +2,7 @@ use itertools::Itertools;
 use kuchiki::{parse_html, traits::TendrilSink};
 
 use crate::{
-    error::Error,
+    error::{Error, ErrorKind},
     utils::html::{descend_iter, descend_to, list_attributes_form_node, node_to_text},
 };
 
@@ -43,9 +43,5 @@ pub fn parse_post_error_html(url: &str, contents: &str, form_root_name: &str) ->
         .flatten()
         .collect_vec();
 
-    Err(Error::GuidePostFormError(
-        url.to_string(),
-        generic_error,
-        specific_errors,
-    ))
+    Err(ErrorKind::GuidePostFormError(url.to_string(), generic_error, specific_errors).into())
 }

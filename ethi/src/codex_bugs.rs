@@ -1,7 +1,7 @@
 use ornaguide_rs::{
     codex::{Codex, CodexBoss, CodexMonster, CodexRaid, Tag},
     data::OrnaData,
-    error::Error,
+    error::{Error, ErrorKind},
     guide::OrnaAdminGuide,
 };
 
@@ -54,10 +54,11 @@ fn weapons_missing_elemental_status_effects(
     let demeter = match guide.codex_fetch_item("arisen-demeters-staff") {
         Ok(x) => x,
         Err(msg) => {
-            return Err(Error::Misc(format!(
+            return Err(ErrorKind::Misc(format!(
                 "Failed to retrieve arisen-demeters-staff: {}",
                 msg
-            )));
+            ))
+            .into());
         }
     };
 
@@ -72,7 +73,10 @@ fn weapons_missing_elemental_status_effects(
             // Ignore 404s.
             let item = match guide.codex_fetch_item(&item.slug) {
                 Ok(x) => x,
-                Err(Error::ResponseError(_, _, 404, _)) => continue,
+                Err(Error {
+                    kind: ErrorKind::ResponseError(_, _, 404, _),
+                    ..
+                }) => continue,
                 Err(x) => return Err(x),
             };
 
@@ -96,7 +100,7 @@ fn monsters_missing_bind_bite(data: &OrnaData, guide: &OrnaAdminGuide) -> Result
     let gull = match guide.codex_fetch_monster("gull") {
         Ok(x) => x,
         Err(msg) => {
-            return Err(Error::Misc(format!("Failed to retrieve gull: {}", msg)));
+            return Err(ErrorKind::Misc(format!("Failed to retrieve gull: {}", msg)).into());
         }
     };
 
@@ -107,14 +111,14 @@ fn monsters_missing_bind_bite(data: &OrnaData, guide: &OrnaAdminGuide) -> Result
             .skills
             .iter()
             .find(|skill| skill.name == "Bind")
-            .ok_or_else(|| Error::Misc("Failed to find Bind".to_string()))?;
+            .ok_or_else(|| ErrorKind::Misc("Failed to find Bind".to_string()))?;
         let bite = data
             .guide
             .skills
             .skills
             .iter()
             .find(|skill| skill.name == "Bite")
-            .ok_or_else(|| Error::Misc("Failed to find Bite".to_string()))?;
+            .ok_or_else(|| ErrorKind::Misc("Failed to find Bite".to_string()))?;
         for monster in data.guide.monsters.monsters.iter().filter(|monster| {
             monster
                 .skills
@@ -223,10 +227,11 @@ fn giants_titans_tag(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<Status, 
         let tags = match get_generic_monster(guide, &monster.codex_uri)? {
             CodexGenericMonsterOwned::Raid(x) => x.tags,
             _ => {
-                return Err(Error::Misc(format!(
+                return Err(ErrorKind::Misc(format!(
                     "Monster {} should be a raid (URI: {})",
                     monster.name, monster.codex_uri
-                )))
+                ))
+                .into())
             }
         };
         if !tags.contains(&Tag::WorldRaid) {

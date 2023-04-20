@@ -1,7 +1,7 @@
 use crate::{
     codex::{CodexBoss, CodexMonster, CodexRaid, MonsterAbility, MonsterDrop},
     data::GuideData,
-    error::Error,
+    error::{Error},
     guide::html_utils::Tag,
     monsters::admin::AdminMonster,
 };

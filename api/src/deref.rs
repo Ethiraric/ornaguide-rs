@@ -1,4 +1,7 @@
-use ornaguide_rs::{data::OrnaData, error::Error as OError};
+use ornaguide_rs::{
+    data::OrnaData,
+    error::{ErrorKind},
+};
 
 use crate::error::{Error, ToErrorable};
 
@@ -14,14 +17,12 @@ where
             *json = serde_json::Value::String(s.to_string());
             Ok(())
         } else {
-            Err(OError::Misc(format!("Failed to find {} #{}", kind, id))).to_internal_server_error()
+            Err(ErrorKind::Misc(format!("Failed to find {} #{}", kind, id)).into_err())
+                .to_internal_server_error()
         }
     } else {
-        Err(OError::Misc(format!(
-            "Json node {} is not of json type u64",
-            kind
-        )))
-        .to_internal_server_error()
+        Err(ErrorKind::Misc(format!("Json node {} is not of json type u64", kind)).into_err())
+            .to_internal_server_error()
     }
 }
 
@@ -40,14 +41,14 @@ where
                     if let Some(s) = id_to_str(id) {
                         Ok(serde_json::Value::String(s.to_string()))
                     } else {
-                        Err(OError::Misc(format!("Failed to find {} #{}", kind, id)))
+                        Err(ErrorKind::Misc(format!("Failed to find {} #{}", kind, id)).into_err())
                             .to_internal_server_error()
                     }
                 } else {
-                    Err(OError::Misc(format!(
-                        "Json node {} is not of json type u64",
-                        kind
-                    )))
+                    Err(
+                        ErrorKind::Misc(format!("Json node {} is not of json type u64", kind))
+                            .into_err(),
+                    )
                     .to_internal_server_error()
                 }
             })
@@ -55,11 +56,8 @@ where
         *json = serde_json::Value::Array(names);
         Ok(())
     } else {
-        Err(OError::Misc(format!(
-            "Array of {} is not of json type array",
-            kind
-        )))
-        .to_internal_server_error()
+        Err(ErrorKind::Misc(format!("Array of {} is not of json type array", kind)).into_err())
+            .to_internal_server_error()
     }
 }
 

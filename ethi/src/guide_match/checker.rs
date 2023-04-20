@@ -1,4 +1,7 @@
-use ornaguide_rs::{data::OrnaData, error::Error};
+use ornaguide_rs::{
+    data::OrnaData,
+    error::{Error, ErrorKind},
+};
 
 use std::fmt::{Debug, Display};
 
@@ -165,7 +168,9 @@ where
                 .iter()
                 .find(|status| status.id == *id)
                 .map(|status| status.name.as_str())
-                .ok_or_else(|| Error::Misc(format!("Failed to find status effect #{}", id)))
+                .ok_or_else(|| {
+                    ErrorKind::Misc(format!("Failed to find status effect #{}", id)).into_err()
+                })
         },
     )
 }
@@ -196,7 +201,7 @@ where
                 .iter()
                 .find(|spawn| spawn.id == *id)
                 .map(|spawn| spawn.name.as_str())
-                .ok_or_else(|| Error::Misc(format!("Failed to find spawn #{}", id)))
+                .ok_or_else(|| ErrorKind::Misc(format!("Failed to find spawn #{}", id)).into_err())
         },
     )
 }

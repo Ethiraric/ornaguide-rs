@@ -3,7 +3,10 @@ use std::ops::Deref;
 use kuchiki::{Attributes, ElementData, NodeData, NodeDataRef, NodeRef};
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, utils::html::node_to_text};
+use crate::{
+    error::{Error, ErrorKind},
+    utils::html::node_to_text,
+};
 
 /// A tag attached to an item, a monster or a skill.
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
@@ -32,7 +35,7 @@ pub fn parse_tags<T>(iter: impl Iterator<Item = NodeDataRef<T>>) -> Result<Vec<T
             "✓ Found in Arcanists" => tags.push(Tag::FoundInArcanists),
             "✓ Other Realms Raid" => tags.push(Tag::OtherRealmsRaid),
             "✓ Found in the arena" => tags.push(Tag::FoundInArena),
-            x => return Err(Error::HTMLParsingError(format!("Unknown tag: {}", x))),
+            x => return Err(ErrorKind::HTMLParsingError(format!("Unknown tag: {}", x)).into()),
         }
     }
 
@@ -54,10 +57,11 @@ pub fn parse_name_and_chance<'a>(text: &'a str, kind: &str) -> Result<(&'a str, 
                 .parse()?,
         ))
     } else {
-        Err(Error::HTMLParsingError(format!(
+        Err(ErrorKind::HTMLParsingError(format!(
             "Failed to find '(' when parsing {} chance: \"{}\"",
             kind, text
-        )))
+        ))
+        .into())
     }
 }
 

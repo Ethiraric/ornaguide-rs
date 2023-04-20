@@ -1,7 +1,10 @@
 use std::str::FromStr;
 
 use itertools::Itertools;
-use ornaguide_rs::{error::Error as OError, pets::admin::CostType};
+use ornaguide_rs::{
+    error::{Error as OError, ErrorKind},
+    pets::admin::CostType,
+};
 
 use crate::{
     error::{Error, ToErrorable},
@@ -30,7 +33,7 @@ where
             || (str.chars().nth(1).unwrap() == '=' && str.len() < 3)
             || ("|^".contains(str.chars().next().unwrap()) && str.len() < 4)
         {
-            return Err(OError::Misc(format!("Expression is too short: '{}'", str)));
+            return Err(ErrorKind::Misc(format!("Expression is too short: '{}'", str)).into());
         }
 
         let first_char = str.chars().next().unwrap();
@@ -39,7 +42,8 @@ where
         // Parse a `<=`, `>=`, `==` or `!=` expression.
         if second_char == '=' {
             // If we have a 2 chars operator, parse value starting from 3rd char.
-            let expected_value = T::from_str(&str[2..]).map_err(|s| OError::Misc(s.to_string()))?;
+            let expected_value =
+                T::from_str(&str[2..]).map_err(|s| ErrorKind::Misc(s.to_string()))?;
 
             // Match the first char and create a closure accordingly.
             match first_char {
@@ -48,30 +52,30 @@ where
                 '>' => Ok(Filter::Compiled(Box::new(move |a| *a >= expected_value))),
                 '<' => Ok(Filter::Compiled(Box::new(move |a| *a <= expected_value))),
                 // Error on weird operators (`,=` would be one).
-                _ => Err(OError::Misc(format!(
-                    "Invalid operator in expression: {}",
-                    str
-                ))),
+                _ => {
+                    Err(ErrorKind::Misc(format!("Invalid operator in expression: {}", str)).into())
+                }
             }
         // Parse a `<` or `>` expression.
         } else if "><".contains(first_char) {
             // If we have a 1 char operator, parse value starting from 2nd char.
-            let expected_value = T::from_str(&str[1..]).map_err(|s| OError::Misc(s.to_string()))?;
+            let expected_value =
+                T::from_str(&str[1..]).map_err(|s| ErrorKind::Misc(s.to_string()))?;
 
             // Match the first char and create a closure accordingly.
             match str.chars().next() {
                 Some('>') => Ok(Filter::Compiled(Box::new(move |a| *a > expected_value))),
                 Some('<') => Ok(Filter::Compiled(Box::new(move |a| *a < expected_value))),
                 // Error on weird operators (`,` would be one).
-                Some(_) => Err(OError::Misc(format!(
-                    "Invalid operator in expression: {}",
-                    str
-                ))),
+                Some(_) => {
+                    Err(ErrorKind::Misc(format!("Invalid operator in expression: {}", str)).into())
+                }
                 // Error if somehow we fail to get the first char.
-                None => Err(OError::Misc(format!(
+                None => Err(ErrorKind::Misc(format!(
                     "Failed to get the first character of the expression '{}'",
                     str
-                ))),
+                ))
+                .into()),
             }
         // Parse a `|[x]` or `^[x]` expression.
         } else if "|^".contains(first_char) {
@@ -80,13 +84,14 @@ where
             match match_type {
                 VecMatch::OneOf => Ok(Filter::Compiled(Box::new(move |a| values.contains(a)))),
                 VecMatch::None => Ok(Filter::Compiled(Box::new(move |a| !values.contains(a)))),
-                _ => Err(OError::Misc(format!(
+                _ => Err(ErrorKind::Misc(format!(
                     "Logic error: Unknown array expression: {}",
                     str
-                ))),
+                ))
+                .into()),
             }
         } else {
-            Err(OError::Misc(format!("Unknown expression: {}", str)))
+            Err(ErrorKind::Misc(format!("Unknown expression: {}", str)).into())
         }
     })();
 
@@ -122,10 +127,10 @@ compilable_scalar!(f64);
 impl<'a> Compilable<'a, bool> for Filter<'a, bool> {
     fn compiled(self) -> Result<Filter<'a, bool>, Error> {
         match self {
-            Filter::Expr(_) => Err(OError::Misc(
-                "Cannot use expressions with booleans".to_string(),
-            ))
-            .to_bad_request(),
+            Filter::Expr(_) => {
+                Err(ErrorKind::Misc("Cannot use expressions with booleans".to_string()).into_err())
+                    .to_bad_request()
+            }
             _ => Ok(self),
         }
     }
@@ -142,11 +147,12 @@ impl<'a> Compilable<'a, String> for Filter<'a, String> {
                 } else if let Some(str) = str.strip_prefix('/') {
                     let regex = Regex::new(&format!("(?i){}", str))
                         .map_err(|e| {
-                            OError::Misc(format!(
+                            ErrorKind::Misc(format!(
                                 "Failed to create regular expression: '{}': {}",
                                 &str[1..],
                                 e
                             ))
+                            .into_err()
                         })
                         .to_bad_request()?;
                     Ok(Filter::Compiled(Box::new(move |a| regex.is_match(a))))
@@ -259,9 +265,10 @@ impl<'a> Compilable<'a, CostType> for Filter<'a, CostType> {
             Filter::Expr(str) => match str.as_str() {
                 "Orn" => Ok(Filter::Compiled(Box::new(|a| *a == CostType::Orn))),
                 "Gold" => Ok(Filter::Compiled(Box::new(|a| *a == CostType::Gold))),
-                _ => Err(OError::Misc(
+                _ => Err(ErrorKind::Misc(
                     "Expected 'Orn' or 'Gold' for 'cost_type' field".to_string(),
-                ))
+                )
+                .into_err())
                 .to_bad_request(),
             },
             _ => Ok(self),
@@ -332,9 +339,7 @@ where
     };
 
     if !str.starts_with('[') || !str.ends_with(']') {
-        return Err(OError::Misc(
-            "Vec filter missing square brackets".to_string(),
-        ));
+        return Err(ErrorKind::Misc("Vec filter missing square brackets".to_string()).into());
     }
     let str = &str[1..str.len() - 1];
 
@@ -344,7 +349,7 @@ where
         .map(str::trim)
         .map(T::from_str)
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| OError::Misc(e.to_string()))?
+        .map_err(|e| ErrorKind::Misc(e.to_string()))?
         .into_iter()
         .sorted_by(|a, b| a.partial_cmp(b).unwrap())
         .dedup()

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     data::GuideData,
-    error::Error,
+    error::{Error, ErrorKind},
     pets::admin::{AdminPet, CostType},
 };
 
@@ -97,7 +97,8 @@ impl<'a> Followers {
     /// Find the codex follower associated with the given admin pet.
     /// If there is no match, return an `Err`.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Follower, Error> {
-        self.find_by_uri(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for follower with uri '{}'", needle)))
+        self.find_by_uri(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for follower with uri '{}'", needle)).into()
+        })
     }
 }

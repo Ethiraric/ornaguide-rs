@@ -2,7 +2,7 @@ use std::sync::RwLock;
 
 use dotenv::dotenv;
 
-use ornaguide_rs::error::Error;
+use ornaguide_rs::error::{Error, ErrorKind};
 
 use lazy_static::lazy_static;
 
@@ -52,12 +52,12 @@ fn sanitize_config(config: &mut Config) {
 
 /// Load the config from the environment.
 fn load() -> Result<Config, Error> {
-    let _ = dotenv().map_err(|err| Error::Misc(format!("Failed to load .env: {}", err)))?;
+    let _ = dotenv().map_err(|err| ErrorKind::Misc(format!("Failed to load .env: {}", err)))?;
     let mut config = Config {
         ornaguide_host: dotenv::var("ORNAGUIDE_HOST")
             .unwrap_or_else(|_| "https://orna.guide".to_string()),
         ornaguide_cookie: dotenv::var("ORNAGUIDE_COOKIE").map_err(|err| {
-            Error::Misc(format!(
+            ErrorKind::Misc(format!(
                 "Failed to get ORNAGUIDE_COOKIE env variable: {}",
                 err
             ))
@@ -83,10 +83,10 @@ where
 {
     let config = CONFIG
         .as_ref()
-        .map_err(|err| Error::Misc(format!("{}", err)))?;
+        .map_err(|err| ErrorKind::Misc(format!("{}", err)))?;
     let config = config
         .read()
-        .map_err(|err| Error::Misc(format!("{}", err)))?;
+        .map_err(|err| ErrorKind::Misc(format!("{}", err)))?;
     f(&config)
 }
 

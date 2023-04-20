@@ -8,7 +8,7 @@ use bzip2::{read::BzDecoder, write::BzEncoder, Compression};
 use ornaguide_rs::{
     codex::translation::{LocaleDB, LocaleStrings},
     data::OrnaData,
-    error::Error,
+    error::{Error, ErrorKind},
 };
 use tar::{Archive, Builder, EntryType, Header};
 
@@ -108,10 +108,9 @@ pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> R
 pub(crate) fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error> {
     let archive_path: &Path = archive_path.as_ref();
     if !archive_path.to_string_lossy().ends_with(".tar.bz2") {
-        return Err(Error::Misc(format!(
-            "Invalid backup output file: {:?}",
-            archive_path
-        )));
+        return Err(
+            ErrorKind::Misc(format!("Invalid backup output file: {:?}", archive_path)).into(),
+        );
     }
 
     // Take path, and remove the `.tar.bz2` extension.
@@ -207,10 +206,11 @@ pub(crate) fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error
                         json_read(entry, base_pathstr).unwrap_or_default();
                 }
                 _ => {
-                    return Err(Error::Misc(format!(
+                    return Err(ErrorKind::Misc(format!(
                         "Unexpected file in {:?}: {:?}",
                         archive_path, path
-                    )));
+                    ))
+                    .into());
                 }
             }
         } else {
@@ -235,10 +235,11 @@ pub(crate) fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error
                     )?;
                 }
             } else {
-                return Err(Error::Misc(format!(
+                return Err(ErrorKind::Misc(format!(
                     "Unexpected file in {:?}: {:?}",
                     archive_path, path
-                )));
+                ))
+                .into());
             }
         }
     }
@@ -263,7 +264,9 @@ where
     let strings: LocaleStrings = json_read(reader, fullpath)?;
     let lang = filename
         .strip_suffix(".json")
-        .ok_or_else(|| Error::Misc(format!("{}: lang file doesn't end in `.json`", fullpath)))?
+        .ok_or_else(|| {
+            ErrorKind::Misc(format!("{}: lang file doesn't end in `.json`", fullpath)).into_err()
+        })?
         .to_string();
     db.locales.insert(lang, strings);
     Ok(())

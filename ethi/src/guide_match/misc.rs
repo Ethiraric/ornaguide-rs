@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     codex::{FollowerAbility, ItemDroppedBy, ItemUpgradeMaterial, MonsterAbility},
-    error::Error,
+    error::{Error, ErrorKind},
     guide::Static,
     items::admin::AdminItems,
     monsters::admin::AdminMonsters,
@@ -11,7 +11,7 @@ use ornaguide_rs::{
 /// A trait to extend `Vec<ItemDroppedBy>` specifically.
 pub trait ItemDroppedBys {
     /// Convert `self` to a `Vec<u32>`, with `u32`s being the guide monster ids.
-    /// Returns `Error::PartialCodexItemDroppedBysConversion` if all fields have not been
+    /// Returns `ErrorKind::PartialCodexItemDroppedBysConversion` if all fields have not been
     /// successfully converted.
     fn try_to_guide_ids(&self, monsters: &AdminMonsters) -> Result<Vec<u32>, Error>;
 }
@@ -31,9 +31,7 @@ impl ItemDroppedBys for Vec<ItemDroppedBy> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(Error::PartialCodexItemDroppedBysConversion(
-                successes, failures,
-            ))
+            Err(ErrorKind::PartialCodexItemDroppedBysConversion(successes, failures).into())
         }
     }
 }
@@ -41,7 +39,7 @@ impl ItemDroppedBys for Vec<ItemDroppedBy> {
 /// A trait to extend `Vec<ItemUpgradeMaterial>` specifically.
 pub trait ItemUpgradeMaterials {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide item ids.
-    /// Returns `Error::PartialCodexItemDroppedBysConversion` if all fields have not been
+    /// Returns `ErrorKind::PartialCodexItemDroppedBysConversion` if all fields have not been
     /// successfully converted.
     fn try_to_guide_ids(&self, items: &AdminItems) -> Result<Vec<u32>, Error>;
 }
@@ -61,9 +59,7 @@ impl ItemUpgradeMaterials for Vec<ItemUpgradeMaterial> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(Error::PartialCodexItemUpgradeMaterialsConversion(
-                successes, failures,
-            ))
+            Err(ErrorKind::PartialCodexItemUpgradeMaterialsConversion(successes, failures).into())
         }
     }
 }
@@ -71,8 +67,8 @@ impl ItemUpgradeMaterials for Vec<ItemUpgradeMaterial> {
 /// A trait to extend `Vec`s of codex abilities.
 pub trait CodexAbilities {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide skill ids.
-    /// Returns `Error::PartialCodexFollowerAbilitiesConversion` or
-    /// `Error::PartialCodexMonsterAbilitiesConversion` if all fields have not been successfully
+    /// Returns `ErrorKind::PartialCodexFollowerAbilitiesConversion` or
+    /// `ErrorKind::PartialCodexMonsterAbilitiesConversion` if all fields have not been successfully
     /// converted.
     fn try_to_guide_ids(&self, skills: &AdminSkills) -> Result<Vec<u32>, Error>;
 }
@@ -92,9 +88,7 @@ impl CodexAbilities for Vec<FollowerAbility> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(Error::PartialCodexFollowerAbilitiesConversion(
-                successes, failures,
-            ))
+            Err(ErrorKind::PartialCodexFollowerAbilitiesConversion(successes, failures).into())
         }
     }
 }
@@ -114,9 +108,7 @@ impl CodexAbilities for Vec<MonsterAbility> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(Error::PartialCodexMonsterAbilitiesConversion(
-                successes, failures,
-            ))
+            Err(ErrorKind::PartialCodexMonsterAbilitiesConversion(successes, failures).into())
         }
     }
 }
@@ -143,7 +135,7 @@ impl EventsNames for Vec<&str> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(Error::PartialCodexEventsConversion(successes, failures))
+            Err(ErrorKind::PartialCodexEventsConversion(successes, failures).into())
         }
     }
 }

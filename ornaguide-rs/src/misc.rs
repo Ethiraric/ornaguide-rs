@@ -1,4 +1,7 @@
-use crate::{error::Error, guide::Static};
+use crate::{
+    error::{Error, ErrorKind},
+    guide::Static,
+};
 
 /// Remove any added text that may appear in the guide for a name, but not in the game or the
 /// codex.
@@ -96,13 +99,34 @@ impl VecIdConversionResult for Result<Vec<u32>, Error> {
     fn ignore_failed_id_conversions(self) -> Self {
         match self {
             Ok(x) => Ok(x),
-            Err(Error::PartialCodexStatusEffectsConversion(found, _)) => Ok(found),
-            Err(Error::PartialCodexSkillsConversion(found, _)) => Ok(found),
-            Err(Error::PartialCodexItemDroppedBysConversion(found, _)) => Ok(found),
-            Err(Error::PartialCodexItemUpgradeMaterialsConversion(found, _)) => Ok(found),
-            Err(Error::PartialCodexFollowerAbilitiesConversion(found, _)) => Ok(found),
-            Err(Error::PartialCodexMonsterAbilitiesConversion(found, _)) => Ok(found),
-            Err(Error::PartialCodexEventsConversion(found, _)) => Ok(found),
+            Err(Error {
+                kind: ErrorKind::PartialCodexStatusEffectsConversion(found, _),
+                ..
+            }) => Ok(found),
+            Err(Error {
+                kind: ErrorKind::PartialCodexSkillsConversion(found, _),
+                ..
+            }) => Ok(found),
+            Err(Error {
+                kind: ErrorKind::PartialCodexItemDroppedBysConversion(found, _),
+                ..
+            }) => Ok(found),
+            Err(Error {
+                kind: ErrorKind::PartialCodexItemUpgradeMaterialsConversion(found, _),
+                ..
+            }) => Ok(found),
+            Err(Error {
+                kind: ErrorKind::PartialCodexFollowerAbilitiesConversion(found, _),
+                ..
+            }) => Ok(found),
+            Err(Error {
+                kind: ErrorKind::PartialCodexMonsterAbilitiesConversion(found, _),
+                ..
+            }) => Ok(found),
+            Err(Error {
+                kind: ErrorKind::PartialCodexEventsConversion(found, _),
+                ..
+            }) => Ok(found),
             x => x,
         }
     }

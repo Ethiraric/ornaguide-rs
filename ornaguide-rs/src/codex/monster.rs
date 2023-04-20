@@ -1,7 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 pub use crate::guide::html_utils::Tag;
-use crate::{data::GuideData, error::Error, monsters::admin::AdminMonster};
+use crate::{
+    data::GuideData,
+    error::{Error, ErrorKind},
+    monsters::admin::AdminMonster,
+};
 
 /// An ability for a monster.
 #[derive(Debug, Serialize, Deserialize, Clone, Eq, PartialEq)]
@@ -298,8 +302,9 @@ impl<'a> Monsters {
     /// Find the codex monster associated with the given uri.
     /// If there is no match, return an `Err`.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Monster, Error> {
-        self.find_by_uri(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for codex monster with uri '{}'", needle)))
+        self.find_by_uri(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for codex monster with uri '{}'", needle)).into()
+        })
     }
 }
 
@@ -318,8 +323,9 @@ impl<'a> Bosses {
     /// Find the codex boss associated with the given uri.
     /// If there is no match, return an `Err`.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Boss, Error> {
-        self.find_by_uri(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for codex boses with uri '{}'", needle)))
+        self.find_by_uri(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for codex boses with uri '{}'", needle)).into()
+        })
     }
 }
 
@@ -338,7 +344,8 @@ impl<'a> Raids {
     /// Find the codex raid associated with the given uri.
     /// If there is no match, return an `Err`.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Raid, Error> {
-        self.find_by_uri(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for codex raid with uri '{}'", needle)))
+        self.find_by_uri(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for codex raid with uri '{}'", needle)).into()
+        })
     }
 }

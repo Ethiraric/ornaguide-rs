@@ -101,7 +101,7 @@ fn make_apply_sort_fn(fields: &Fields, field_names: &[String], filtered_type: &s
             match key {{
                 {},
                 key => return Err(
-                    ornaguide_rs::error::Error::Misc(format!("Failed to find key {{}}", key))
+                    ornaguide_rs::error::ErrorKind::Misc(format!("Failed to find key {{}}", key)).into_err()
                 ).to_bad_request(),
             }}
             if options.sort_descending {{
@@ -145,7 +145,7 @@ fn make_apply_sort_fn(fields: &Fields, field_names: &[String], filtered_type: &s
                 }
                 format!(
                     "\"{}\" => return Err(
-                        ornaguide_rs::error::Error::Misc(\"Cannot sort by {}\".to_string())
+                        ornaguide_rs::error::ErrorKind::Misc(\"Cannot sort by {}\".to_string()).into_err()
                         ).to_bad_request()",
                     name, name
                 )

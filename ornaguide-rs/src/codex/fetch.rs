@@ -3,7 +3,7 @@ use crate::{
         Codex, CodexBosses, CodexFollowers, CodexItems, CodexMonsters, CodexRaids, CodexSkills,
         Sluggable,
     },
-    error::Error,
+    error::{Error},
     guide::OrnaAdminGuide,
 };
 
