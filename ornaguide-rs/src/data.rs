@@ -3,7 +3,11 @@ use std::{
     io::{BufReader, Write},
 };
 
-use crate::{error::Error, guide::Static, monsters::admin::AdminMonster};
+use crate::{
+    error::{Error, ErrorKind},
+    guide::Static,
+    monsters::admin::AdminMonster,
+};
 
 mod codex_data;
 mod codex_generic_monster;
@@ -12,6 +16,7 @@ mod guide_data;
 pub use codex_data::CodexData;
 pub use codex_generic_monster::CodexGenericMonster;
 pub use guide_data::GuideData;
+use serde::Serialize;
 
 /// Aggregate for both the codex and the guide data.
 #[derive(Clone, Default, PartialEq)]
@@ -105,80 +110,83 @@ impl OrnaData {
         })
     }
 
-    pub fn save_to_generic<Writer>(&self, directory: &str, mut writer: Writer) -> Result<(), Error>
+    pub fn save_to_generic<Writer>(&self, dir: &str, mut writer: Writer) -> Result<(), Error>
     where
         Writer: FnMut(&str, &dyn Fn(&mut dyn Write) -> Result<(), Error>) -> Result<(), Error>,
     {
         // Codex jsons
-        writer(&format!("{}/codex_items.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.codex.items).map_err(Error::from)
-        })?;
-        writer(&format!("{}/codex_raids.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.codex.raids).map_err(Error::from)
-        })?;
-        writer(&format!("{}/codex_monsters.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.codex.monsters).map_err(Error::from)
-        })?;
-        writer(&format!("{}/codex_bosses.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.codex.bosses).map_err(Error::from)
-        })?;
-        writer(&format!("{}/codex_skills.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.codex.skills).map_err(Error::from)
-        })?;
-        writer(&format!("{}/codex_followers.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.codex.followers).map_err(Error::from)
-        })?;
+        save(dir, "codex_items.json", &mut writer, &self.codex.items)?;
+        save(dir, "codex_raids.json", &mut writer, &self.codex.raids)?;
+        save(
+            dir,
+            "codex_monsters.json",
+            &mut writer,
+            &self.codex.monsters,
+        )?;
+        save(dir, "codex_bosses.json", &mut writer, &self.codex.bosses)?;
+        save(dir, "codex_skills.json", &mut writer, &self.codex.skills)?;
+        save(
+            dir,
+            "codex_followers.json",
+            &mut writer,
+            &self.codex.followers,
+        )?;
 
         // Guide jsons
-        writer(&format!("{}/guide_items.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.guide.items).map_err(Error::from)
-        })?;
-        writer(&format!("{}/guide_monsters.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.guide.monsters).map_err(Error::from)
-        })?;
-        writer(&format!("{}/guide_skills.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.guide.skills).map_err(Error::from)
-        })?;
-        writer(&format!("{}/guide_pets.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.guide.pets).map_err(Error::from)
-        })?;
+        save(dir, "guide_items.json", &mut writer, &self.guide.items)?;
+        save(
+            dir,
+            "guide_monsters.json",
+            &mut writer,
+            &self.guide.monsters,
+        )?;
+        save(dir, "guide_skills.json", &mut writer, &self.guide.skills)?;
+        save(dir, "guide_pets.json", &mut writer, &self.guide.pets)?;
 
-        writer(&format!("{}/guide_spawns.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.guide.static_.spawns).map_err(Error::from)
-        })?;
-        writer(&format!("{}/guide_elements.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.guide.static_.elements).map_err(Error::from)
-        })?;
-        writer(&format!("{}/guide_item_types.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.guide.static_.item_types).map_err(Error::from)
-        })?;
-        writer(&format!("{}/guide_equipped_bys.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.guide.static_.equipped_bys).map_err(Error::from)
-        })?;
-        writer(
-            &format!("{}/guide_status_effects.json", directory),
-            &|out| {
-                serde_json::to_writer_pretty(out, &self.guide.static_.status_effects)
-                    .map_err(Error::from)
-            },
+        let static_ = &self.guide.static_;
+        save(
+            dir,
+            "guide_spawns.json",
+            &mut writer,
+            &self.guide.static_.spawns,
         )?;
-        writer(
-            &format!("{}/guide_item_categories.json", directory),
-            &|out| {
-                serde_json::to_writer_pretty(out, &self.guide.static_.item_categories)
-                    .map_err(Error::from)
-            },
+        save(dir, "guide_elements.json", &mut writer, &static_.elements)?;
+        save(
+            dir,
+            "guide_item_types.json",
+            &mut writer,
+            &static_.item_types,
         )?;
-        writer(
-            &format!("{}/guide_monster_families.json", directory),
-            &|out| {
-                serde_json::to_writer_pretty(out, &self.guide.static_.monster_families)
-                    .map_err(Error::from)
-            },
+        save(
+            dir,
+            "guide_equipped_bys.json",
+            &mut writer,
+            &static_.equipped_bys,
         )?;
-        writer(&format!("{}/guide_skill_types.json", directory), &|out| {
-            serde_json::to_writer_pretty(out, &self.guide.static_.skill_types).map_err(Error::from)
-        })?;
+        save(
+            dir,
+            "guide_status_effects.json",
+            &mut writer,
+            &static_.status_effects,
+        )?;
+        save(
+            dir,
+            "guide_item_categories.json",
+            &mut writer,
+            &static_.item_categories,
+        )?;
+        save(
+            dir,
+            "guide_monster_families.json",
+            &mut writer,
+            &static_.monster_families,
+        )?;
+        save(
+            dir,
+            "guide_skill_types.json",
+            &mut writer,
+            &static_.skill_types,
+        )?;
         Ok(())
     }
 
@@ -196,10 +204,11 @@ impl OrnaData {
         admin_monster: &AdminMonster,
     ) -> Result<CodexGenericMonster<'a>, Error> {
         if admin_monster.codex_uri.is_empty() {
-            return Err(Error::Misc(format!(
+            return Err(ErrorKind::Misc(format!(
                 "Empty codex_uri for admin monster '{}'",
                 admin_monster.name
-            )));
+            ))
+            .into());
         }
 
         if admin_monster.is_regular_monster() {
@@ -212,10 +221,11 @@ impl OrnaData {
                 .find(|codex_monster| codex_monster.slug == slug)
                 .map(CodexGenericMonster::Monster)
                 .ok_or_else(|| {
-                    Error::Misc(format!(
+                    ErrorKind::Misc(format!(
                         "No codex monster match for admin monster {} (#{})",
                         admin_monster.name, admin_monster.id
                     ))
+                    .into()
                 })
         } else if admin_monster.is_boss(&self.guide.static_.spawns) {
             // Boss
@@ -227,10 +237,11 @@ impl OrnaData {
                 .find(|codex_boss| codex_boss.slug == slug)
                 .map(CodexGenericMonster::Boss)
                 .ok_or_else(|| {
-                    Error::Misc(format!(
+                    ErrorKind::Misc(format!(
                         "No codex monster match for admin boss {} (#{})",
                         admin_monster.name, admin_monster.id
                     ))
+                    .into()
                 })
         } else {
             // Raid
@@ -242,11 +253,25 @@ impl OrnaData {
                 .find(|codex_raid| codex_raid.slug == slug)
                 .map(CodexGenericMonster::Raid)
                 .ok_or_else(|| {
-                    Error::Misc(format!(
+                    ErrorKind::Misc(format!(
                         "No codex monster match for admin raid {} (#{})",
                         admin_monster.name, admin_monster.id
                     ))
+                    .into()
                 })
         }
     }
+}
+
+/// Save a structure into a file in a directory.
+fn save<Writer, T>(directory: &str, filename: &str, mut writer: Writer, t: T) -> Result<(), Error>
+where
+    Writer: FnMut(&str, &dyn Fn(&mut dyn Write) -> Result<(), Error>) -> Result<(), Error>,
+    T: Serialize,
+{
+    writer(&format!("{}/{}", directory, filename), &|out| {
+        serde_json::to_writer_pretty(out, &t)
+            .map_err(ErrorKind::from)
+            .map_err(Error::from)
+    })
 }

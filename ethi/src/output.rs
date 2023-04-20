@@ -2,7 +2,7 @@ use itertools::Itertools;
 use ornaguide_rs::{
     codex::Codex,
     data::{CodexData, GuideData, OrnaData},
-    error::Error,
+    error::{Error, ErrorKind},
     guide::{AdminGuide, OrnaAdminGuide},
 };
 
@@ -75,7 +75,10 @@ fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result
             }();
             // Ignore 404s.
             match result {
-                Err(Error::ResponseError(_, _, 404, _)) => {}
+                Err(Error {
+                    kind: ErrorKind::ResponseError(_, _, 404, _),
+                    ..
+                }) => {}
                 Err(x) => return Err(x),
                 _ => {}
             }
@@ -161,7 +164,10 @@ fn add_event_followers(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result<(
         {
             match guide.codex_fetch_follower(slug) {
                 Ok(follower) => data.followers.followers.push(follower),
-                Err(Error::ResponseError(_, _, 404, _)) => {}
+                Err(Error {
+                    kind: ErrorKind::ResponseError(_, _, 404, _),
+                    ..
+                }) => {}
                 Err(x) => return Err(x),
             }
         }

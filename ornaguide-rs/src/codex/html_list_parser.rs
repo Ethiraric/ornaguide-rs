@@ -1,7 +1,7 @@
 use kuchiki::{parse_html, traits::TendrilSink, NodeRef};
 
 use crate::{
-    error::Error,
+    error::{Error, ErrorKind},
     utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text},
 };
 
@@ -33,19 +33,17 @@ fn node_to_entry(node: &NodeRef) -> Result<Entry, Error> {
     let all_contents = all_contents.trim();
     let mut entry = Entry::default();
 
-    let it = node
-        .children()
-        .filter(|n| n.as_element().is_some())
-        .skip(1); // Skip over image.
+    let it = node.children().filter(|n| n.as_element().is_some()).skip(1); // Skip over image.
     let mut it = it.peekable();
 
     if let Some(name_node) = it.next() {
         entry.value = node_to_text(&name_node);
     } else {
-        return Err(Error::HTMLParsingError(format!(
+        return Err(ErrorKind::HTMLParsingError(format!(
             "Failed to find name in codex entry: {:#?}",
             all_contents
-        )));
+        ))
+        .into());
     }
 
     if let Some(meta_node) = it.peek() {
@@ -66,22 +64,25 @@ fn node_to_entry(node: &NodeRef) -> Result<Entry, Error> {
                 chars.next();
                 entry.tier = chars.as_str().trim().parse()?;
             } else {
-                return Err(Error::HTMLParsingError(format!(
+                return Err(ErrorKind::HTMLParsingError(format!(
                     "Failed to find the star in tier in codex entry field: {:#?}",
                     tier_str
-                )));
+                ))
+                .into());
             }
         } else {
-            return Err(Error::HTMLParsingError(format!(
+            return Err(ErrorKind::HTMLParsingError(format!(
                 "The tier string is empty in: {:#?}",
                 node_to_text(&tier_node)
-            )));
+            ))
+            .into());
         }
     } else {
-        return Err(Error::HTMLParsingError(format!(
+        return Err(ErrorKind::HTMLParsingError(format!(
             "Failed to find tier in codex entry: {:#?}",
             all_contents
-        )));
+        ))
+        .into());
     }
 
     entry.uri = get_attribute_from_node(descend_to(node, "a", "entry")?.as_node(), "href", "a")?;

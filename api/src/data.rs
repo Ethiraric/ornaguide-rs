@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 
-use ornaguide_rs::{data::OrnaData, error::Error as OError};
+use ornaguide_rs::{
+    data::OrnaData,
+    error::{Error as OError, ErrorKind},
+};
 
 use lazy_static::lazy_static;
 
@@ -44,7 +47,7 @@ where
             if let Some(data) = locale_data.get(lang) {
                 f(data)
             } else {
-                Err(OError::Misc(format!("Failed to find locale {}", lang)))
+                Err(ErrorKind::Misc(format!("Failed to find locale {}", lang)).into_err())
                     .to_internal_server_error()
             }
         }

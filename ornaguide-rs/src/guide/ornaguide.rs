@@ -5,7 +5,7 @@ use crate::{
         MonsterEntry as CodexMonsterEntry, RaidEntry as CodexRaidEntry,
         SkillEntry as CodexSkillEntry,
     },
-    error::Error,
+    error::{Error,ErrorKind},
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, ItemCategory,
         ItemRow, ItemType, MonsterFamily, MonsterRow, PetRow, SkillRow, SkillType, Spawn,
@@ -410,7 +410,7 @@ impl Codex for OrnaAdminGuide {
                 Ok(CodexMonsterEntry {
                     name: entry.value,
                     family: entry.meta.ok_or_else(|| {
-                        Error::HTMLParsingError(
+                        ErrorKind::HTMLParsingError(
                             "Failed to retrieve meta field of monster".to_string(),
                         )
                     })?,
@@ -438,7 +438,7 @@ impl Codex for OrnaAdminGuide {
                 Ok(CodexBossEntry {
                     name: entry.value,
                     family: entry.meta.ok_or_else(|| {
-                        Error::HTMLParsingError("Failed to retrieve meta field of boss".to_string())
+                        ErrorKind::HTMLParsingError("Failed to retrieve meta field of boss".to_string())
                     })?,
                     tier: entry.tier,
                     uri: entry.uri,

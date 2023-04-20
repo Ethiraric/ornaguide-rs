@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ornaguide_rs::{data::OrnaData, error::Error as OError, items::admin::AdminItem};
+use ornaguide_rs::{data::OrnaData, error::ErrorKind, items::admin::AdminItem};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
@@ -179,13 +179,14 @@ impl ItemFilters<'_> {
                         }
                     }
                 } else {
-                    return Err(OError::Misc("Item should be an object".to_string()))
+                    return Err(ErrorKind::Misc("Item should be an object".to_string()).into_err())
                         .to_internal_server_error();
                 }
             }
             Ok(())
         } else {
-            Err(OError::Misc("Items should be an array".to_string())).to_internal_server_error()
+            Err(ErrorKind::Misc("Items should be an array".to_string()).into_err())
+                .to_internal_server_error()
         }
     }
 }

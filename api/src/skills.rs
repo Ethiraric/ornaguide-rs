@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use ornaguide_rs::{data::OrnaData, error::Error as OError, skills::admin::AdminSkill};
+use ornaguide_rs::{data::OrnaData, error::ErrorKind, skills::admin::AdminSkill};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
@@ -97,13 +97,14 @@ impl SkillFilters<'_> {
                         deref_status_effects(gives, data)?;
                     }
                 } else {
-                    return Err(OError::Misc("Skill should be an object".to_string()))
+                    return Err(ErrorKind::Misc("Skill should be an object".to_string()).into_err())
                         .to_internal_server_error();
                 }
             }
             Ok(())
         } else {
-            Err(OError::Misc("Skills should be an array".to_string())).to_internal_server_error()
+            Err(ErrorKind::Misc("Skills should be an array".to_string()).into_err())
+                .to_internal_server_error()
         }
     }
 }

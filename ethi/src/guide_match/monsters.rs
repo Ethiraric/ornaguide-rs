@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     data::{CodexGenericMonster, OrnaData},
-    error::Error,
+    error::{Error, ErrorKind},
     guide::{AdminGuide, OrnaAdminGuide},
     monsters::admin::AdminMonster,
 };
@@ -231,10 +231,11 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                                 .find(|family| family.name == **name)
                                 .map(|family| family.id)
                                 .ok_or_else(|| {
-                                    Error::Misc(format!(
+                                    ErrorKind::Misc(format!(
                                         "Failed to find family {} for monster {} (#{})",
                                         name, admin_monster.name, admin_monster.id
                                     ))
+                                    .into_err()
                                 })
                         },
                     )
@@ -320,7 +321,10 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 .try_to_guide_ids(&data.guide.skills)
                 // TODO(ethiraric, 27/07/2022): Add diagnostics.
                 .unwrap_or_else(|err| match err {
-                    Error::PartialCodexMonsterAbilitiesConversion(ok, _) => ok,
+                    Error {
+                        kind: ErrorKind::PartialCodexMonsterAbilitiesConversion(ok, _),
+                        ..
+                    } => ok,
                     _ => panic!("try_to_guide_ids returned a weird error"),
                 })
                 .into_iter()

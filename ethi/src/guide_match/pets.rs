@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     data::OrnaData,
-    error::Error,
+    error::{Error, ErrorKind},
     guide::{AdminGuide, OrnaAdminGuide},
     pets::admin::AdminPet,
 };
@@ -179,7 +179,10 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 .try_to_guide_ids(&data.guide.skills)
                 // TODO(ethiraric, 27/07/2022): Add diagnostics.
                 .unwrap_or_else(|err| match err {
-                    Error::PartialCodexFollowerAbilitiesConversion(ok, _) => ok,
+                    Error {
+                        kind: ErrorKind::PartialCodexFollowerAbilitiesConversion(ok, _),
+                        ..
+                    } => ok,
                     _ => panic!("try_to_guide_ids returned a weird error"),
                 })
                 .into_iter()

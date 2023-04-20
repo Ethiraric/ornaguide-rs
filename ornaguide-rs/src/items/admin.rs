@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, guide::html_form_parser::ParsedForm};
+use crate::{
+    error::{Error, ErrorKind},
+    guide::html_form_parser::ParsedForm,
+};
 
 /// An item fetched from the admin panel.
 #[derive(Clone, Debug, Serialize, Deserialize, Derivative)]
@@ -298,7 +301,7 @@ impl TryFrom<ParsedForm> for AdminItem {
                     }
                 }
                 key => {
-                    return Err(Error::ExtraField(key.to_string(), value));
+                    return Err(ErrorKind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
@@ -455,8 +458,9 @@ impl<'a> AdminItems {
     /// Find the admin item associated with the given id.
     /// If there is no match, return an `Err`.
     pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminItem, Error> {
-        self.find_by_id(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for admin item with id {}", needle)))
+        self.find_by_id(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for admin item with id {}", needle)).into()
+        })
     }
 
     /// Find the admin item associated with the given uri.
@@ -468,7 +472,7 @@ impl<'a> AdminItems {
     /// If there is no match, return an `Err`.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminItem, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            Error::Misc(format!("No match for admin item with codex_uri {}", needle))
+            ErrorKind::Misc(format!("No match for admin item with codex_uri {}", needle)).into()
         })
     }
 
@@ -484,10 +488,11 @@ impl<'a> AdminItems {
     /// If there is no match, return an `Err`.
     pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a AdminItem, Error> {
         self.find_by_slug(needle).ok_or_else(|| {
-            Error::Misc(format!(
+            ErrorKind::Misc(format!(
                 "No match for admin item with codex slug {}",
                 needle
             ))
+            .into()
         })
     }
 }

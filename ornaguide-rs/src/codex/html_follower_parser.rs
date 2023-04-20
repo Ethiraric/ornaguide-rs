@@ -4,7 +4,7 @@ use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRe
 
 use crate::{
     codex::{CodexFollower, FollowerAbility},
-    error::Error,
+    error::{Error, ErrorKind},
     misc::truncate_str_until,
     utils::html::{
         descend_iter, descend_to, get_attribute_from_node, list_attributes_form_node, node_to_text,
@@ -32,10 +32,11 @@ fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
         it.next(); // Skip over the star.
         Ok(it.as_str().parse()?)
     } else {
-        Err(Error::HTMLParsingError(format!(
+        Err(ErrorKind::HTMLParsingError(format!(
             "Failed to find ':' when parsing skill tier: \"{}\"",
             text
-        )))
+        ))
+        .into())
     }
 }
 
@@ -51,9 +52,10 @@ fn parse_description_nodes<T>(
     let description = if let Some(description_node) = iter.next() {
         node_to_text(description_node.as_node())
     } else {
-        return Err(Error::HTMLParsingError(
+        return Err(ErrorKind::HTMLParsingError(
             "No description node when parsing follower".to_string(),
-        ));
+        )
+        .into());
     };
 
     // Look for the event node.
@@ -81,14 +83,13 @@ fn parse_description_nodes<T>(
         if let Some(rarity_str) = truncate_str_until(&node_to_text(rarity_node.as_node()), ':') {
             rarity = rarity_str.trim().to_string();
         } else {
-            return Err(Error::HTMLParsingError(
+            return Err(ErrorKind::HTMLParsingError(
                 "Failed to find ':' in rarity node".to_string(),
-            ));
+            )
+            .into());
         }
     } else {
-        return Err(Error::HTMLParsingError(
-            "Failed to find rarity node".to_string(),
-        ));
+        return Err(ErrorKind::HTMLParsingError("Failed to find rarity node".to_string()).into());
     }
 
     Ok(DescriptionNode {
@@ -128,10 +129,11 @@ fn parse_name_uri_icon_list(
                         descend_to(&node, "a", "div drop or ability")
                             .and_then(|node| a_to_name_uri_icon(node.as_node())),
                     ),
-                    _ => Some(Err(Error::HTMLParsingError(format!(
+                    _ => Some(Err(ErrorKind::HTMLParsingError(format!(
                         "Unknown node tag when parsing drop or ability: {}",
                         &tag
-                    )))),
+                    ))
+                    .into())),
                 }
             } else {
                 panic!("Cannot happen due to previous filter");

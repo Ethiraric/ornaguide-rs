@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use kuchiki::{parse_html, traits::TendrilSink, Attributes, ElementData, NodeData, NodeRef};
 
-use crate::{error::Error, utils::html::descend_to};
+use crate::{error::{Error,ErrorKind}, utils::html::descend_to};
 
 /// Parsed form, csrf token included.
 #[derive(Debug, Default)]
@@ -88,14 +88,14 @@ fn add_field_value(
     let field_node = form
         .select(&html_id)
         .map_err(|()| {
-            Error::HTMLParsingError(format!(
+            ErrorKind::HTMLParsingError(format!(
                 "Failed to select html id {} in guide form parsing",
                 html_id
             ))
         })?
         .next()
         .ok_or_else(|| {
-            Error::HTMLParsingError(format!("No node {} in guide form parsing", html_id))
+            ErrorKind::HTMLParsingError(format!("No node {} in guide form parsing", html_id))
         })?;
     let field_node = field_node.as_node();
     if let NodeData::Element(ElementData {

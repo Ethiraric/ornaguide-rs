@@ -1,6 +1,9 @@
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
 
-use crate::{error::Error, utils::html::descend_to};
+use crate::{
+    error::{Error, ErrorKind},
+    utils::html::descend_to,
+};
 
 /// An entry on the list.
 pub struct Entry {
@@ -29,33 +32,35 @@ fn tr_to_entry(tr: &NodeRef) -> Result<Entry, Error> {
         let attributes = attributes.borrow();
         let url = attributes
             .get("href")
-            .ok_or_else(|| Error::HTMLParsingError("Failed to find href in a".to_string()))?;
+            .ok_or_else(|| ErrorKind::HTMLParsingError("Failed to find href in a".to_string()))?;
         let url = if let Some(x) = url.find('?') {
             url.split_at(x).0
         } else {
             url
         };
         if !url.ends_with("/change/") {
-            return Err(Error::HTMLParsingError(format!(
+            return Err(ErrorKind::HTMLParsingError(format!(
                 "a URL doesn't end with \"/change/\": {}",
                 url
-            )));
+            ))
+            .into());
         }
 
         // Trim "/change/" from the end.
         let url = url.split_at(url.len() - "/change/".len()).0;
         if url.ends_with('/') {
-            return Err(Error::HTMLParsingError(
-                "a URL has a duplicate '/'".to_string(),
-            ));
+            return Err(
+                ErrorKind::HTMLParsingError("a URL has a duplicate '/'".to_string()).into(),
+            );
         }
         // Get the id.
         let id = if let Some(idx) = url.rfind('/') {
             url.split_at(idx + 1).1
         } else {
-            return Err(Error::HTMLParsingError(
+            return Err(ErrorKind::HTMLParsingError(
                 "a URL doesn't contain an expected '/'".to_string(),
-            ));
+            )
+            .into());
         };
 
         // Return entry.
@@ -64,9 +69,7 @@ fn tr_to_entry(tr: &NodeRef) -> Result<Entry, Error> {
             value: a.text_contents(),
         })
     } else {
-        Err(Error::HTMLParsingError(
-            "Failed to convert a node to data".to_string(),
-        ))
+        Err(ErrorKind::HTMLParsingError("Failed to convert a node to data".to_string()).into())
     }
 }
 
@@ -82,14 +85,14 @@ pub fn parse_list_html(contents: &str) -> Result<ParsedTable, Error> {
         .map_while(|s| if s == "..." { Some(0) } else { s.parse().ok() })
         .last()
         .ok_or_else(|| {
-            Error::HTMLParsingError(format!("Failed to get parsing from: {}", paginator_text))
+            ErrorKind::HTMLParsingError(format!("Failed to get parsing from: {}", paginator_text))
         })?;
 
     Ok(ParsedTable {
         entries: tbody
             .as_node()
             .select("tr")
-            .map_err(|()| Error::HTMLParsingError("Failed to find tr in tbody".to_string()))?
+            .map_err(|()| ErrorKind::HTMLParsingError("Failed to find tr in tbody".to_string()))?
             .map(|tr| tr_to_entry(tr.as_node()))
             .collect::<Result<Vec<_>, _>>()?,
         number_entries,

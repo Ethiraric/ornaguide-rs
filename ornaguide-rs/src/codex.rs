@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::error::{Error};
 
 pub(crate) mod follower;
 pub(crate) mod html_follower_parser;

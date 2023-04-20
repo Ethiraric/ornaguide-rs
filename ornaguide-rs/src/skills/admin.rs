@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Error, guide::html_form_parser::ParsedForm, misc::sanitize_guide_name};
+use crate::{
+    error::{Error, ErrorKind},
+    guide::html_form_parser::ParsedForm,
+    misc::sanitize_guide_name,
+};
 
 /// A skill fetched from the admin panel.
 #[derive(Clone, Debug, Serialize, Deserialize, Derivative)]
@@ -135,7 +139,7 @@ impl TryFrom<ParsedForm> for AdminSkill {
                 "cures" => item.cures.push(value.parse()?),
                 "gives" => item.gives.push(value.parse()?),
                 key => {
-                    return Err(Error::ExtraField(key.to_string(), value));
+                    return Err(ErrorKind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
@@ -209,8 +213,9 @@ impl<'a> AdminSkills {
     /// Find the admin skill corresponding to the given id.
     /// If there is no match, return an `Err`.
     pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminSkill, Error> {
-        self.find_by_id(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for admin skill with id #{}", needle)))
+        self.find_by_id(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for admin skill with id #{}", needle)).into()
+        })
     }
 
     /// Find the admin skill corresponding to the given codex URI.
@@ -222,10 +227,11 @@ impl<'a> AdminSkills {
     /// If there is no match, return an `Err`.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            Error::Misc(format!(
+            ErrorKind::Misc(format!(
                 "No match for admin skill with codex_uri {}",
                 needle
             ))
+            .into()
         })
     }
 
@@ -241,10 +247,11 @@ impl<'a> AdminSkills {
     /// If there is no match, return an `Err`.
     pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
         self.find_by_slug(needle).ok_or_else(|| {
-            Error::Misc(format!(
+            ErrorKind::Misc(format!(
                 "No match for admin skill with codex slug '{}'",
                 needle
             ))
+            .into()
         })
     }
 
@@ -259,10 +266,11 @@ impl<'a> AdminSkills {
     /// If there is no match, return an `Err`.
     pub fn get_offhand_from_name(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
         self.find_offhand_from_name(needle).ok_or_else(|| {
-            Error::Misc(format!(
+            ErrorKind::Misc(format!(
                 "No match for offhand admin skill with name '{}'",
                 needle
             ))
+            .into()
         })
     }
 }

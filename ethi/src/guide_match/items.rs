@@ -2,7 +2,7 @@ use itertools::Itertools;
 use ornaguide_rs::{
     codex::{CodexElement, ItemStatusEffects},
     data::OrnaData,
-    error::Error,
+    error::{Error, ErrorKind},
     guide::{AdminGuide, OrnaAdminGuide, VecElements},
 };
 
@@ -414,7 +414,10 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 .try_to_guide_ids(&data.guide.static_)
                 // TODO(ethiraric, 27/07/2022): Add diagnostics.
                 .unwrap_or_else(|err| match err {
-                    Error::PartialCodexStatusEffectsConversion(x, _) => x,
+                    Error {
+                        kind: ErrorKind::PartialCodexStatusEffectsConversion(x, _),
+                        ..
+                    } => x,
                     _ => panic!("try_to_guide_ids returned a weird error"),
                 })
                 .into_iter()
@@ -558,7 +561,10 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 .try_to_guide_ids(&data.guide.monsters)
                 // TODO(ethiraric, 27/07/2022): Add diagnostics.
                 .unwrap_or_else(|err| match err {
-                    Error::PartialCodexItemDroppedBysConversion(ok, _) => ok,
+                    Error {
+                        kind: ErrorKind::PartialCodexItemDroppedBysConversion(ok, _),
+                        ..
+                    } => ok,
                     _ => panic!("try_to_guide_ids returned a weird error"),
                 })
                 .into_iter()

@@ -4,7 +4,7 @@ use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRe
 
 use crate::{
     codex::{CodexBoss, CodexMonster, CodexRaid, MonsterAbility, MonsterDrop},
-    error::Error,
+    error::{Error, ErrorKind},
     guide::html_utils::{parse_tags, Tag},
     misc::truncate_str_until,
     utils::html::{
@@ -90,7 +90,7 @@ fn parse_description_nodes<T>(
             family: Some(
                 truncate_str_until(&node_to_text(family_node.as_node()), ':')
                     .ok_or_else(|| {
-                        Error::HTMLParsingError(format!(
+                        ErrorKind::HTMLParsingError(format!(
                             "Failed to find colon in: monster family {}",
                             &node_to_text(family_node.as_node())
                         ))
@@ -101,7 +101,7 @@ fn parse_description_nodes<T>(
             rarity: Some(
                 truncate_str_until(&node_to_text(rarity_node.as_node()), ':')
                     .ok_or_else(|| {
-                        Error::HTMLParsingError(format!(
+                        ErrorKind::HTMLParsingError(format!(
                             "Failed to find colon in: monster rarity {}",
                             &node_to_text(rarity_node.as_node())
                         ))
@@ -130,10 +130,11 @@ fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
         it.next(); // Skip over the star.
         Ok(it.as_str().parse()?)
     } else {
-        Err(Error::HTMLParsingError(format!(
+        Err(ErrorKind::HTMLParsingError(format!(
             "Failed to find ':' when parsing monster tier: \"{}\"",
             text
-        )))
+        ))
+        .into())
     }
 }
 
@@ -167,10 +168,11 @@ fn parse_name_uri_icon_list(
                         descend_to(&node, "a", "div drop or ability")
                             .and_then(|node| a_to_name_uri_icon(node.as_node())),
                     ),
-                    _ => Some(Err(Error::HTMLParsingError(format!(
+                    _ => Some(Err(ErrorKind::HTMLParsingError(format!(
                         "Unknown node tag when parsing drop or ability: {}",
                         &tag
-                    )))),
+                    ))
+                    .into())),
                 }
             } else {
                 panic!("Cannot happen due to previous filter");
@@ -255,22 +257,21 @@ pub fn parse_html_codex_monster(contents: &str, slug: String) -> Result<CodexMon
                 icon: info.icon,
                 events: info.events,
                 family: info.family.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
+                    ErrorKind::HTMLParsingError(
+                        "Failed to retrieve family from monster".to_string(),
+                    )
                 })?,
                 rarity: info.rarity.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
+                    ErrorKind::HTMLParsingError(
+                        "Failed to retrieve rarity from monster".to_string(),
+                    )
                 })?,
                 tier: info.tier,
                 abilities: info.abilities,
                 drops: info.drops,
             })
         })
-        .map_err(|err| match err {
-            Error::HTMLParsingError(msg) => {
-                Error::HTMLParsingError(format!("Monster {}: {}", slug, msg))
-            }
-            x => x,
-        })
+        .map_err(|err| err.ctx_push(format!("Monster: {slug}")))
 }
 
 /// Parses a boss page from `playorna.com` and returns the details about the given boss.
@@ -283,22 +284,21 @@ pub fn parse_html_codex_boss(contents: &str, slug: String) -> Result<CodexBoss, 
                 icon: info.icon,
                 events: info.events,
                 family: info.family.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
+                    ErrorKind::HTMLParsingError(
+                        "Failed to retrieve family from monster".to_string(),
+                    )
                 })?,
                 rarity: info.rarity.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
+                    ErrorKind::HTMLParsingError(
+                        "Failed to retrieve rarity from monster".to_string(),
+                    )
                 })?,
                 tier: info.tier,
                 abilities: info.abilities,
                 drops: info.drops,
             })
         })
-        .map_err(|err| match err {
-            Error::HTMLParsingError(msg) => {
-                Error::HTMLParsingError(format!("Boss {}: {}", slug, msg))
-            }
-            x => x,
-        })
+        .map_err(|err| err.ctx_push(format!("Boss: {slug}")))
 }
 
 /// Parses a raid page from `playorna.com` and returns the details about the given raid.
@@ -309,7 +309,9 @@ pub fn parse_html_codex_raid(contents: &str, slug: String) -> Result<CodexRaid, 
                 slug: slug.clone(),
                 name: info.name,
                 description: info.description.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve description from raid".to_string())
+                    ErrorKind::HTMLParsingError(
+                        "Failed to retrieve description from raid".to_string(),
+                    )
                 })?,
                 icon: info.icon,
                 events: info.events,
@@ -319,12 +321,7 @@ pub fn parse_html_codex_raid(contents: &str, slug: String) -> Result<CodexRaid, 
                 drops: info.drops,
             })
         })
-        .map_err(|err| match err {
-            Error::HTMLParsingError(msg) => {
-                Error::HTMLParsingError(format!("Raid {}: {}", slug, msg))
-            }
-            x => x,
-        })
+        .map_err(|err| err.ctx_push(format!("Raid: {slug}")))
 }
 
 /// Parses a monster page from `playorna.com` and returns the details about the given monster.
@@ -344,22 +341,21 @@ pub fn parse_html_codex_monster_translation(
                 icon: info.icon,
                 events: info.events,
                 family: info.family.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve family from monster".to_string())
+                    ErrorKind::HTMLParsingError(
+                        "Failed to retrieve family from monster".to_string(),
+                    )
                 })?,
                 rarity: info.rarity.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve rarity from monster".to_string())
+                    ErrorKind::HTMLParsingError(
+                        "Failed to retrieve rarity from monster".to_string(),
+                    )
                 })?,
                 tier: info.tier,
                 abilities: vec![],
                 drops: vec![],
             })
         })
-        .map_err(|err| match err {
-            Error::HTMLParsingError(msg) => {
-                Error::HTMLParsingError(format!("Monster {}: {}", slug, msg))
-            }
-            x => x,
-        })
+        .map_err(|err| err.ctx_push(format!("Monster: {slug}")))
 }
 
 /// Parses a boss page from `playorna.com` and returns the details about the given boss.
@@ -376,22 +372,17 @@ pub fn parse_html_codex_boss_translation(contents: &str, slug: String) -> Result
                 icon: info.icon,
                 events: info.events,
                 family: info.family.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve family from boss".to_string())
+                    ErrorKind::HTMLParsingError("Failed to retrieve family from boss".to_string())
                 })?,
                 rarity: info.rarity.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve rarity from boss".to_string())
+                    ErrorKind::HTMLParsingError("Failed to retrieve rarity from boss".to_string())
                 })?,
                 tier: info.tier,
                 abilities: vec![],
                 drops: vec![],
             })
         })
-        .map_err(|err| match err {
-            Error::HTMLParsingError(msg) => {
-                Error::HTMLParsingError(format!("Monster {}: {}", slug, msg))
-            }
-            x => x,
-        })
+        .map_err(|err| err.ctx_push(format!("Boss: {slug}")))
 }
 
 /// Parses a raid page from `playorna.com` and returns the details about the given raid.
@@ -407,7 +398,9 @@ pub fn parse_html_codex_raid_translation(contents: &str, slug: String) -> Result
                 slug: slug.clone(),
                 name: info.name,
                 description: info.description.ok_or_else(|| {
-                    Error::HTMLParsingError("Failed to retrieve description from raid".to_string())
+                    ErrorKind::HTMLParsingError(
+                        "Failed to retrieve description from raid".to_string(),
+                    )
                 })?,
                 icon: info.icon,
                 events: info.events,
@@ -417,10 +410,5 @@ pub fn parse_html_codex_raid_translation(contents: &str, slug: String) -> Result
                 drops: vec![],
             })
         })
-        .map_err(|err| match err {
-            Error::HTMLParsingError(msg) => {
-                Error::HTMLParsingError(format!("Monster {}: {}", slug, msg))
-            }
-            x => x,
-        })
+        .map_err(|err| err.ctx_push(format!("Raid: {slug}")))
 }

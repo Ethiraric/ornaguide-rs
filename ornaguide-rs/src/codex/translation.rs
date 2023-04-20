@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     codex::{CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill},
     data::OrnaData,
-    error::Error,
+    error::{Error, ErrorKind},
     items::admin::AdminItem,
     misc::codex_effect_name_to_guide_name,
     monsters::admin::AdminMonster,
@@ -151,7 +151,7 @@ impl LocaleStrings {
                 .raids
                 .find_by_uri(&format!("/codex/raids/{}/", raid.slug))
                 .ok_or_else(|| {
-                    Error::Misc(format!(
+                    ErrorKind::Misc(format!(
                         "Failed to find raid {} (found in locale {})",
                         raid.slug, self.locale
                     ))
@@ -188,7 +188,7 @@ impl LocaleStrings {
                 .monsters
                 .find_by_uri(&format!("/codex/monsters/{}/", monster.slug))
                 .ok_or_else(|| {
-                    Error::Misc(format!(
+                    ErrorKind::Misc(format!(
                         "Failed to find monster {} (found in locale {})",
                         monster.slug, self.locale
                     ))
@@ -226,7 +226,7 @@ impl LocaleStrings {
                 .bosses
                 .find_by_uri(&format!("/codex/bosses/{}/", boss.slug))
                 .ok_or_else(|| {
-                    Error::Misc(format!(
+                    ErrorKind::Misc(format!(
                         "Failed to find boss {} (found in locale {})",
                         boss.slug, self.locale
                     ))
@@ -262,7 +262,7 @@ impl LocaleStrings {
                 .skills
                 .find_by_uri(&format!("/codex/spells/{}/", skill.slug))
                 .ok_or_else(|| {
-                    Error::Misc(format!(
+                    ErrorKind::Misc(format!(
                         "Failed to find skill {} (found in locale {})",
                         skill.slug, self.locale
                     ))
@@ -306,7 +306,7 @@ impl LocaleStrings {
                 .followers
                 .find_by_uri(&format!("/codex/followers/{}/", follower.slug))
                 .ok_or_else(|| {
-                    Error::Misc(format!(
+                    ErrorKind::Misc(format!(
                         "Failed to find follower {} (found in locale {})",
                         follower.slug, self.locale
                     ))
@@ -439,10 +439,11 @@ impl LocaleStrings {
     /// Save translations to a json file.
     pub fn load_from(file: &str) -> Result<Self, Error> {
         serde_json::from_reader(BufReader::new(File::open(file)?)).map_err(|err| {
-            Error::Misc(format!(
+            ErrorKind::Misc(format!(
                 "Failed to parse json from lang db {}: {}",
                 file, err
             ))
+            .into()
         })
     }
 

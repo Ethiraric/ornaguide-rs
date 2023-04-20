@@ -2,7 +2,7 @@ use std::sync::RwLock;
 
 use dotenv::dotenv;
 
-use crate::error::Error;
+use crate::error::{Error,ErrorKind};
 
 use lazy_static::lazy_static;
 
@@ -25,7 +25,7 @@ lazy_static! {
 
 /// Load the config from the environment.
 fn load() -> Result<Config, Error> {
-    let _ = dotenv().map_err(|err| Error::Misc(format!("Failed to load .env: {}", err)))?;
+    let _ = dotenv().map_err(|err| ErrorKind::Misc(format!("Failed to load .env: {}", err)))?;
     let config = Config {
         debug_urls: dotenv::var("ORNAGUIDERS_DEBUG_URLS")
             .unwrap_or_else(|_| "false".to_string())
@@ -42,10 +42,10 @@ where
 {
     let config = CONFIG
         .as_ref()
-        .map_err(|err| Error::Misc(format!("{}", err)))?;
+        .map_err(|err| ErrorKind::Misc(format!("{}", err)))?;
     let config = config
         .read()
-        .map_err(|err| Error::Misc(format!("{}", err)))?;
+        .map_err(|err| ErrorKind::Misc(format!("{}", err)))?;
     f(&config)
 }
 

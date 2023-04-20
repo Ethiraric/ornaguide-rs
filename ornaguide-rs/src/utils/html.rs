@@ -4,7 +4,7 @@ use kuchiki::{
 };
 use reqwest::Url;
 
-use crate::error::Error;
+use crate::error::{Error, ErrorKind};
 
 /// Select the node that matches the selector and that is a descendant of `node`. `from_name` is a
 /// name to be displayed on the error message.
@@ -14,7 +14,8 @@ pub fn descend_iter(
     from_name: &str,
 ) -> Result<Select<Elements<Descendants>>, Error> {
     node.select(selector).map_err(|()| {
-        Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
+        ErrorKind::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
+            .into()
     })
 }
 
@@ -26,7 +27,8 @@ pub fn descend_to(
     from_name: &str,
 ) -> Result<NodeDataRef<ElementData>, Error> {
     try_descend_to(node, selector, from_name)?.ok_or_else(|| {
-        Error::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
+        ErrorKind::HTMLParsingError(format!("Failed to find \"{}\" in {}", selector, from_name))
+            .into()
     })
 }
 
@@ -56,14 +58,15 @@ pub fn get_attribute_from_node(
         attributes
             .get(attr)
             .ok_or_else(|| {
-                Error::HTMLParsingError(format!("Failed to find {} in {}", attr, node_name))
+                ErrorKind::HTMLParsingError(format!("Failed to find {} in {}", attr, node_name))
+                    .into()
             })
             .map(|s| s.to_string())
     } else {
-        Err(Error::HTMLParsingError(format!(
-            "Failed to get attributes from {}",
-            node_name
-        )))
+        Err(
+            ErrorKind::HTMLParsingError(format!("Failed to get attributes from {}", node_name))
+                .into(),
+        )
     }
 }
 
@@ -83,10 +86,10 @@ pub fn list_attributes_form_node(node: &NodeRef, node_name: &str) -> Result<Vec<
             .flat_map(|(_, value)| value.value.split(' ').map(str::to_string))
             .collect())
     } else {
-        Err(Error::HTMLParsingError(format!(
-            "Failed to get attributes from {}",
-            node_name
-        )))
+        Err(
+            ErrorKind::HTMLParsingError(format!("Failed to get attributes from {}", node_name))
+                .into(),
+        )
     }
 }
 

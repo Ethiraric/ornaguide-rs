@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     codex::Tag,
-    error::Error,
+    error::{Error, ErrorKind},
     guide::Static,
     misc::{
         codex_effect_name_iter_to_guide_id_results, codex_effect_name_to_guide_name,
@@ -33,7 +33,7 @@ pub struct SkillSummon {
 /// A trait to extend `Vec<SkillStatusEffect>` specifically.
 pub trait SkillStatusEffects {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide status_effect ids.
-    /// Returns `Error::PartialCodexStatusEffectConversion` if all fields have not been
+    /// Returns `ErrorKind::PartialCodexStatusEffectConversion` if all fields have not been
     /// successfully converted.
     fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error>;
     /// Convert the list of status effects to a list of effect names, matching those of the guide.
@@ -51,9 +51,7 @@ impl SkillStatusEffects for Vec<SkillStatusEffect> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(Error::PartialCodexStatusEffectsConversion(
-                successes, failures,
-            ))
+            Err(ErrorKind::PartialCodexStatusEffectsConversion(successes, failures).into())
         }
     }
 
@@ -155,7 +153,8 @@ impl<'a> CodexSkills {
     /// Find the codex skill associated with the given URI.
     /// If there is no match, return an `Err`.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a CodexSkill, Error> {
-        self.find_by_uri(needle)
-            .ok_or_else(|| Error::Misc(format!("No match for codex skill with uri '{}'", needle)))
+        self.find_by_uri(needle).ok_or_else(|| {
+            ErrorKind::Misc(format!("No match for codex skill with uri '{}'", needle)).into()
+        })
     }
 }
