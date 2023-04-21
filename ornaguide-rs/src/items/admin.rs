@@ -70,15 +70,15 @@ pub struct AdminItem {
     /// How much foresight the item gives, if equippable.
     pub foresight: i16,
     /// How much view distance the item gives (%).
-    pub view_distance: u32,
+    pub view_distance: i8,
     /// How much the item increases the stats of your follower (%).
-    pub follower_stats: u32,
+    pub follower_stats: i8,
     /// How much the item increases the action rate of your follower (%).
-    pub follower_act: i32,
+    pub follower_act: i8,
     /// How much the item increases your status infliction rate (%).
-    pub status_infliction: u32,
+    pub status_infliction: i8,
     /// How much the item increases your status protection rate (%).
-    pub status_protection: u32,
+    pub status_protection: i8,
     /// How much mana you save with this item, if equippable (%).
     pub mana_saver: i8,
     /// How much more effective potions are, if equippable (%).
