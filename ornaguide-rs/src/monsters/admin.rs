@@ -5,6 +5,7 @@ use crate::{
     error::{Error, ErrorKind},
     guide::{html_form_parser::ParsedForm, Spawn},
     misc::sanitize_guide_name,
+    parse_stat, parse_stat_opt, parse_stat_vec,
 };
 
 /// An item fetched from the admin panel.
@@ -82,43 +83,53 @@ impl TryFrom<ParsedForm> for AdminMonster {
     type Error = Error;
 
     fn try_from(form: ParsedForm) -> Result<Self, Self::Error> {
-        let mut item = AdminMonster {
+        let mut monster = AdminMonster {
             csrfmiddlewaretoken: form.csrfmiddlewaretoken,
             ..Default::default()
         };
 
         for (key, value) in form.fields.into_iter() {
+            // Helper macros to parse and add meaningful error messages.
+            macro_rules! stat {
+                ($field:ident) => {
+                    parse_stat!(monster, $field, value)
+                };
+            }
+            macro_rules! opt {
+                ($field:ident) => {
+                    parse_stat_opt!(monster, $field, value)
+                };
+            }
+            macro_rules! push {
+                ($field:ident) => {
+                    parse_stat_vec!(monster, $field, value)
+                };
+            }
             match key.as_str() {
-                "codex" => item.codex_uri = value,
-                "name" => item.name = value,
-                "tier" => item.tier = value.parse()?,
-                "family" => {
-                    item.family = if value.is_empty() {
-                        None
-                    } else {
-                        Some(value.parse()?)
-                    }
-                }
-                "image_name" => item.image_name = value,
-                "boss" => item.boss = value == "on",
-                "level" => item.level = value.parse()?,
-                "hp" => item.hp = value.parse()?,
-                "notes" => item.notes = value,
-                "spawns" => item.spawns.push(value.parse()?),
-                "weak_to" => item.weak_to.push(value.parse()?),
-                "resistant_to" => item.resistant_to.push(value.parse()?),
-                "immune_to" => item.immune_to.push(value.parse()?),
-                "immune_to_status" => item.immune_to_status.push(value.parse()?),
-                "vulnerable_to_status" => item.vulnerable_to_status.push(value.parse()?),
-                "drops" => item.drops.push(value.parse()?),
-                "skills" => item.skills.push(value.parse()?),
+                "codex" => monster.codex_uri = value,
+                "name" => monster.name = value,
+                "tier" => stat!(tier),
+                "family" => opt!(family),
+                "image_name" => monster.image_name = value,
+                "boss" => monster.boss = value == "on",
+                "level" => stat!(level),
+                "hp" => stat!(hp),
+                "notes" => monster.notes = value,
+                "spawns" => push!(spawns),
+                "weak_to" => push!(weak_to),
+                "resistant_to" => push!(resistant_to),
+                "immune_to" => push!(immune_to),
+                "immune_to_status" => push!(immune_to_status),
+                "vulnerable_to_status" => push!(vulnerable_to_status),
+                "drops" => push!(drops),
+                "skills" => push!(skills),
                 key => {
                     return Err(ErrorKind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
 
-        Ok(item)
+        Ok(monster)
     }
 }
 

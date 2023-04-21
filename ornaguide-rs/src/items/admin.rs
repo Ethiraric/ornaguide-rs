@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::{Error, ErrorKind},
     guide::html_form_parser::ParsedForm,
+    parse_stat, parse_stat_opt, parse_stat_vec,
 };
 
 /// An item fetched from the admin panel.
@@ -223,83 +224,82 @@ impl TryFrom<ParsedForm> for AdminItem {
         };
 
         for (key, value) in form.fields.into_iter() {
+            // Helper macros to parse and add meaningful error messages.
+            macro_rules! stat {
+                ($field:ident) => {
+                    parse_stat!(item, $field, value)
+                };
+            }
+            macro_rules! opt {
+                ($field:ident) => {
+                    parse_stat_opt!(item, $field, value)
+                };
+            }
+            macro_rules! push {
+                ($field:ident) => {
+                    parse_stat_vec!(item, $field, value)
+                };
+            }
+
             match key.as_str() {
                 "codex" => item.codex_uri = value,
                 "name" => item.name = value,
-                "tier" => item.tier = value.parse()?,
-                "type" => item.type_ = value.parse()?,
+                "tier" => stat!(tier),
+                "type" => stat!(type_),
                 "image_name" => item.image_name = value,
                 "description" => item.description = value,
                 "notes" => item.notes = value,
-                "hp" => item.hp = value.parse()?,
+                "hp" => stat!(hp),
                 "hp_affected_by_quality" => item.hp_affected_by_quality = value == "on",
-                "mana" => item.mana = value.parse()?,
+                "mana" => stat!(mana),
                 "mana_affected_by_quality" => item.mana_affected_by_quality = value == "on",
-                "attack" => item.attack = value.parse()?,
+                "attack" => stat!(attack),
                 "attack_affected_by_quality" => item.attack_affected_by_quality = value == "on",
-                "magic" => item.magic = value.parse()?,
+                "magic" => stat!(magic),
                 "magic_affected_by_quality" => item.magic_affected_by_quality = value == "on",
-                "defense" => item.defense = value.parse()?,
+                "defense" => stat!(defense),
                 "defense_affected_by_quality" => item.defense_affected_by_quality = value == "on",
-                "resistance" => item.resistance = value.parse()?,
+                "resistance" => stat!(resistance),
                 "resistance_affected_by_quality" => {
                     item.resistance_affected_by_quality = value == "on"
                 }
-                "dexterity" => item.dexterity = value.parse()?,
+                "dexterity" => stat!(dexterity),
                 "dexterity_affected_by_quality" => {
                     item.dexterity_affected_by_quality = value == "on"
                 }
-                "ward" => item.ward = value.parse()?,
+                "ward" => stat!(ward),
                 "ward_affected_by_quality" => item.ward_affected_by_quality = value == "on",
-                "crit" => item.crit = value.parse()?,
+                "crit" => stat!(crit),
                 "crit_affected_by_quality" => item.crit_affected_by_quality = value == "on",
-                "foresight" => item.foresight = value.parse()?,
-                "view_distance" => item.view_distance = value.parse()?,
-                "follower_stats" => item.follower_stats = value.parse()?,
-                "follower_act" => item.follower_act = value.parse()?,
-                "status_infliction" => item.status_infliction = value.parse()?,
-                "status_protection" => item.status_protection = value.parse()?,
-                "mana_saver" => item.mana_saver = value.parse()?,
-                "potion_effectiveness" => item.potion_effectiveness = value.parse()?,
+                "foresight" => stat!(foresight),
+                "view_distance" => stat!(view_distance),
+                "follower_stats" => stat!(follower_stats),
+                "follower_act" => stat!(follower_act),
+                "status_infliction" => stat!(status_infliction),
+                "status_protection" => stat!(status_protection),
+                "mana_saver" => stat!(mana_saver),
+                "potion_effectiveness" => stat!(potion_effectiveness),
                 "has_slots" => item.has_slots = value == "on",
-                "base_adornment_slots" => item.base_adornment_slots = value.parse()?,
+                "base_adornment_slots" => stat!(base_adornment_slots),
                 "rarity" => item.rarity = value,
-                "element" => {
-                    item.element = if value.is_empty() {
-                        None
-                    } else {
-                        Some(value.parse()?)
-                    }
-                }
-                "equipped_by" => item.equipped_by.push(value.parse()?),
+                "element" => opt!(element),
+                "equipped_by" => push!(equipped_by),
                 "two_handed" => item.two_handed = value == "on",
-                "orn_bonus" => item.orn_bonus = value.parse()?,
-                "gold_bonus" => item.gold_bonus = value.parse()?,
-                "drop_bonus" => item.drop_bonus = value.parse()?,
-                "spawn_bonus" => item.spawn_bonus = value.parse()?,
-                "exp_bonus" => item.exp_bonus = value.parse()?,
+                "orn_bonus" => stat!(orn_bonus),
+                "gold_bonus" => stat!(gold_bonus),
+                "drop_bonus" => stat!(drop_bonus),
+                "spawn_bonus" => stat!(spawn_bonus),
+                "exp_bonus" => stat!(exp_bonus),
                 "boss" => item.boss = value == "on",
                 "arena" => item.arena = value == "on",
-                "category" => {
-                    item.category = if value.is_empty() {
-                        None
-                    } else {
-                        Some(value.parse()?)
-                    }
-                }
-                "causes" => item.causes.push(value.parse()?),
-                "cures" => item.cures.push(value.parse()?),
-                "gives" => item.gives.push(value.parse()?),
-                "prevents" => item.prevents.push(value.parse()?),
-                "materials" => item.materials.push(value.parse()?),
-                "price" => item.price = value.parse()?,
-                "ability" => {
-                    item.ability = if value.is_empty() {
-                        None
-                    } else {
-                        Some(value.parse()?)
-                    }
-                }
+                "category" => opt!(category),
+                "causes" => push!(causes),
+                "cures" => push!(cures),
+                "gives" => push!(gives),
+                "prevents" => push!(prevents),
+                "materials" => push!(materials),
+                "price" => stat!(price),
+                "ability" => opt!(ability),
                 key => {
                     return Err(ErrorKind::ExtraField(key.to_string(), value).into());
                 }

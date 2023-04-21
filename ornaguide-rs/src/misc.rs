@@ -138,3 +138,63 @@ pub fn truncate_str_until(s: &str, c: char) -> Option<&str> {
         .map(|pos| s.split_at(pos + 1))
         .map(|(_, right)| right)
 }
+
+/// Parse a single stat from an entry using `FromStr::parse`.
+/// Add meaningful context to the error.
+#[macro_export]
+macro_rules! parse_stat {
+    ($entry:ident, $field:ident, $value:ident) => {
+        $entry.$field = $value.parse().map_err(Error::from).map_err(|e| {
+            e.ctx_push(format!(
+                concat!(
+                    "While parsing ",
+                    stringify!($field),
+                    ": got {} (item name: {})"
+                ),
+                $value, $entry.name
+            ))
+        })?
+    };
+}
+
+/// Parse a single `Option` stat from an entry using `FromStr::parse`.
+/// Add meaningful context to the error.
+#[macro_export]
+macro_rules! parse_stat_opt {
+    ($entry:ident, $field:ident, $value:ident) => {
+        $entry.$field = if $value.is_empty() {
+            None
+        } else {
+            Some($value.parse().map_err(Error::from).map_err(|e| {
+                e.ctx_push(format!(
+                    concat!(
+                        "While parsing ",
+                        stringify!($field),
+                        ": got {} (item name: {})"
+                    ),
+                    $value, $entry.name,
+                ))
+            })?)
+        }
+    };
+}
+
+/// Parse and push a single stat from an entry using `FromStr::parse`.
+/// Add meaningful context to the error.
+#[macro_export]
+macro_rules! parse_stat_vec {
+    ($entry:ident, $field:ident, $value:ident) => {
+        $entry
+            .$field
+            .push($value.parse().map_err(Error::from).map_err(|e| {
+                e.ctx_push(format!(
+                    concat!(
+                        "While parsing ",
+                        stringify!($field),
+                        ": got {} (item name: {})"
+                    ),
+                    $value, $entry.name,
+                ))
+            })?)
+    };
+}
