@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::{Error, ErrorKind},
     guide::html_form_parser::ParsedForm,
+    parse_stat, parse_stat_vec,
 };
 
 /// The kind of currency a pet costs.
@@ -108,20 +109,32 @@ impl TryFrom<ParsedForm> for AdminPet {
         };
 
         for (key, value) in form.fields.into_iter() {
+            // Helper macros to parse and add meaningful error messages.
+            macro_rules! stat {
+                ($field:ident) => {
+                    parse_stat!(pet, $field, value)
+                };
+            }
+            macro_rules! push {
+                ($field:ident) => {
+                    parse_stat_vec!(pet, $field, value)
+                };
+            }
+
             match key.as_str() {
                 "codex" => pet.codex_uri = value,
                 "name" => pet.name = value,
-                "tier" => pet.tier = value.parse()?,
+                "tier" => stat!(tier),
                 "image_name" => pet.image_name = value,
                 "description" => pet.description = value,
-                "event" => pet.event.push(value.parse()?),
-                "attack" => pet.attack = value.parse()?,
-                "heal" => pet.heal = value.parse()?,
-                "buff" => pet.buff = value.parse()?,
-                "debuff" => pet.debuff = value.parse()?,
-                "spell" => pet.spell = value.parse()?,
-                "protect" => pet.protect = value.parse()?,
-                "cost" => pet.cost = value.parse()?,
+                "event" => push!(event),
+                "attack" => stat!(attack),
+                "heal" => stat!(heal),
+                "buff" => stat!(buff),
+                "debuff" => stat!(debuff),
+                "spell" => stat!(spell),
+                "protect" => stat!(protect),
+                "cost" => stat!(cost),
                 "cost_type" => {
                     pet.cost_type = if value.parse::<u8>()? == 1 {
                         CostType::Orn
@@ -131,7 +144,7 @@ impl TryFrom<ParsedForm> for AdminPet {
                 }
                 "limited" => pet.limited = value == "on",
                 "limited_details" => pet.limited_details = value,
-                "skills" => pet.skills.push(value.parse()?),
+                "skills" => push!(skills),
                 key => {
                     return Err(ErrorKind::ExtraField(key.to_string(), value).into());
                 }

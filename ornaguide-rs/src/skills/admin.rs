@@ -4,6 +4,7 @@ use crate::{
     error::{Error, ErrorKind},
     guide::html_form_parser::ParsedForm,
     misc::sanitize_guide_name,
+    parse_stat, parse_stat_opt, parse_stat_vec,
 };
 
 /// A skill fetched from the admin panel.
@@ -105,46 +106,57 @@ impl TryFrom<ParsedForm> for AdminSkill {
     type Error = Error;
 
     fn try_from(form: ParsedForm) -> Result<Self, Self::Error> {
-        let mut item = AdminSkill {
+        let mut skill = AdminSkill {
             csrfmiddlewaretoken: form.csrfmiddlewaretoken,
             ..Default::default()
         };
 
         for (key, value) in form.fields.into_iter() {
+            // Helper macros to parse and add meaningful error messages.
+            macro_rules! stat {
+                ($field:ident) => {
+                    parse_stat!(skill, $field, value)
+                };
+            }
+            macro_rules! opt {
+                ($field:ident) => {
+                    parse_stat_opt!(skill, $field, value)
+                };
+            }
+            macro_rules! push {
+                ($field:ident) => {
+                    parse_stat_vec!(skill, $field, value)
+                };
+            }
+
             match key.as_str() {
-                "codex" => item.codex_uri = value,
-                "name" => item.name = value,
-                "tier" => item.tier = value.parse()?,
-                "type" => item.type_ = value.parse()?,
-                "is_magic" => item.is_magic = value == "on",
-                "mana_cost" => item.mana_cost = value.parse()?,
-                "description" => item.description = value,
-                "element" => {
-                    item.element = if value.is_empty() {
-                        None
-                    } else {
-                        Some(value.parse()?)
-                    }
-                }
-                "offhand" => item.offhand = value == "on",
-                "cost" => item.cost = value.parse()?,
-                "bought" => item.bought = value == "on",
-                "skill_power" => item.skill_power = value.parse()?,
-                "strikes" => item.strikes = value.parse()?,
-                "modifier_min" => item.modifier_min = value.parse()?,
-                "modifier_max" => item.modifier_max = value.parse()?,
-                "extra" => item.extra = value,
-                "buffed_by" => item.buffed_by.push(value.parse()?),
-                "causes" => item.causes.push(value.parse()?),
-                "cures" => item.cures.push(value.parse()?),
-                "gives" => item.gives.push(value.parse()?),
+                "codex" => skill.codex_uri = value,
+                "name" => skill.name = value,
+                "tier" => stat!(tier),
+                "type" => stat!(type_),
+                "is_magic" => skill.is_magic = value == "on",
+                "mana_cost" => stat!(mana_cost),
+                "description" => skill.description = value,
+                "element" => opt!(element),
+                "offhand" => skill.offhand = value == "on",
+                "cost" => stat!(cost),
+                "bought" => skill.bought = value == "on",
+                "power" => stat!(skill_power),
+                "strikes" => stat!(strikes),
+                "modifier_min" => stat!(modifier_min),
+                "modifier_max" => stat!(modifier_max),
+                "extra" => skill.extra = value,
+                "buffed_by" => push!(buffed_by),
+                "causes" => push!(causes),
+                "cures" => push!(cures),
+                "gives" => push!(gives),
                 key => {
                     return Err(ErrorKind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
 
-        Ok(item)
+        Ok(skill)
     }
 }
 

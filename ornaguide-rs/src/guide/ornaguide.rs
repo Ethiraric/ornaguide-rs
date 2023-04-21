@@ -5,7 +5,7 @@ use crate::{
         MonsterEntry as CodexMonsterEntry, RaidEntry as CodexRaidEntry,
         SkillEntry as CodexSkillEntry,
     },
-    error::{Error,ErrorKind},
+    error::{Error, ErrorKind},
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, ItemCategory,
         ItemRow, ItemType, MonsterFamily, MonsterRow, PetRow, SkillRow, SkillType, Spawn,
@@ -81,7 +81,8 @@ impl OrnaAdminGuide {
                     .http()
                     .async_admin_retrieve_item_by_id(id)
                     .await?,
-            )?
+            )
+            .map_err(|e| e.ctx_push(format!("While parsing item {id}")))?
         })
     }
 
@@ -93,7 +94,8 @@ impl OrnaAdminGuide {
                     .http()
                     .async_admin_retrieve_monster_by_id(id)
                     .await?,
-            )?
+            )
+            .map_err(|e| e.ctx_push(format!("While parsing monster {id}")))?
         })
     }
 
@@ -105,14 +107,16 @@ impl OrnaAdminGuide {
                     .http()
                     .async_admin_retrieve_skill_by_id(id)
                     .await?,
-            )?
+            )
+            .map_err(|e| e.ctx_push(format!("While parsing skill {id}")))?
         })
     }
 
     pub async fn async_admin_retrieve_pet_by_id(&self, id: u32) -> Result<AdminPet, Error> {
         Ok(AdminPet {
             id,
-            ..AdminPet::try_from(self.guide.http().async_admin_retrieve_pet_by_id(id).await?)?
+            ..AdminPet::try_from(self.guide.http().async_admin_retrieve_pet_by_id(id).await?)
+                .map_err(|e| e.ctx_push(format!("While parsing pet {id}")))?
         })
     }
 }
@@ -438,7 +442,9 @@ impl Codex for OrnaAdminGuide {
                 Ok(CodexBossEntry {
                     name: entry.value,
                     family: entry.meta.ok_or_else(|| {
-                        ErrorKind::HTMLParsingError("Failed to retrieve meta field of boss".to_string())
+                        ErrorKind::HTMLParsingError(
+                            "Failed to retrieve meta field of boss".to_string(),
+                        )
                     })?,
                     tier: entry.tier,
                     uri: entry.uri,
