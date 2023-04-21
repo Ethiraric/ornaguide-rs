@@ -76,15 +76,15 @@ pub struct ItemFilters<'a> {
     /// Filter by foresight.
     pub foresight: Filter<'a, i16>,
     /// Filter by view_distance.
-    pub view_distance: Filter<'a, u32>,
+    pub view_distance: Filter<'a, i8>,
     /// Filter by follower_stats.
-    pub follower_stats: Filter<'a, u32>,
+    pub follower_stats: Filter<'a, i8>,
     /// Filter by follower_act.
-    pub follower_act: Filter<'a, i32>,
+    pub follower_act: Filter<'a, i8>,
     /// Filter by status_infliction.
-    pub status_infliction: Filter<'a, u32>,
+    pub status_infliction: Filter<'a, i8>,
     /// Filter by status_protection.
-    pub status_protection: Filter<'a, u32>,
+    pub status_protection: Filter<'a, i8>,
     /// Filter by mana_saver.
     pub mana_saver: Filter<'a, i8>,
     /// Filter by has_slots.
