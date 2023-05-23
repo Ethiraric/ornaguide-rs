@@ -211,15 +211,29 @@ where
 /// Return whether the stats matched.
 #[allow(clippy::too_many_arguments)]
 pub fn check_field_vec_formatter<
+    // The type of the admin entity we're checking the field of.
     AdminEntity,
+    // The type of the field in the admin entity's `Vec`.
     AS,
+    // The type of the field in the codex entity's `Vec`.
     CS,
+    // A function called with the admin entity and the codex entity's `Vec`.
     Fixer,
+    // A function taking an admin ID that is able to retrieve the associated `AdminEntity`.
     GuideRetriever,
+    // A function taking an `AdminEntity` that saves it into the guide.
     GuideSaver,
+    // A function taking a field in the admin entity's `Vec` that returns a representation that
+    // implements `Debug`. This is used to transform an ID by the name of the entity it refers to,
+    // for example.
     AFormatter,
+    // A function taking a field in the codex entity's `Vec` that returns a representation that
+    // implements `Debug`. This is used to transform an ID by the name of the entity it refers to,
+    // for example.
     CFormatter,
+    // The return type of the `AFormatter`.
     ADebuggable,
+    // The return type of the `CFormatter`.
     CDebuggable,
 >(
     field_name: &str,
