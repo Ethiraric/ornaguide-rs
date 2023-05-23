@@ -125,7 +125,7 @@ pub fn followers(guide: &OrnaAdminGuide) -> Result<CodexFollowers, Error> {
     fetch_loop(
         &guide.codex_fetch_follower_list()?,
         |slug| guide.codex_fetch_follower(slug),
-        "CFollwrs",
+        "CFllwrs",
     )
     .map(|followers| CodexFollowers { followers })
 }
@@ -136,7 +136,7 @@ pub fn followers_no_parse(guide: &OrnaAdminGuide) -> Result<(), Error> {
     fetch_loop(
         &guide.codex_fetch_follower_list()?,
         |slug| guide.codex_fetch_follower_page(slug).map(|_| ()),
-        "CFollwrs",
+        "CFllwrs",
     )
     .map(|_| ())
 }
@@ -266,7 +266,7 @@ pub fn missing_followers(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), 
             })
             .collect_vec(),
         |slug| guide.codex_fetch_follower_page(slug).map(|_| ()),
-        "CFollwrs",
+        "CFllwrs",
     )
     .map(|_| ())
 }
@@ -344,7 +344,7 @@ pub fn followers_translations(
     fetch_loop(
         &guide.codex_fetch_follower_list()?,
         |slug| guide.codex_fetch_follower_with_locale(slug, locale),
-        "CFollwrs",
+        "CFllwrs",
     )
     .map(|followers| CodexFollowers { followers })
 }
@@ -481,7 +481,7 @@ pub fn missing_followers_translations(
             .filter(|entry| !db.followers.contains_key(entry.slug()))
             .collect_vec(),
         |slug| guide.codex_fetch_follower_with_locale(slug, locale),
-        "CFollwrs",
+        "CFllwrs",
     )
     .map(|followers| CodexFollowers { followers })
 }
@@ -556,7 +556,7 @@ pub fn skill_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexSkills
 /// Retrieve followers with the given slugs from the codex.
 /// This function ignores errors.
 pub fn follower_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexFollowers, Error> {
-    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_follower(slug), "CFollwrs")
+    try_fetch_loop_slugs(slugs, |slug| guide.codex_fetch_follower(slug), "CFllwrs")
         .map(|followers| CodexFollowers { followers })
 }
 
