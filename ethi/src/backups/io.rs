@@ -234,6 +234,8 @@ pub(crate) fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error
                         entry,
                     )?;
                 }
+            } else if path.starts_with("guide_api") {
+                // Ok, skip this file.
             } else {
                 return Err(ErrorKind::Misc(format!(
                     "Unexpected file in {:?}: {:?}",
