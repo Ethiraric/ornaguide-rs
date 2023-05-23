@@ -227,6 +227,10 @@ fn parse_stats(node: Option<&NodeRef>) -> Result<Option<Stats>, Error> {
                     "Orn Bonus:" => stats.orn_bonus = Some(value.parse()?),
                     "Luck Bonus:" => stats.luck_bonus = Some(value.parse()?),
                     "View distance:" => stats.view_distance = Some(value.parse()?),
+                    "View Distance:" => stats.view_distance = Some(value.parse()?),
+                    "Follower Stats:" => stats.follower_stats = Some(value.parse()?),
+                    "Summon Stats:" => stats.summon_stats = Some(value.parse()?),
+                    "Follower Act:" => stats.follower_act = Some(value.parse()?),
                     "Monster attraction:" => stats.monster_attraction = Some(value.parse()?),
                     _ => panic!("Failed to parse stat: {text}"),
                 }
@@ -395,7 +399,7 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
     let mut stats = parse_stats(stats_parent.as_ref().map(|n| n.as_node()))?;
     // Though `place` is in the `codex-page-meta` section, it is in the `stat` structure.
     if let Some(place) = codex_page_meta.place {
-        if let Some(mut stats) = stats.as_mut() {
+        if let Some(stats) = stats.as_mut() {
             stats.place = Some(place);
         } else {
             stats = Some(Stats {
