@@ -150,9 +150,8 @@ where
 
 /// Same as a `serde_json::from_reader` with a file, but adds the filename to the error message, if any.
 #[allow(dead_code)]
-pub fn json_from_file<R, T>(path: &str) -> Result<T, Error>
+pub fn json_from_file<T>(path: &str) -> Result<T, Error>
 where
-    R: Read,
     T: serde::de::DeserializeOwned,
 {
     json_read(BufReader::new(File::open(path)?), path)
