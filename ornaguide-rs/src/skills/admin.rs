@@ -141,7 +141,7 @@ impl TryFrom<ParsedForm> for AdminSkill {
                 "offhand" => skill.offhand = value == "on",
                 "cost" => stat!(cost),
                 "bought" => skill.bought = value == "on",
-                "power" => stat!(skill_power),
+                "skill_power" => stat!(skill_power),
                 "strikes" => stat!(strikes),
                 "modifier_min" => stat!(modifier_min),
                 "modifier_max" => stat!(modifier_max),

@@ -85,6 +85,12 @@ pub struct Stats {
     pub place: Option<Place>,
     /// How much View Distance the item gives (%).
     pub view_distance: Option<u8>,
+    /// How much stats to the follower the item gives (%).
+    pub follower_act: Option<i8>,
+    /// How much stats to the follower the item gives (%).
+    pub follower_stats: Option<i8>,
+    /// How much stats to the summons the item gives (%).
+    pub summon_stats: Option<i8>,
     /// How much Monster Attraction the item gives (%).
     pub monster_attraction: Option<u8>,
 }
