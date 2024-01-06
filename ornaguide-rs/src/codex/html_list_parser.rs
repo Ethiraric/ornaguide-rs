@@ -60,6 +60,9 @@ fn node_to_entry(node: &NodeRef) -> Result<Entry, Error> {
         let tier_str = tier_str.trim();
         if let Some(c) = tier_str.chars().next() {
             if c == '★' {
+                let tier_str = tier_str
+                    .trim_end_matches(" Spell")
+                    .trim_end_matches(" Skill");
                 let mut chars = tier_str.chars();
                 chars.next();
                 entry.tier = chars.as_str().trim().parse()?;
