@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use itertools::Itertools;
 use ornaguide_rs::{
     data::OrnaData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::OrnaAdminGuide,
 };
 
@@ -17,7 +17,7 @@ use crate::{
 fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
     std::fs::read_dir("data/merges")?
         // Filter out directory entries we can't read.
-        .filter_map(|entry| entry.ok())
+        .filter_map(std::result::Result::ok)
         // Filter out directories.
         .filter(|entry| entry.file_type().map(|t| t.is_file()).unwrap_or(false))
         // Keep only merge files.
@@ -38,7 +38,7 @@ fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
                 None
             }
         })
-        .ok_or_else(|| ErrorKind::Misc("Failed to find a merge file".to_string()).into())
+        .ok_or_else(|| Kind::Misc("Failed to find a merge file".to_string()).into())
 }
 
 pub fn match_(fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {

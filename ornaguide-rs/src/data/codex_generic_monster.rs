@@ -1,7 +1,6 @@
 use crate::{
     codex::{CodexBoss, CodexMonster, CodexRaid, MonsterAbility, MonsterDrop},
     data::GuideData,
-    error::{Error},
     guide::html_utils::Tag,
     monsters::admin::AdminMonster,
 };
@@ -23,6 +22,7 @@ pub enum CodexGenericMonster<'a> {
 impl<'a> CodexGenericMonster<'a> {
     // Return the URI of the monster.
     // URI matches `/codex/{kind}/{slug}/`.
+    #[must_use]
     pub fn uri(&self) -> String {
         match self {
             CodexGenericMonster::Monster(x) => format!("/codex/monsters/{}/", x.slug),
@@ -32,6 +32,7 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     // Return the slug of the monster.
+    #[must_use]
     pub fn slug(&self) -> &str {
         match self {
             CodexGenericMonster::Monster(x) => &x.slug,
@@ -41,6 +42,7 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     /// Return the name of the monster.
+    #[must_use]
     pub fn name(&self) -> &'a String {
         match self {
             CodexGenericMonster::Monster(x) => &x.name,
@@ -50,6 +52,7 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     /// Return the icon of the monster.
+    #[must_use]
     pub fn icon(&self) -> &'a String {
         match self {
             CodexGenericMonster::Monster(x) => &x.icon,
@@ -59,6 +62,7 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     /// Return the events to which the monster belongs.
+    #[must_use]
     pub fn events(&self) -> &'a Vec<String> {
         match self {
             CodexGenericMonster::Monster(x) => x.events.as_ref(),
@@ -68,6 +72,7 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     /// Return the family of the monster, if any.
+    #[must_use]
     pub fn family(&self) -> Option<&'a String> {
         match self {
             CodexGenericMonster::Monster(x) => Some(&x.family),
@@ -77,6 +82,7 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     /// Return the rarity of the monster, if any.
+    #[must_use]
     pub fn rarity(&self) -> Option<&'a String> {
         match self {
             CodexGenericMonster::Monster(x) => Some(&x.rarity),
@@ -86,6 +92,7 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     /// Return the tier of the monster.
+    #[must_use]
     pub fn tier(&self) -> u8 {
         match self {
             CodexGenericMonster::Monster(x) => x.tier,
@@ -95,16 +102,20 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     /// Return the tags attached to the monster.
+    #[must_use]
     pub fn tags(&self) -> &'a Vec<Tag> {
         static EMPTY_VEC: Vec<Tag> = Vec::new();
         match self {
-            CodexGenericMonster::Monster(_) => &EMPTY_VEC,
-            CodexGenericMonster::Boss(_) => &EMPTY_VEC,
+            CodexGenericMonster::Monster(_) | CodexGenericMonster::Boss(_) => &EMPTY_VEC,
             CodexGenericMonster::Raid(x) => &x.tags,
         }
     }
 
     /// Return the tags attached to the monster as guide spawns
+    ///
+    /// # Panics
+    /// Panics if a monsters is tagged with a non-monster tag.
+    #[must_use]
     pub fn tags_as_guide_spawns(&self) -> Vec<&'static str> {
         static WRB_STR: &str = "World Raid";
         static KRB_STR: &str = "Kingdom Raid";
@@ -115,13 +126,14 @@ impl<'a> CodexGenericMonster<'a> {
                 Tag::KingdomRaid => Some(KRB_STR),
                 // TODO(ethiraric, 27/07/2022): Include Other Realm Raid as a spawn?
                 Tag::OtherRealmsRaid => None,
-                _ => panic!("Unknown tag {:?} for monster", tag),
+                _ => panic!("Unknown tag {tag:?} for monster"),
             })
             .sorted()
             .collect()
     }
 
     /// Return the abilities of the monster.
+    #[must_use]
     pub fn abilities(&self) -> &'a Vec<MonsterAbility> {
         match self {
             CodexGenericMonster::Monster(x) => &x.abilities,
@@ -131,6 +143,7 @@ impl<'a> CodexGenericMonster<'a> {
     }
 
     /// Return the list of drops of the monster.
+    #[must_use]
     pub fn drops(&self) -> &'a Vec<MonsterDrop> {
         match self {
             CodexGenericMonster::Monster(x) => &x.drops,
@@ -146,11 +159,12 @@ impl<'a> CodexGenericMonster<'a> {
     ///  - Unknown spawns are ignored, rather than returning an error.
     ///  - Unknown drops are ignored, rather than returning an error.
     ///  - Unknown skills are ignored, rather than returning an error.
-    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminMonster, Error> {
+    #[must_use]
+    pub fn to_admin_monster(&self, guide_data: &GuideData) -> AdminMonster {
         match self {
-            CodexGenericMonster::Monster(x) => x.try_to_admin_monster(guide_data),
-            CodexGenericMonster::Boss(x) => x.try_to_admin_monster(guide_data),
-            CodexGenericMonster::Raid(x) => x.try_to_admin_monster(guide_data),
+            CodexGenericMonster::Monster(x) => x.to_admin_monster(guide_data),
+            CodexGenericMonster::Boss(x) => x.to_admin_monster(guide_data),
+            CodexGenericMonster::Raid(x) => x.to_admin_monster(guide_data),
         }
     }
 }

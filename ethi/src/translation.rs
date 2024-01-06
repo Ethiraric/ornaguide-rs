@@ -8,18 +8,20 @@ use crate::cli;
 pub fn cli(
     command: cli::translation::Command,
     guide: &OrnaAdminGuide,
-    data: OrnaData,
+    data: &OrnaData,
     mut locales: LocaleDB,
 ) -> Result<(), Error> {
     match command {
         cli::translation::Command::Missing => {
-            let missing = crate::codex::fetch::missing_translations(guide, &data, &locales)?;
+            let missing = crate::codex::fetch::missing_translations(guide, data, &locales)?;
             locales.merge_with(missing);
             locales.save_to("data/current_entries/i18n")
         }
         cli::translation::Command::Fetch(locale) => {
-            crate::codex::fetch::translations(guide, &data, &locale.locale)?
-                .save_to(&format!("data/current_entries/i18n/{}.json", &locale.locale))
+            crate::codex::fetch::translations(guide, data, &locale.locale)?.save_to(&format!(
+                "data/current_entries/i18n/{}.json",
+                &locale.locale
+            ))
         }
     }
 }

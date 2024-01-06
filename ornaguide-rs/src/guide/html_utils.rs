@@ -1,10 +1,8 @@
-use std::ops::Deref;
-
 use kuchiki::{Attributes, ElementData, NodeData, NodeDataRef, NodeRef};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     utils::html::node_to_text,
 };
 
@@ -35,7 +33,7 @@ pub fn parse_tags<T>(iter: impl Iterator<Item = NodeDataRef<T>>) -> Result<Vec<T
             "✓ Found in Arcanists" => tags.push(Tag::FoundInArcanists),
             "✓ Other Realms Raid" => tags.push(Tag::OtherRealmsRaid),
             "✓ Found in the arena" => tags.push(Tag::FoundInArena),
-            x => return Err(ErrorKind::HTMLParsingError(format!("Unknown tag: {}", x)).into()),
+            x => return Err(Kind::HTMLParsingError(format!("Unknown tag: {x}")).into()),
         }
     }
 
@@ -57,9 +55,8 @@ pub fn parse_name_and_chance<'a>(text: &'a str, kind: &str) -> Result<(&'a str, 
                 .parse()?,
         ))
     } else {
-        Err(ErrorKind::HTMLParsingError(format!(
-            "Failed to find '(' when parsing {} chance: \"{}\"",
-            kind, text
+        Err(Kind::HTMLParsingError(format!(
+            "Failed to find '(' when parsing {kind} chance: \"{text}\""
         ))
         .into())
     }
@@ -85,7 +82,7 @@ where
     {
         let tag = name.local.to_string();
         if tag == expected_tag {
-            Some(f(node, attributes.borrow().deref()))
+            Some(f(node, &attributes.borrow()))
         } else {
             None
         }

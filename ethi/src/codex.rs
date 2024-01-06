@@ -6,12 +6,15 @@ pub mod fetch;
 
 /// Execute a CLI subcommand on the codex.
 pub fn cli(
-    command: cli::codex::Command,
+    command: &cli::codex::Command,
     guide: &OrnaAdminGuide,
-    data: OrnaData,
+    data: &OrnaData,
 ) -> Result<(), Error> {
     match command {
-        cli::codex::Command::Bugs => crate::codex_bugs::check(&data, guide),
-        cli::codex::Command::Missing => fetch::missing(guide, &data).map(|_| ()),
+        cli::codex::Command::Bugs => {
+            crate::codex_bugs::check(data, guide);
+            Ok(())
+        }
+        cli::codex::Command::Missing => fetch::missing(guide, data).map(|_| ()),
     }
 }

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     data::GuideData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     pets::admin::{AdminPet, CostType},
 };
 
@@ -49,16 +49,17 @@ impl Follower {
     /// Try to convert `self` to an `AdminPet`.
     ///
     ///  - Unknown skills are ignored, rather than returning an error.
-    pub fn try_to_admin_pet(&self, guide_data: &GuideData) -> Result<AdminPet, Error> {
-        Ok(AdminPet {
+    #[must_use]
+    pub fn to_admin_pet(&self, guide_data: &GuideData) -> AdminPet {
+        AdminPet {
             codex_uri: format!("/codex/followers/{}/", self.slug),
             name: self.name.clone(),
             tier: self.tier,
             image_name: self.icon.clone(),
-            description: if !self.description.is_empty() {
-                self.description.clone()
-            } else {
+            description: if self.description.is_empty() {
                 ".".to_string()
+            } else {
+                self.description.clone()
             },
             cost_type: if self.tier >= 8 {
                 CostType::Orn
@@ -78,12 +79,13 @@ impl Follower {
                 })
                 .collect(),
             ..AdminPet::default()
-        })
+        }
     }
 }
 
 impl<'a> Followers {
     /// Find the codex follower associated with the given admin pet.
+    #[must_use]
     pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a Follower> {
         static URI_START: &str = "/codex/followers/";
         if !needle.starts_with(URI_START) {
@@ -95,10 +97,11 @@ impl<'a> Followers {
     }
 
     /// Find the codex follower associated with the given admin pet.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Follower, Error> {
-        self.find_by_uri(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for follower with uri '{}'", needle)).into()
-        })
+        self.find_by_uri(needle)
+            .ok_or_else(|| Kind::Misc(format!("No match for follower with uri '{needle}'")).into())
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error},
+    error::Error,
     guide::{AdminGuide, OrnaAdminGuide},
     items::admin::AdminItems,
     monsters::admin::AdminMonsters,
@@ -10,6 +10,9 @@ use crate::{
 use crate::retry_once;
 
 /// List items from the guide and retrieve them sequentially.
+///
+/// # Errors
+/// Errors on I/O, HTTP or parsing error. This function does not return partial results.
 pub fn items(guide: &OrnaAdminGuide) -> Result<AdminItems, Error> {
     Ok(AdminItems {
         items: guide
@@ -21,6 +24,9 @@ pub fn items(guide: &OrnaAdminGuide) -> Result<AdminItems, Error> {
 }
 
 /// List monsters from the guide and retrieve them sequentially.
+///
+/// # Errors
+/// Errors on I/O, HTTP or parsing error. This function does not return partial results.
 pub fn monsters(guide: &OrnaAdminGuide) -> Result<AdminMonsters, Error> {
     Ok(AdminMonsters {
         monsters: guide
@@ -32,6 +38,9 @@ pub fn monsters(guide: &OrnaAdminGuide) -> Result<AdminMonsters, Error> {
 }
 
 /// List skills from the guide and retrieve them sequentially.
+///
+/// # Errors
+/// Errors on I/O, HTTP or parsing error. This function does not return partial results.
 pub fn skills(guide: &OrnaAdminGuide) -> Result<AdminSkills, Error> {
     Ok(AdminSkills {
         skills: guide
@@ -43,6 +52,9 @@ pub fn skills(guide: &OrnaAdminGuide) -> Result<AdminSkills, Error> {
 }
 
 /// List pets from the guide and retrieve them sequentially.
+///
+/// # Errors
+/// Errors on I/O, HTTP or parsing error. This function does not return partial results.
 pub fn pets(guide: &OrnaAdminGuide) -> Result<AdminPets, Error> {
     Ok(AdminPets {
         pets: guide

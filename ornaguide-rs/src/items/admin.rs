@@ -1,12 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::html_form_parser::ParsedForm,
     parse_stat, parse_stat_opt, parse_stat_vec,
 };
 
 /// An item fetched from the admin panel.
+#[allow(clippy::module_name_repetitions, clippy::struct_excessive_bools)]
 #[derive(Clone, Debug, Serialize, Deserialize, Derivative)]
 #[derivative(PartialEq)]
 pub struct AdminItem {
@@ -142,6 +143,7 @@ pub struct AdminItem {
 impl AdminItem {
     /// Return the slug of the item.
     /// If the item has no `codex_uri`, return an empty string.
+    #[must_use]
     pub fn slug(&self) -> &str {
         if self.codex_uri.is_empty() {
             ""
@@ -223,7 +225,7 @@ impl TryFrom<ParsedForm> for AdminItem {
             ..Default::default()
         };
 
-        for (key, value) in form.fields.into_iter() {
+        for (key, value) in form.fields {
             // Helper macros to parse and add meaningful error messages.
             macro_rules! stat {
                 ($field:ident) => {
@@ -261,11 +263,11 @@ impl TryFrom<ParsedForm> for AdminItem {
                 "defense_affected_by_quality" => item.defense_affected_by_quality = value == "on",
                 "resistance" => stat!(resistance),
                 "resistance_affected_by_quality" => {
-                    item.resistance_affected_by_quality = value == "on"
+                    item.resistance_affected_by_quality = value == "on";
                 }
                 "dexterity" => stat!(dexterity),
                 "dexterity_affected_by_quality" => {
-                    item.dexterity_affected_by_quality = value == "on"
+                    item.dexterity_affected_by_quality = value == "on";
                 }
                 "ward" => stat!(ward),
                 "ward_affected_by_quality" => item.ward_affected_by_quality = value == "on",
@@ -301,7 +303,7 @@ impl TryFrom<ParsedForm> for AdminItem {
                 "price" => stat!(price),
                 "ability" => opt!(ability),
                 key => {
-                    return Err(ErrorKind::ExtraField(key.to_string(), value).into());
+                    return Err(Kind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
@@ -311,6 +313,7 @@ impl TryFrom<ParsedForm> for AdminItem {
 }
 
 impl From<AdminItem> for ParsedForm {
+    #[allow(clippy::too_many_lines)]
     fn from(item: AdminItem) -> Self {
         let mut form = ParsedForm {
             csrfmiddlewaretoken: item.csrfmiddlewaretoken,
@@ -390,7 +393,7 @@ impl From<AdminItem> for ParsedForm {
         } else {
             push("element", String::new());
         }
-        for x in item.equipped_by.iter() {
+        for x in &item.equipped_by {
             push("equipped_by", x.to_string());
         }
         if item.two_handed {
@@ -415,20 +418,20 @@ impl From<AdminItem> for ParsedForm {
             push("category", String::new());
         }
 
-        for x in item.causes.iter() {
+        for x in &item.causes {
             push("causes", x.to_string());
         }
-        for x in item.cures.iter() {
+        for x in &item.cures {
             push("cures", x.to_string());
         }
-        for x in item.gives.iter() {
+        for x in &item.gives {
             push("gives", x.to_string());
         }
-        for x in item.prevents.iter() {
+        for x in &item.prevents {
             push("prevents", x.to_string());
         }
 
-        for x in item.materials.iter() {
+        for x in &item.materials {
             push("materials", x.to_string());
         }
         push("price", item.price.to_string());
@@ -443,6 +446,7 @@ impl From<AdminItem> for ParsedForm {
 }
 
 /// Collection of items from the guide's admin view.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct AdminItems {
     /// Items from the guide's admin view.
@@ -451,32 +455,38 @@ pub struct AdminItems {
 
 impl<'a> AdminItems {
     /// Find the admin item associated with the given id.
+    #[must_use]
     pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminItem> {
         self.items.iter().find(|item| item.id == needle)
     }
 
     /// Find the admin item associated with the given id.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminItem, Error> {
-        self.find_by_id(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for admin item with id {}", needle)).into()
-        })
+        self.find_by_id(needle)
+            .ok_or_else(|| Kind::Misc(format!("No match for admin item with id {needle}")).into())
     }
 
     /// Find the admin item associated with the given uri.
+    #[must_use]
     pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminItem> {
         self.items.iter().find(|item| item.codex_uri == needle)
     }
 
     /// Find the admin item associated with the given uri.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminItem, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for admin item with codex_uri {}", needle)).into()
+            Kind::Misc(format!("No match for admin item with codex_uri {needle}")).into()
         })
     }
 
     /// Find the admin item associated with the given slug.
+    #[must_use]
     pub fn find_by_slug(&'a self, needle: &str) -> Option<&'a AdminItem> {
         self.items.iter().find(|item| {
             !item.codex_uri.is_empty()
@@ -485,14 +495,12 @@ impl<'a> AdminItems {
     }
 
     /// Find the admin item associated with the given slug.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a AdminItem, Error> {
         self.find_by_slug(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!(
-                "No match for admin item with codex slug {}",
-                needle
-            ))
-            .into()
+            Kind::Misc(format!("No match for admin item with codex slug {needle}")).into()
         })
     }
 }

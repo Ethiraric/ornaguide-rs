@@ -44,13 +44,13 @@ fn iter_backups<P: AsRef<Path>>(path: P) -> Result<impl Iterator<Item = (PathBuf
     // Walk through all backup archives.
     Ok(std::fs::read_dir(path)?
         // Filter out directory entries we can't read.
-        .filter_map(|entry| entry.ok())
+        .filter_map(std::result::Result::ok)
         // Filter out directories.
         .filter(|entry| entry.file_type().map(|t| t.is_file()).unwrap_or(false))
         // Exclude "changes.json" from the list
         .filter(|entry| !entry.path().ends_with("changes.json"))
         // Sort them. The names are chronological, so it orders them oldest first.
-        .sorted_by_key(|entry| entry.path())
+        .sorted_by_key(std::fs::DirEntry::path)
         // Try to open them. Ignore those we fail to open.
         // Oldest archives have a different format and may not be loadable.
         .filter_map(|entry| match Backup::load_from(entry.path()) {
@@ -110,17 +110,14 @@ pub fn merge<P: AsRef<Path>>(backups_path: P, output_path: P) -> Result<(), Erro
     let changes_path = format!("{}/changes.json", backups_path.as_ref().to_string_lossy());
     match BackupChanges::load_from(&changes_path) {
         Ok(changes) => changes.apply_to(&mut backup),
-        Err(err) => println!(
-            "{}: Failed to load changes to backup: {}",
-            changes_path, err
-        ),
+        Err(err) => println!("{changes_path}: Failed to load changes to backup: {err}"),
     };
 
     backup.save_to(output_path, "merge")
 }
 
 /// Execute a CLI subcommand on backups.
-pub fn cli(command: cli::backups::Command, _: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
+pub fn cli(command: &cli::backups::Command, _: &OrnaAdminGuide, _: OrnaData) -> Result<(), Error> {
     match command {
         cli::backups::Command::Merge => merge("data/backups/current_entries", "data/merges"),
         cli::backups::Command::Prune => prune("data/backups/current_entries"),

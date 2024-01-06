@@ -19,7 +19,7 @@ impl Clone for Error {
     fn clone(&self) -> Self {
         Error {
             status: self.status,
-            error: ornaguide_rs::error::ErrorKind::Misc(format!("{}", self.error)).into(),
+            error: ornaguide_rs::error::Kind::Misc(format!("{}", self.error)).into(),
         }
     }
 }
@@ -58,7 +58,7 @@ impl<T> ToErrorable<T> for Result<T, &ornaguide_rs::error::Error> {
             Ok(x) => Ok(x),
             Err(e) => Err(Error {
                 status,
-                error: ornaguide_rs::error::ErrorKind::Misc(format!("{}", e)).into(),
+                error: ornaguide_rs::error::Kind::Misc(format!("{e}")).into(),
             }),
         }
     }
@@ -113,10 +113,10 @@ impl<'r> Responder<'r, 'static> for MaybeResponse {
     }
 }
 
-/// Return an API error wrapping an ornaguide_rs error with the given string and status.
-pub fn og_error(status: Status, contents: String) -> Error {
+/// Return an API error wrapping an [`ornaguide_rs::error::Error`] with the given string and status.
+pub fn from_og(status: Status, contents: String) -> Error {
     Error {
         status,
-        error: ornaguide_rs::error::ErrorKind::Misc(contents).into(),
+        error: ornaguide_rs::error::Kind::Misc(contents).into(),
     }
 }

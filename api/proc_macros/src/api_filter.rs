@@ -22,7 +22,7 @@ pub(crate) fn create_compile_error_at(span: Span, message: &str) -> TokenStream 
         TokenTree::Punct(Punct::new(';', Spacing::Alone)),
     ];
 
-    for token in tokens.iter_mut() {
+    for token in &mut tokens {
         token.set_span(span);
     }
 
@@ -44,7 +44,7 @@ fn make_compiled_fn(fields: &[String]) -> TokenStream {
     }}",
         fields
             .iter()
-            .map(|name| format!("{}: self.{}.compiled()?", name, name))
+            .map(|name| format!("{name}: self.{name}.compiled()?"))
             .join(",")
     )
     .parse()
@@ -61,7 +61,7 @@ fn make_is_none_fn(fields: &[String]) -> TokenStream {
     }}",
         fields
             .iter()
-            .map(|name| format!("self.{}.is_none()", name))
+            .map(|name| format!("self.{name}.is_none()"))
             .join("&&")
     )
     .parse()
@@ -81,10 +81,7 @@ fn make_into_fn_vec_fn(fields: &[String], filtered_type: &str) -> TokenStream {
         filtered_type,
         fields
             .iter()
-            .map(|name| format!(
-                "self.{}.into_fn(|value: &{}| &value.{})",
-                name, filtered_type, name
-            ))
+            .map(|name| format!("self.{name}.into_fn(|value: &{filtered_type}| &value.{name})"))
             .join(","),
     )
     .parse()
@@ -101,7 +98,7 @@ fn make_apply_sort_fn(fields: &Fields, field_names: &[String], filtered_type: &s
             match key {{
                 {},
                 key => return Err(
-                    ornaguide_rs::error::ErrorKind::Misc(format!("Failed to find key {{}}", key)).into_err()
+                    ornaguide_rs::error::Kind::Misc(format!("Failed to find key {{}}", key)).into_err()
                 ).to_bad_request(),
             }}
             if options.sort_descending {{
@@ -138,16 +135,14 @@ fn make_apply_sort_fn(fields: &Fields, field_names: &[String], filtered_type: &s
                     .contains(&ty)
                     {
                         return format!(
-                            "\"{}\" => v.sort_unstable_by(|a, b| a.{}.partial_cmp(&b.{}).unwrap())",
-                            name, name, name
+                            "\"{name}\" => v.sort_unstable_by(|a, b| a.{name}.partial_cmp(&b.{name}).unwrap())"
                         );
                     }
                 }
                 format!(
-                    "\"{}\" => return Err(
-                        ornaguide_rs::error::ErrorKind::Misc(\"Cannot sort by {}\".to_string()).into_err()
-                        ).to_bad_request()",
-                    name, name
+                    "\"{name}\" => return Err(
+                        ornaguide_rs::error::Kind::Misc(\"Cannot sort by {name}\".to_string()).into_err()
+                        ).to_bad_request()"
                 )
             })
             .join(",")
@@ -216,7 +211,7 @@ pub fn api_filter(attr: TokenStream, item: TokenStream) -> Result<TokenStream, T
     let field_names = structure
         .fields
         .iter()
-        .filter_map(|field| field.ident.as_ref().map(|id| id.to_string()))
+        .filter_map(|field| field.ident.as_ref().map(std::string::ToString::to_string))
         .filter(|field| field != "options")
         .collect_vec();
 

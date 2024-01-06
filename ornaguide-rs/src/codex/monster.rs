@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 pub use crate::guide::html_utils::Tag;
 use crate::{
     data::GuideData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     monsters::admin::AdminMonster,
 };
 
@@ -126,8 +126,9 @@ impl Monster {
     ///  - Unknown events are ignored, rather than returning an error.
     ///  - Unknown drops are ignored, rather than returning an error.
     ///  - Unknown skills are ignored, rather than returning an error.
-    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminMonster, Error> {
-        Ok(AdminMonster {
+    #[must_use]
+    pub fn to_admin_monster(&self, guide_data: &GuideData) -> AdminMonster {
+        AdminMonster {
             codex_uri: format!("/codex/monsters/{}/", self.slug),
             name: self.name.clone(),
             tier: self.tier,
@@ -166,7 +167,7 @@ impl Monster {
                 })
                 .collect(),
             ..AdminMonster::default()
-        })
+        }
     }
 }
 
@@ -177,8 +178,9 @@ impl Boss {
     ///  - Unknown events are ignored, rather than returning an error.
     ///  - Unknown drops are ignored, rather than returning an error.
     ///  - Unknown skills are ignored, rather than returning an error.
-    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminMonster, Error> {
-        Ok(AdminMonster {
+    #[must_use]
+    pub fn to_admin_monster(&self, guide_data: &GuideData) -> AdminMonster {
+        AdminMonster {
             codex_uri: format!("/codex/bosses/{}/", self.slug),
             name: self.name.clone(),
             tier: self.tier,
@@ -217,7 +219,7 @@ impl Boss {
                 })
                 .collect(),
             ..AdminMonster::default()
-        })
+        }
     }
 }
 
@@ -228,8 +230,9 @@ impl Raid {
     ///  - Unknown spawns are ignored, rather than returning an error.
     ///  - Unknown drops are ignored, rather than returning an error.
     ///  - Unknown skills are ignored, rather than returning an error.
-    pub fn try_to_admin_monster(&self, guide_data: &GuideData) -> Result<AdminMonster, Error> {
-        Ok(AdminMonster {
+    #[must_use]
+    pub fn to_admin_monster(&self, guide_data: &GuideData) -> AdminMonster {
+        AdminMonster {
             codex_uri: format!("/codex/raids/{}/", self.slug),
             name: self.name.clone(),
             tier: self.tier,
@@ -262,7 +265,7 @@ impl Raid {
                             .find(|spawn| spawn.name == "Kingdom Raid")
                             .map(|spawn| spawn.id),
                         // TODO(ethiraric, 28/07/2022): Include Other Realm Raid as a spawn?
-                        Tag::OtherRealmsRaid => None,
+                        // Tag::OtherRealmsRaid => None,
                         _ => None,
                     }
                 }))
@@ -283,12 +286,13 @@ impl Raid {
                 })
                 .collect(),
             ..AdminMonster::default()
-        })
+        }
     }
 }
 
 impl<'a> Monsters {
     /// Find the codex monster associated with the given uri.
+    #[must_use]
     pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a Monster> {
         static URI_START: &str = "/codex/monsters/";
         if !needle.starts_with(URI_START) {
@@ -300,16 +304,19 @@ impl<'a> Monsters {
     }
 
     /// Find the codex monster associated with the given uri.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Monster, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for codex monster with uri '{}'", needle)).into()
+            Kind::Misc(format!("No match for codex monster with uri '{needle}'")).into()
         })
     }
 }
 
 impl<'a> Bosses {
     /// Find the codex boss associated with the given uri.
+    #[must_use]
     pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a Boss> {
         static URI_START: &str = "/codex/bosses/";
         if !needle.starts_with(URI_START) {
@@ -321,16 +328,19 @@ impl<'a> Bosses {
     }
 
     /// Find the codex boss associated with the given uri.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Boss, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for codex boses with uri '{}'", needle)).into()
+            Kind::Misc(format!("No match for codex boses with uri '{needle}'")).into()
         })
     }
 }
 
 impl<'a> Raids {
     /// Find the codex raid associated with the given uri.
+    #[must_use]
     pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a Raid> {
         static URI_START: &str = "/codex/raids/";
         if !needle.starts_with(URI_START) {
@@ -342,10 +352,12 @@ impl<'a> Raids {
     }
 
     /// Find the codex raid associated with the given uri.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Raid, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for codex raid with uri '{}'", needle)).into()
+            Kind::Misc(format!("No match for codex raid with uri '{needle}'")).into()
         })
     }
 }

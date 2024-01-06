@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{data::OrnaData, monsters::admin::AdminMonster};
 
-#[allow(dead_code)]
+#[allow(dead_code, clippy::too_many_lines)]
 pub fn monster_to_former_entry_html(monster: &AdminMonster, data: &OrnaData) -> String {
     format!(
         r#"# {} ★{}
@@ -41,7 +41,7 @@ pub fn monster_to_former_entry_html(monster: &AdminMonster, data: &OrnaData) -> 
         if monster.level > 0 {
             format!("<b>Level {}</b></br>", monster.level)
         } else {
-            "".to_string()
+            String::new()
         },
         if monster.is_world_raid(&data.guide.static_.spawns) {
             "<b>World Raid</b></br>"
@@ -53,7 +53,9 @@ pub fn monster_to_former_entry_html(monster: &AdminMonster, data: &OrnaData) -> 
         } else {
             ""
         },
-        if !monster.resistant_to.is_empty() {
+        if monster.resistant_to.is_empty() {
+            String::new()
+        } else {
             format!(
                 r#"
         <b>Resists</b></br>
@@ -73,10 +75,10 @@ pub fn monster_to_former_entry_html(monster: &AdminMonster, data: &OrnaData) -> 
                         .name)
                     .join("</li>\n            <li>")
             )
-        } else {
-            "".to_string()
         },
-        if !monster.immune_to_status.is_empty() {
+        if monster.immune_to_status.is_empty() {
+            String::new()
+        } else {
             format!(
                 r#"
         <b>Immune to</b></br>
@@ -96,8 +98,6 @@ pub fn monster_to_former_entry_html(monster: &AdminMonster, data: &OrnaData) -> 
                         .name)
                     .join("</li>\n            <li>")
             )
-        } else {
-            "".to_string()
         },
         monster
             .skills

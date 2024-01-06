@@ -27,7 +27,7 @@ pub fn items(guide: &OrnaAdminGuide) -> Result<AdminItems, Error> {
                 cloned_bar.set_message(item.name.clone());
                 cloned_bar.inc(1);
                 if sleep > 0 {
-                    tokio::time::sleep(std::time::Duration::from_secs(sleep)).await
+                    tokio::time::sleep(std::time::Duration::from_secs(sleep)).await;
                 }
                 Result::<AdminItem, Error>::Ok(admin_item)
             }
@@ -44,7 +44,7 @@ pub fn monsters(guide: &OrnaAdminGuide) -> Result<AdminMonsters, Error> {
     let monsters = guide.admin_retrieve_monsters_list()?;
     let mut ret = Vec::with_capacity(monsters.len());
     let bar = bar(monsters.len() as u64);
-    for monster in monsters.iter() {
+    for monster in &monsters {
         bar.set_message(monster.name.clone());
         ret.push(retry_once!(guide.admin_retrieve_monster_by_id(monster.id))?);
         bar.inc(1);
@@ -61,7 +61,7 @@ pub fn skills(guide: &OrnaAdminGuide) -> Result<AdminSkills, Error> {
     let skills = guide.admin_retrieve_skills_list()?;
     let mut ret = Vec::with_capacity(skills.len());
     let bar = bar(skills.len() as u64);
-    for skill in skills.iter() {
+    for skill in &skills {
         bar.set_message(skill.name.clone());
         ret.push(retry_once!(guide.admin_retrieve_skill_by_id(skill.id))?);
         bar.inc(1);
@@ -78,7 +78,7 @@ pub fn pets(guide: &OrnaAdminGuide) -> Result<AdminPets, Error> {
     let pets = guide.admin_retrieve_pets_list()?;
     let mut ret = Vec::with_capacity(pets.len());
     let bar = bar(pets.len() as u64);
-    for pet in pets.iter() {
+    for pet in &pets {
         bar.set_message(pet.name.clone());
         ret.push(retry_once!(guide.admin_retrieve_pet_by_id(pet.id))?);
         bar.inc(1);

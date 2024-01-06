@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     data::GuideData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::{html_utils::Tag, Static, VecElements},
     items::admin::AdminItem,
     misc::{
@@ -199,6 +199,7 @@ pub struct Item {
 
 impl Item {
     /// Return whether the item can be found in shops.
+    #[must_use]
     pub fn found_in_shops(&self) -> bool {
         self.tags.iter().any(|tag| *tag == Tag::FoundInShops)
     }
@@ -210,16 +211,18 @@ impl Item {
     ///  - An unknown ability will be ignored, rather than returning an error.
     ///  - An unknown element will be ignored, rather than returning an error.
     ///  - `self.dropped_by` is ignored and will not be saved in the returned `AdminItem`.
-    pub fn try_to_admin_item(&self, guide_data: &GuideData) -> Result<AdminItem, Error> {
-        Ok(AdminItem {
+    #[allow(clippy::too_many_lines)]
+    #[must_use]
+    pub fn to_admin_item(&self, guide_data: &GuideData) -> AdminItem {
+        AdminItem {
             codex_uri: format!("/codex/items/{}/", self.slug),
             name: self.name.clone(),
             tier: self.tier,
             image_name: self.icon.clone(),
-            description: if !self.description.is_empty() {
-                self.description.clone()
-            } else {
+            description: if self.description.is_empty() {
                 ".".to_string()
+            } else {
+                self.description.clone()
             },
             hp: self.stats.as_ref().and_then(|stats| stats.hp).unwrap_or(0),
             mana: self
@@ -299,26 +302,30 @@ impl Item {
             causes: self
                 .causes
                 .try_to_guide_ids(&guide_data.static_)
-                .ignore_failed_id_conversions()?,
+                .ignore_failed_id_conversions()
+                .expect("only possible error should be partial conversions"),
             cures: self
                 .cures
                 .try_to_guide_ids(&guide_data.static_)
-                .ignore_failed_id_conversions()?,
+                .ignore_failed_id_conversions()
+                .expect("only possible error should be partial conversions"),
             gives: self
                 .gives
                 .try_to_guide_ids(&guide_data.static_)
-                .ignore_failed_id_conversions()?,
+                .ignore_failed_id_conversions()
+                .expect("only possible error should be partial conversions"),
             prevents: self
                 .immunities
                 .try_to_guide_ids(&guide_data.static_)
-                .ignore_failed_id_conversions()?,
+                .ignore_failed_id_conversions()
+                .expect("only possible error should be partial conversions"),
             materials: self
                 .upgrade_materials
                 .iter()
                 .filter_map(|item| guide_data.items.find_by_uri(&item.uri).map(|item| item.id))
                 .collect(),
             ..AdminItem::default()
-        })
+        }
     }
 }
 
@@ -366,24 +373,26 @@ impl FromStr for Place {
             "Off-hand" => Ok(Place::OffHand),
             "Legs" => Ok(Place::Legs),
             "Accessory" => Ok(Place::Accessory),
-            "Armor" => Ok(Place::Armor),
-            "Armor (for adornments)" => Ok(Place::Armor),
+            "Armor" | "Armor (for adornments)" => Ok(Place::Armor),
             "Augment (for celestial weapons)" => Ok(Place::Augment),
             "material" => Ok(Place::Material),
-            _ => Err(ErrorKind::ParseEnumError(
-                "Place".to_string(),
-                format!("Invalid value: {}", s),
-            )
-            .into()),
+            _ => {
+                Err(Kind::ParseEnumError("Place".to_string(), format!("Invalid value: {s}")).into())
+            }
         }
     }
 }
 
 /// A trait to extend `Vec`s of `Cure`s, `Give`s, ....
+#[allow(clippy::module_name_repetitions)]
 pub trait ItemStatusEffects {
-    /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide status_effect ids.
+    /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide `status_effect` ids.
     /// Returns `ErrorKind::PartialCodexStatusEffectConversion` if all fields have not been
     /// successfully converted.
+    ///
+    /// # Errors
+    /// Errors if the array could not be converted in its entirety. Should the array be partially
+    /// converted, partially converted content can be found in the error variant.
     fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error>;
     /// Convert the list of status effects to a list of effect names, matching those of the guide.
     fn to_guide_names(&self) -> Vec<&str>;
@@ -403,7 +412,7 @@ macro_rules! make_impl_for_status_effect_struct_vec {
                 if failures.is_empty() {
                     Ok(successes)
                 } else {
-                    Err(ErrorKind::PartialCodexStatusEffectsConversion(successes, failures).into())
+                    Err(Kind::PartialCodexStatusEffectsConversion(successes, failures).into())
                 }
             }
 
@@ -431,6 +440,7 @@ pub struct Items {
 
 impl<'a> Items {
     /// Find the codex item associated with the given uri.
+    #[must_use]
     pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a Item> {
         static URI_START: &str = "/codex/items/";
         if !needle.starts_with(URI_START) {
@@ -442,23 +452,28 @@ impl<'a> Items {
     }
 
     /// Find the codex item associated with the given uri.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a Item, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for codex item with uri '{}'", needle)).into()
+            Kind::Misc(format!("No match for codex item with uri '{needle}'")).into()
         })
     }
 
     /// Find the codex item associated with the given slug.
+    #[must_use]
     pub fn find_by_slug(&'a self, needle: &str) -> Option<&'a Item> {
         self.items.iter().find(|item| item.slug == needle)
     }
 
     /// Find the codex item associated with the given slug.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a Item, Error> {
         self.find_by_slug(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for codex item with slug '{}'", needle)).into()
+            Kind::Misc(format!("No match for codex item with slug '{needle}'")).into()
         })
     }
 }

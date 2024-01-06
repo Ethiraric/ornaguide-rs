@@ -10,7 +10,7 @@ use backtrace::Backtrace;
 use color_backtrace::termcolor::Ansi;
 
 /// Generic error type.
-pub enum ErrorKind {
+pub enum Kind {
     /// There was an error with `serde_json`.
     SerdeJson(serde_json::Error, String),
     /// There was an error with `std::io`.
@@ -122,8 +122,9 @@ pub enum ErrorKind {
     Misc(String),
 }
 
-impl ErrorKind {
+impl Kind {
     /// Convert the error kind into an error with backtrace and context.
+    #[must_use]
     pub fn into_err(self) -> Error {
         Error::from(self)
     }
@@ -133,7 +134,7 @@ impl ErrorKind {
 #[derive(Debug)]
 pub struct Error {
     /// The error that happened.
-    pub kind: ErrorKind,
+    pub kind: Kind,
     /// The backtrace when the error happened, if activated.
     pub backtrace: Box<Backtrace>,
     /// Context that was added to the error.
@@ -143,6 +144,7 @@ pub struct Error {
 impl Error {
     /// Pushes an element into the context stack.
     /// The function consumes `self` and returns it so it is easier to use in a `map`.
+    #[must_use]
     pub fn ctx_push(mut self, contents: String) -> Self {
         self.context.push(contents);
         self
@@ -166,7 +168,7 @@ impl Display for Error {
     }
 }
 
-impl<T: Into<ErrorKind>> From<T> for Error {
+impl<T: Into<Kind>> From<T> for Error {
     fn from(err: T) -> Self {
         Self {
             kind: err.into(),
@@ -176,140 +178,131 @@ impl<T: Into<ErrorKind>> From<T> for Error {
     }
 }
 
-impl Display for ErrorKind {
+impl Display for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ErrorKind::SerdeJson(err, name) => {
+            Kind::SerdeJson(err, name) => {
                 if name.is_empty() {
-                    write!(f, "{}", err)
+                    write!(f, "{err}")
                 } else {
-                    write!(f, "{}: {}", name, err)
+                    write!(f, "{name}: {err}")
                 }
             }
-            ErrorKind::Io(err) => write!(f, "{}", err),
-            ErrorKind::MissingField(from, field) => {
-                write!(f, "Failed to convert {}: missing field {}", from, field)
+            Kind::Io(err) => write!(f, "{err}"),
+            Kind::MissingField(from, field) => {
+                write!(f, "Failed to convert {from}: missing field {field}")
             }
-            ErrorKind::ExtraField(from, field) => {
-                write!(f, "Failed to convert {}: extra field {}", from, field)
+            Kind::ExtraField(from, field) => {
+                write!(f, "Failed to convert {from}: extra field {field}")
             }
-            ErrorKind::InvalidField(from, field, value) => match value {
+            Kind::InvalidField(from, field, value) => match value {
                 Some(s) => {
-                    write!(
-                        f,
-                        "Failed to convert {}: invalid field {}={}",
-                        from, field, s
-                    )
+                    write!(f, "Failed to convert {from}: invalid field {field}={s}")
                 }
                 None => {
-                    write!(f, "Failed to convert {}: invalid field {}", from, field)
+                    write!(f, "Failed to convert {from}: invalid field {field}")
                 }
             },
-            ErrorKind::Reqwest(err) => write!(f, "{}", err),
-            ErrorKind::ParseEnumError(name, err) => {
-                write!(f, "Could not parse enum {}: {}", name, err)
+            Kind::Reqwest(err) => write!(f, "{err}"),
+            Kind::ParseEnumError(name, err) => {
+                write!(f, "Could not parse enum {name}: {err}")
             }
-            ErrorKind::ParseBoolError(err) => write!(f, "{}", err),
-            ErrorKind::ParseIntError(err) => write!(f, "{}", err),
-            ErrorKind::ParseFloatError(err) => write!(f, "{}", err),
-            ErrorKind::ResponseError(method, url, status, err) => {
-                write!(f, "HTTP {} {} {}: {}", method, url, status, err)
+            Kind::ParseBoolError(err) => write!(f, "{err}"),
+            Kind::ParseIntError(err) => write!(f, "{err}"),
+            Kind::ParseFloatError(err) => write!(f, "{err}"),
+            Kind::ResponseError(method, url, status, err) => {
+                write!(f, "HTTP {method} {url} {status}: {err}")
             }
-            ErrorKind::GuidePostFormError(url, generic, errors) => {
-                write!(f, "HTTP POST {}: {}: {:?}", url, generic, errors)
+            Kind::GuidePostFormError(url, generic, errors) => {
+                write!(f, "HTTP POST {url}: {generic}: {errors:?}")
             }
-            ErrorKind::HTMLParsingError(err) => write!(f, "{}", err),
-            ErrorKind::PartialCodexStatusEffectsConversion(found, not_found) => write!(
+            Kind::HTMLParsingError(err) => write!(f, "{err}"),
+            Kind::PartialCodexStatusEffectsConversion(found, not_found) => write!(
                 f,
-                "Partial codex status effects conversion: OK {:?}, KO {:?}",
-                found, not_found
+                "Partial codex status effects conversion: OK {found:?}, KO {not_found:?}"
             ),
-            ErrorKind::PartialCodexSkillsConversion(found, not_found) => write!(
+            Kind::PartialCodexSkillsConversion(found, not_found) => write!(
                 f,
-                "Partial codex skills conversion: OK {:?}, KO {:?}",
-                found, not_found
+                "Partial codex skills conversion: OK {found:?}, KO {not_found:?}"
             ),
-            ErrorKind::PartialCodexItemDroppedBysConversion(found, not_found) => write!(
+            Kind::PartialCodexItemDroppedBysConversion(found, not_found) => write!(
                 f,
-                "Partial codex item dropped_bys conversion: OK {:?}, KO {:?}",
-                found, not_found
+                "Partial codex item dropped_bys conversion: OK {found:?}, KO {not_found:?}"
             ),
-            ErrorKind::PartialCodexItemUpgradeMaterialsConversion(found, not_found) => write!(
+            Kind::PartialCodexItemUpgradeMaterialsConversion(found, not_found) => write!(
                 f,
-                "Partial codex item upgrade materials conversion: OK {:?}, KO {:?}",
-                found, not_found
+                "Partial codex item upgrade materials conversion: OK {found:?}, KO {not_found:?}"
             ),
-            ErrorKind::PartialCodexFollowerAbilitiesConversion(found, not_found) => write!(
+            Kind::PartialCodexFollowerAbilitiesConversion(found, not_found) => write!(
                 f,
-                "Partial codex follower abilities conversion: OK {:?}, KO {:?}",
-                found, not_found
+                "Partial codex follower abilities conversion: OK {found:?}, KO {not_found:?}"
             ),
-            ErrorKind::PartialCodexMonsterAbilitiesConversion(found, not_found) => write!(
+            Kind::PartialCodexMonsterAbilitiesConversion(found, not_found) => write!(
                 f,
-                "Partial codex monster abilities conversion: OK {:?}, KO {:?}",
-                found, not_found
+                "Partial codex monster abilities conversion: OK {found:?}, KO {not_found:?}"
             ),
-            ErrorKind::PartialCodexEventsConversion(found, not_found) => write!(
+            Kind::PartialCodexEventsConversion(found, not_found) => write!(
                 f,
-                "Partial codex events conversion: OK {:?}, KO {:?}",
-                found, not_found
+                "Partial codex events conversion: OK {found:?}, KO {not_found:?}"
             ),
-            ErrorKind::InvalidUTF8Conversion(err) => write!(f, "{}", err),
-            ErrorKind::BufferConversionError(err) => write!(f, "{}", err),
-            ErrorKind::Misc(err) => write!(f, "{}", err),
+            Kind::InvalidUTF8Conversion(err)
+            | Kind::BufferConversionError(err)
+            | Kind::Misc(err) => {
+                write!(f, "{err}")
+            }
         }
     }
 }
 
-impl Debug for ErrorKind {
+impl Debug for Kind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         (self as &dyn Display).fmt(f)
     }
 }
 
-impl From<ParseBoolError> for ErrorKind {
+impl From<ParseBoolError> for Kind {
     fn from(err: ParseBoolError) -> Self {
         Self::ParseBoolError(err)
     }
 }
 
-impl From<ParseFloatError> for ErrorKind {
+impl From<ParseFloatError> for Kind {
     fn from(err: ParseFloatError) -> Self {
         Self::ParseFloatError(err)
     }
 }
 
-impl From<ParseIntError> for ErrorKind {
+impl From<ParseIntError> for Kind {
     fn from(err: ParseIntError) -> Self {
         Self::ParseIntError(err)
     }
 }
 
-impl From<reqwest::Error> for ErrorKind {
+impl From<reqwest::Error> for Kind {
     fn from(err: reqwest::Error) -> Self {
         Self::Reqwest(err)
     }
 }
 
-impl From<serde_json::Error> for ErrorKind {
+impl From<serde_json::Error> for Kind {
     fn from(err: serde_json::Error) -> Self {
         Self::SerdeJson(err, String::new())
     }
 }
 
-impl From<std::io::Error> for ErrorKind {
+impl From<std::io::Error> for Kind {
     fn from(err: std::io::Error) -> Self {
         Self::Io(err)
     }
 }
 
-impl<T> From<IntoInnerError<T>> for ErrorKind {
+impl<T> From<IntoInnerError<T>> for Kind {
     fn from(err: IntoInnerError<T>) -> Self {
         Self::BufferConversionError(err.to_string())
     }
 }
 
-impl From<FromUtf8Error> for ErrorKind {
+impl From<FromUtf8Error> for Kind {
     fn from(err: FromUtf8Error) -> Self {
         Self::InvalidUTF8Conversion(err.to_string())
     }

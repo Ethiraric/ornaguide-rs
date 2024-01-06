@@ -1,4 +1,4 @@
-use std::{io::BufWriter, ops::Deref};
+use std::io::BufWriter;
 
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
 
@@ -7,7 +7,7 @@ use crate::{
         Ability, Cause, Cure, DroppedBy, Element, Give, Immunity, Item, Place, Stats,
         UpgradeMaterial,
     },
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::html_utils::parse_tags,
     utils::html::{
         descend_iter, descend_to, get_attribute_from_node, icon_url_to_path, node_to_text,
@@ -50,9 +50,8 @@ fn parse_tier(text: &str) -> Result<u8, Error> {
         it.next(); // Skip over the star.
         Ok(it.as_str().parse()?)
     } else {
-        Err(ErrorKind::HTMLParsingError(format!(
-            "Failed to find ':' when parsing item tier: \"{}\"",
-            text
+        Err(Kind::HTMLParsingError(format!(
+            "Failed to find ':' when parsing item tier: \"{text}\""
         ))
         .into())
     }
@@ -71,9 +70,8 @@ fn parse_codex_page_meta(page: &NodeRef) -> Result<CodexMeta, Error> {
             if contents == "Exotic" {
                 ret.exotic = true;
             } else {
-                return Err(ErrorKind::HTMLParsingError(format!(
-                    "Invalid exotic node contents: {}",
-                    contents
+                return Err(Kind::HTMLParsingError(format!(
+                    "Invalid exotic node contents: {contents}"
                 ))
                 .into());
             }
@@ -100,7 +98,7 @@ fn parse_codex_page_meta(page: &NodeRef) -> Result<CodexMeta, Error> {
             } else {
                 let mut buf = BufWriter::new(Vec::new());
                 meta_node.as_node().serialize(&mut buf)?;
-                return Err(ErrorKind::HTMLParsingError(format!(
+                return Err(Kind::HTMLParsingError(format!(
                     "Unknown codex-page-meta: {}",
                     String::from_utf8(buf.into_inner()?)?
                 ))
@@ -151,13 +149,13 @@ fn parse_name_uri_icon_list(
             }) = node.data()
             {
                 let tag = name.local.to_string();
-                match tag.deref() {
+                match &*tag {
                     "h4" | "hr" => None,
                     "div" => Some(
                         descend_to(&node, "a", "div drop or ability")
                             .and_then(|node| a_to_name_uri_icon(node.as_node())),
                     ),
-                    _ => Some(Err(ErrorKind::HTMLParsingError(format!(
+                    _ => Some(Err(Kind::HTMLParsingError(format!(
                         "Unknown node tag when parsing drop or ability: {}",
                         &tag
                     ))
@@ -184,10 +182,10 @@ fn parse_name_icon_list(
             }) = node.data()
             {
                 let tag = name.local.to_string();
-                match tag.deref() {
+                match &*tag {
                     "h4" | "hr" => None,
                     "div" => Some(div_to_name_icon(&node)),
-                    _ => Some(Err(ErrorKind::HTMLParsingError(format!(
+                    _ => Some(Err(Kind::HTMLParsingError(format!(
                         "Unknown node tag when parsing drop or ability: {}",
                         &tag
                     ))
@@ -226,8 +224,9 @@ fn parse_stats(node: Option<&NodeRef>) -> Result<Option<Stats>, Error> {
                     "Gold Bonus:" => stats.gold_bonus = Some(value.parse()?),
                     "Orn Bonus:" => stats.orn_bonus = Some(value.parse()?),
                     "Luck Bonus:" => stats.luck_bonus = Some(value.parse()?),
-                    "View distance:" => stats.view_distance = Some(value.parse()?),
-                    "View Distance:" => stats.view_distance = Some(value.parse()?),
+                    "View distance:" | "View Distance:" => {
+                        stats.view_distance = Some(value.parse()?);
+                    }
                     "Follower Stats:" => stats.follower_stats = Some(value.parse()?),
                     "Summon Stats:" => stats.summon_stats = Some(value.parse()?),
                     "Follower Act:" => stats.follower_act = Some(value.parse()?),
@@ -247,9 +246,8 @@ fn parse_stats(node: Option<&NodeRef>) -> Result<Option<Stats>, Error> {
                     "Physical" => stats.element = Some(Element::Physical),
                     "Two handed" => stats.two_handed = true,
                     _ => {
-                        return Err(ErrorKind::HTMLParsingError(format!(
-                            "Failed to find ':' when parsing stat: \"{}\"",
-                            text
+                        return Err(Kind::HTMLParsingError(format!(
+                            "Failed to find ':' when parsing stat: \"{text}\""
                         ))
                         .into());
                     }
@@ -276,9 +274,8 @@ fn split_status_chance(text: &str) -> Result<(String, i8), Error> {
                 .parse()?,
         ))
     } else {
-        Err(ErrorKind::HTMLParsingError(format!(
-            "Failed to find '(' when parsing status effect: \"{}\"",
-            text
+        Err(Kind::HTMLParsingError(format!(
+            "Failed to find '(' when parsing status effect: \"{text}\""
         ))
         .into())
     }
@@ -345,21 +342,19 @@ fn parse_ability(node: Option<&NodeRef>) -> Result<Option<Ability>, Error> {
                         description: node_to_text(node),
                     }))
                 } else {
-                    Err(ErrorKind::HTMLParsingError(format!(
-                        "Failed to find 'Ability:' when parsing: \"{}\"",
-                        text
+                    Err(Kind::HTMLParsingError(format!(
+                        "Failed to find 'Ability:' when parsing: \"{text}\""
                     ))
                     .into())
                 }
             } else {
-                Err(ErrorKind::HTMLParsingError(format!(
-                    "Failed to find ':' when parsing ability name: \"{}\"",
-                    text
+                Err(Kind::HTMLParsingError(format!(
+                    "Failed to find ':' when parsing ability name: \"{text}\""
                 ))
                 .into())
             }
         } else {
-            Err(ErrorKind::HTMLParsingError(
+            Err(Kind::HTMLParsingError(
                 "Failed to find previous node when parsing ability".to_string(),
             )
             .into())
@@ -392,11 +387,11 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
     let description = if let Some(description) = description_it.next() {
         node_to_text(description.as_node())
     } else {
-        return Err(ErrorKind::HTMLParsingError("Failed to find description".to_string()).into());
+        return Err(Kind::HTMLParsingError("Failed to find description".to_string()).into());
     };
 
     // Parse stats.
-    let mut stats = parse_stats(stats_parent.as_ref().map(|n| n.as_node()))?;
+    let mut stats = parse_stats(stats_parent.as_ref().map(kuchiki::NodeDataRef::as_node))?;
     // Though `place` is in the `codex-page-meta` section, it is in the `stat` structure.
     if let Some(place) = codex_page_meta.place {
         if let Some(stats) = stats.as_mut() {
@@ -440,7 +435,12 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
         description,
         tier: codex_page_meta.tier,
         stats,
-        ability: parse_ability(description_it.next().as_ref().map(|n| n.as_node()))?,
+        ability: parse_ability(
+            description_it
+                .next()
+                .as_ref()
+                .map(kuchiki::NodeDataRef::as_node),
+        )?,
         causes,
         cures,
         gives,
@@ -464,6 +464,7 @@ pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error
 ///   - upgrade_materials
 ///   - tags
 ///   - ability
+#[allow(clippy::doc_markdown)]
 pub fn parse_html_codex_item_translation(contents: &str, slug: String) -> Result<Item, Error> {
     let html = parse_html().one(contents);
 
@@ -475,7 +476,7 @@ pub fn parse_html_codex_item_translation(contents: &str, slug: String) -> Result
     let description = if let Some(description) = description_it.next() {
         node_to_text(description.as_node())
     } else {
-        return Err(ErrorKind::HTMLParsingError("Failed to find description".to_string()).into());
+        return Err(Kind::HTMLParsingError("Failed to find description".to_string()).into());
     };
 
     Ok(Item {

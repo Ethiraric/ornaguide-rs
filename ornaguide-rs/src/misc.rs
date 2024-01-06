@@ -1,5 +1,5 @@
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::Static,
 };
 
@@ -13,6 +13,7 @@ pub(crate) fn sanitize_guide_name(name: &str) -> &str {
     }
 }
 /// Rename effects whose name is different from the codex to the guide.
+#[must_use]
 pub fn codex_effect_name_to_guide_name(name: &str) -> &str {
     match name {
         "Bloodshift" => "Bloodshift [temp]",
@@ -92,6 +93,7 @@ pub trait VecIdConversionResult {
     /// If the conversion errored because some or all elements could not be converted, return an
     /// `Ok` with the elements that could be converted.
     /// If all elements failed to be converted, return an `Ok(Vec::new())`.
+    #[must_use]
     fn ignore_failed_id_conversions(self) -> Self;
 }
 
@@ -100,31 +102,14 @@ impl VecIdConversionResult for Result<Vec<u32>, Error> {
         match self {
             Ok(x) => Ok(x),
             Err(Error {
-                kind: ErrorKind::PartialCodexStatusEffectsConversion(found, _),
-                ..
-            }) => Ok(found),
-            Err(Error {
-                kind: ErrorKind::PartialCodexSkillsConversion(found, _),
-                ..
-            }) => Ok(found),
-            Err(Error {
-                kind: ErrorKind::PartialCodexItemDroppedBysConversion(found, _),
-                ..
-            }) => Ok(found),
-            Err(Error {
-                kind: ErrorKind::PartialCodexItemUpgradeMaterialsConversion(found, _),
-                ..
-            }) => Ok(found),
-            Err(Error {
-                kind: ErrorKind::PartialCodexFollowerAbilitiesConversion(found, _),
-                ..
-            }) => Ok(found),
-            Err(Error {
-                kind: ErrorKind::PartialCodexMonsterAbilitiesConversion(found, _),
-                ..
-            }) => Ok(found),
-            Err(Error {
-                kind: ErrorKind::PartialCodexEventsConversion(found, _),
+                kind:
+                    Kind::PartialCodexStatusEffectsConversion(found, _)
+                    | Kind::PartialCodexSkillsConversion(found, _)
+                    | Kind::PartialCodexItemDroppedBysConversion(found, _)
+                    | Kind::PartialCodexItemUpgradeMaterialsConversion(found, _)
+                    | Kind::PartialCodexFollowerAbilitiesConversion(found, _)
+                    | Kind::PartialCodexMonsterAbilitiesConversion(found, _)
+                    | Kind::PartialCodexEventsConversion(found, _),
                 ..
             }) => Ok(found),
             x => x,
@@ -133,6 +118,7 @@ impl VecIdConversionResult for Result<Vec<u32>, Error> {
 }
 
 /// Truncate a string until a given char is encountered.
+#[must_use]
 pub fn truncate_str_until(s: &str, c: char) -> Option<&str> {
     s.find(c)
         .map(|pos| s.split_at(pos + 1))

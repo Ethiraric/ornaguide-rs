@@ -43,9 +43,8 @@ pub fn entity_to_li(
     write!(
         response,
         r#"<li>
-        <a href="https://orna.guide/admin/{}s/{}/{}/change"><pre>#{:04}</pre></a>: {}
-        </li>"#,
-        entity_kind, entity_kind, id, id, name
+        <a href="https://orna.guide/admin/{entity_kind}s/{entity_kind}/{id}/change"><pre>#{id:04}</pre></a>: {name}
+        </li>"#
     )
 }
 
@@ -63,7 +62,7 @@ where
     let mut iter = iter.peekable();
 
     if iter.peek().is_some() {
-        write!(response, "<h2>{}</h2>\n<p><ul>", title)?;
+        write!(response, "<h2>{title}</h2>\n<p><ul>")?;
 
         for entity in iter {
             formatter(entity, response)?;

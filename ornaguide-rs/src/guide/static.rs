@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::error::{Error, ErrorKind};
+use crate::error::{Error, Kind};
 
 /// A spawn for monsters.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -70,6 +70,7 @@ pub struct EquippedBy {
 }
 
 /// A skill type (passive, magic, AoE, ...).
+#[allow(clippy::doc_markdown)]
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct SkillType {
     /// Id of the skill type.
@@ -102,6 +103,7 @@ pub struct Static {
 impl Spawn {
     /// Return the name of the event (without `Event:` or `Past Event:` prepended).
     /// Returns an empty string if the spawn isn't an event.
+    #[must_use]
     pub fn event_name(&self) -> &str {
         if self.name.starts_with("Event:") {
             &self.name[7..]
@@ -127,12 +129,16 @@ pub trait VecElements {
     /// Find the element with the given id.
     fn find_element_by_id(&self, needle: u32) -> Option<&Element>;
     /// Find the element with the given id.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     fn get_element_by_id(&self, needle: u32) -> Result<&Element, Error>;
     /// Find the element with the given name.
     fn find_element_by_name(&self, needle: &str) -> Option<&Element>;
     /// Find the element with the given name.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     fn get_element_by_name(&self, needle: &str) -> Result<&Element, Error>;
 }
 
@@ -143,7 +149,7 @@ impl VecElements for Vec<Element> {
 
     fn get_element_by_id(&self, needle: u32) -> Result<&Element, Error> {
         self.find_element_by_id(needle)
-            .ok_or_else(|| ErrorKind::Misc(format!("No element with id {}", needle)).into())
+            .ok_or_else(|| Kind::Misc(format!("No element with id {needle}")).into())
     }
 
     fn find_element_by_name(&self, needle: &str) -> Option<&Element> {
@@ -152,6 +158,6 @@ impl VecElements for Vec<Element> {
 
     fn get_element_by_name(&self, needle: &str) -> Result<&Element, Error> {
         self.find_element_by_name(needle)
-            .ok_or_else(|| ErrorKind::Misc(format!("No element with name {}", needle)).into())
+            .ok_or_else(|| Kind::Misc(format!("No element with name {needle}")).into())
     }
 }

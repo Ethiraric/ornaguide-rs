@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     data::{CodexGenericMonster, OrnaData},
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::{AdminGuide, OrnaAdminGuide},
     monsters::admin::AdminMonster,
 };
@@ -27,7 +27,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 .find_match_for_codex_generic_monster(*monster)
                 .is_err()
         })
-        .sorted_by_key(|monster| monster.name())
+        .sorted_by_key(ornaguide_rs::data::CodexGenericMonster::name)
         .collect_vec();
 
     let not_on_codex = data
@@ -44,32 +44,32 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
     if !missing_on_guide.is_empty() {
         println!("{} monsters missing on guide:", missing_on_guide.len());
-        for monster in missing_on_guide.iter() {
+        for monster in &missing_on_guide {
             match monster {
                 CodexGenericMonster::Monster(monster) => {
                     println!(
                         "\t- [Monster] {:20} (https://playorna.com/codex/monsters/{})",
                         monster.name, monster.slug
-                    )
+                    );
                 }
                 CodexGenericMonster::Boss(boss) => {
                     println!(
                         "\t- [ Boss  ] {:20} (https://playorna.com/codex/bosses/{})",
                         boss.name, boss.slug
-                    )
+                    );
                 }
                 CodexGenericMonster::Raid(raid) => {
                     println!(
                         "\t- [ Raid  ] {:20} (https://playorna.com/codex/raids/{})",
                         raid.name, raid.slug
-                    )
+                    );
                 }
             }
         }
     }
     if !not_on_codex.is_empty() {
         println!("{} monsters not on codex:", not_on_codex.len());
-        for monster in not_on_codex.iter() {
+        for monster in &not_on_codex {
             let kind = if monster.is_regular_monster() {
                 "Monster"
             } else if monster.is_boss(&data.guide.static_.spawns) {
@@ -86,8 +86,8 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
     // Create the new monsters on the guide, if asked to.
     if fix && !missing_on_guide.is_empty() {
-        for monster in missing_on_guide.iter() {
-            retry_once!(guide.admin_add_monster(monster.try_to_admin_monster(&data.guide)?))?;
+        for monster in &missing_on_guide {
+            retry_once!(guide.admin_add_monster(monster.to_admin_monster(&data.guide)))?;
         }
 
         // Retrieve the new list of monsters, and keep only those we didn't know of before.
@@ -116,7 +116,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
             new_monsters.len(),
             missing_on_guide.len()
         );
-        for monster in new_monsters.iter() {
+        for monster in &new_monsters {
             println!(
                 "\t\x1B[0;32m- {:20} (https://orna.guide/monsters?show={})\x1B[0m",
                 monster.name, monster.id
@@ -130,6 +130,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
     Ok(())
 }
 
+#[allow(clippy::items_after_statements, clippy::too_many_lines)]
 fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     for codex_monster in data.codex.iter_all_monsters() {
         if let Ok(admin_monster) = data
@@ -169,7 +170,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
             let codex_events = codex_monster
                 .events()
                 .iter()
-                .map(|s| s.as_str())
+                .map(std::string::String::as_str)
                 // TODO(ethiraric, 14/07/2022): Remove this once codex is updated.
                 .chain({
                     if admin_monster.name.contains("Kerberos") {
@@ -231,7 +232,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                                 .find(|family| family.name == **name)
                                 .map(|family| family.id)
                                 .ok_or_else(|| {
-                                    ErrorKind::Misc(format!(
+                                    Kind::Misc(format!(
                                         "Failed to find family {} for monster {} (#{})",
                                         name, admin_monster.name, admin_monster.id
                                     ))
@@ -279,8 +280,9 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                             .spawns
                             .iter()
                             .find(|spawn| spawn.id == *spawn_id)
-                            .map(|spawn| spawn.name != "Kingdom Raid" && spawn.name != "World Raid")
-                            .unwrap_or(false)
+                            .map_or(false, |spawn| {
+                                spawn.name != "Kingdom Raid" && spawn.name != "World Raid"
+                            })
                     });
                     for tag in tags_strs.iter() {
                         if let Some(spawn) = data
@@ -291,7 +293,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                             .find(|spawn| spawn.name == *tag)
                         {
                             if !monster.spawns.contains(&spawn.id) {
-                                monster.spawns.push(spawn.id)
+                                monster.spawns.push(spawn.id);
                             }
                         }
                     }
@@ -303,7 +305,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
             let admin_ability_ids = admin_monster
                 .skills
                 .iter()
-                .cloned()
+                .copied()
                 // TODO(ethiraric, 11/07/2022): Remove filter when the codex fixes Bind and Bite.
                 .filter(|id| {
                     !data
@@ -322,7 +324,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 // TODO(ethiraric, 27/07/2022): Add diagnostics.
                 .unwrap_or_else(|err| match err {
                     Error {
-                        kind: ErrorKind::PartialCodexMonsterAbilitiesConversion(ok, _),
+                        kind: Kind::PartialCodexMonsterAbilitiesConversion(ok, _),
                         ..
                     } => ok,
                     _ => panic!("try_to_guide_ids returned a weird error"),
@@ -332,7 +334,9 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 .collect::<Vec<_>>();
             // TODO(ethiraric, 17/10/22): Remove once we cycle all events. Skill slugs were
             // kebab-caseified.
-            if !expected_ids.is_empty() {
+            if expected_ids.is_empty() {
+                // println!("Monster {} has no ability on codex.", codex_monster.name());
+            } else {
                 check.skill_id_vec(
                     "abilities",
                     &admin_ability_ids,
@@ -348,8 +352,6 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                     },
                     data,
                 )?;
-            } else {
-                // println!("Monster {} has no ability on codex.", codex_monster.name());
             }
         }
     }

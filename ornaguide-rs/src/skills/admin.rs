@@ -1,13 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::html_form_parser::ParsedForm,
     misc::sanitize_guide_name,
     parse_stat, parse_stat_opt, parse_stat_vec,
 };
 
 /// A skill fetched from the admin panel.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug, Serialize, Deserialize, Derivative)]
 #[derivative(PartialEq)]
 pub struct AdminSkill {
@@ -64,6 +65,7 @@ pub struct AdminSkill {
 impl AdminSkill {
     /// Return the slug of the skill.
     /// If the skill has no `codex_uri`, return an empty string.
+    #[must_use]
     pub fn slug(&self) -> &str {
         if self.codex_uri.is_empty() {
             ""
@@ -111,7 +113,7 @@ impl TryFrom<ParsedForm> for AdminSkill {
             ..Default::default()
         };
 
-        for (key, value) in form.fields.into_iter() {
+        for (key, value) in form.fields {
             // Helper macros to parse and add meaningful error messages.
             macro_rules! stat {
                 ($field:ident) => {
@@ -151,7 +153,7 @@ impl TryFrom<ParsedForm> for AdminSkill {
                 "cures" => push!(cures),
                 "gives" => push!(gives),
                 key => {
-                    return Err(ErrorKind::ExtraField(key.to_string(), value).into());
+                    return Err(Kind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
@@ -195,13 +197,13 @@ impl From<AdminSkill> for ParsedForm {
         push("modifier_min", item.modifier_min.to_string());
         push("modifier_max", item.modifier_max.to_string());
         push("extra", item.extra);
-        for x in item.causes.iter() {
+        for x in &item.causes {
             push("causes", x.to_string());
         }
-        for x in item.cures.iter() {
+        for x in &item.cures {
             push("cures", x.to_string());
         }
-        for x in item.gives.iter() {
+        for x in &item.gives {
             push("gives", x.to_string());
         }
 
@@ -210,6 +212,7 @@ impl From<AdminSkill> for ParsedForm {
 }
 
 /// Collection of skills from the guide's admin view.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct AdminSkills {
     /// Skills from the guide's admin view.
@@ -218,36 +221,38 @@ pub struct AdminSkills {
 
 impl<'a> AdminSkills {
     /// Find the admin skill corresponding to the given id.
+    #[must_use]
     pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminSkill> {
         self.skills.iter().find(|skill| skill.id == needle)
     }
 
     /// Find the admin skill corresponding to the given id.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminSkill, Error> {
-        self.find_by_id(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for admin skill with id #{}", needle)).into()
-        })
+        self.find_by_id(needle)
+            .ok_or_else(|| Kind::Misc(format!("No match for admin skill with id #{needle}")).into())
     }
 
     /// Find the admin skill corresponding to the given codex URI.
+    #[must_use]
     pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminSkill> {
         self.skills.iter().find(|skill| skill.codex_uri == needle)
     }
 
     /// Find the admin skill corresponding to the given codex URI.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!(
-                "No match for admin skill with codex_uri {}",
-                needle
-            ))
-            .into()
+            Kind::Misc(format!("No match for admin skill with codex_uri {needle}")).into()
         })
     }
 
     /// Find the admin skill associated with the given slug
+    #[must_use]
     pub fn find_by_slug(&'a self, needle: &str) -> Option<&'a AdminSkill> {
         self.skills.iter().find(|skill| {
             !skill.codex_uri.is_empty()
@@ -256,18 +261,20 @@ impl<'a> AdminSkills {
     }
 
     /// Find the admin skill associated with the given slug.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
         self.find_by_slug(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!(
-                "No match for admin skill with codex slug '{}'",
-                needle
+            Kind::Misc(format!(
+                "No match for admin skill with codex slug '{needle}'"
             ))
             .into()
         })
     }
 
     /// Find the admin offhand skill with the given name.
+    #[must_use]
     pub fn find_offhand_from_name(&'a self, needle: &str) -> Option<&'a AdminSkill> {
         self.skills
             .iter()
@@ -275,12 +282,13 @@ impl<'a> AdminSkills {
     }
 
     /// Find the admin offhand skill with the given name.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_offhand_from_name(&'a self, needle: &str) -> Result<&'a AdminSkill, Error> {
         self.find_offhand_from_name(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!(
-                "No match for offhand admin skill with name '{}'",
-                needle
+            Kind::Misc(format!(
+                "No match for offhand admin skill with name '{needle}'"
             ))
             .into()
         })

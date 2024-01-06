@@ -1,9 +1,10 @@
+#![allow(clippy::module_name_repetitions)]
 use serde::{Deserialize, Serialize};
 
 use crate::{
     codex::{CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill},
     data::OrnaData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     items::admin::AdminItem,
     misc::codex_effect_name_to_guide_name,
     monsters::admin::AdminMonster,
@@ -126,7 +127,7 @@ impl LocaleStrings {
     /// Add some codex items to the locale database.
     /// If an item is already present in `self`, it is updated with the strings from `items`.
     pub fn add_items(&mut self, items: Vec<CodexItem>) {
-        for item in items.into_iter() {
+        for item in items {
             self.items.insert(
                 item.slug.to_string(),
                 ItemTranslation {
@@ -140,18 +141,21 @@ impl LocaleStrings {
     /// Add some codex raids to the locale database.
     /// If a raid is already present in `self`, it is updated with the strings from `raids`.
     /// Events associated to the raid are added to the events database.
+    ///
+    /// # Errors
+    /// Errors if a raid cannot be found in the regular database.
     pub fn add_raids_and_events(
         &mut self,
         raids: Vec<CodexRaid>,
         data: &OrnaData,
     ) -> Result<(), Error> {
-        for raid in raids.into_iter() {
+        for raid in raids {
             let raid_data = data
                 .codex
                 .raids
                 .find_by_uri(&format!("/codex/raids/{}/", raid.slug))
                 .ok_or_else(|| {
-                    ErrorKind::Misc(format!(
+                    Kind::Misc(format!(
                         "Failed to find raid {} (found in locale {})",
                         raid.slug, self.locale
                     ))
@@ -177,18 +181,21 @@ impl LocaleStrings {
     /// Add some codex monsters to the locale database.
     /// If a monsters is already present in `self`, it is updated with the strings from `monsters`.
     /// Events, families and rarities associated to the monster are added to the database.
+    ///
+    /// # Errors
+    /// Errors if a monster cannot be found in the regular database.
     pub fn add_monsters_events_families_and_rarities(
         &mut self,
         monsters: Vec<CodexMonster>,
         data: &OrnaData,
     ) -> Result<(), Error> {
-        for monster in monsters.into_iter() {
+        for monster in monsters {
             let monster_data = data
                 .codex
                 .monsters
                 .find_by_uri(&format!("/codex/monsters/{}/", monster.slug))
                 .ok_or_else(|| {
-                    ErrorKind::Misc(format!(
+                    Kind::Misc(format!(
                         "Failed to find monster {} (found in locale {})",
                         monster.slug, self.locale
                     ))
@@ -215,18 +222,21 @@ impl LocaleStrings {
     /// Add some codex bosses to the locale database.
     /// If a boss is already present in `self`, it is updated with the strings from `bosses`.
     /// Events, families and rarities associated to the boss are added to the database.
+    ///
+    /// # Errors
+    /// Errors if a boss cannot be found in the regular database.
     pub fn add_bosses_events_families_and_rarities(
         &mut self,
         bosses: Vec<CodexBoss>,
         data: &OrnaData,
     ) -> Result<(), Error> {
-        for boss in bosses.into_iter() {
+        for boss in bosses {
             let boss_data = data
                 .codex
                 .bosses
                 .find_by_uri(&format!("/codex/bosses/{}/", boss.slug))
                 .ok_or_else(|| {
-                    ErrorKind::Misc(format!(
+                    Kind::Misc(format!(
                         "Failed to find boss {} (found in locale {})",
                         boss.slug, self.locale
                     ))
@@ -251,18 +261,21 @@ impl LocaleStrings {
     /// Add some codex skills to the locale database.
     /// If a skill is already present in `self`, it is updated with the strings from `skills`.
     /// Statuses associated to the skill are added to the database.
+    ///
+    /// # Errors
+    /// Errors if a skill cannot be found in the regular database.
     pub fn add_skills_and_statuses(
         &mut self,
         skills: Vec<CodexSkill>,
         data: &OrnaData,
     ) -> Result<(), Error> {
-        for skill in skills.into_iter() {
+        for skill in skills {
             let skill_data = data
                 .codex
                 .skills
                 .find_by_uri(&format!("/codex/spells/{}/", skill.slug))
                 .ok_or_else(|| {
-                    ErrorKind::Misc(format!(
+                    Kind::Misc(format!(
                         "Failed to find skill {} (found in locale {})",
                         skill.slug, self.locale
                     ))
@@ -295,18 +308,21 @@ impl LocaleStrings {
     /// Add some codex followers to the locale database.
     /// If a follower is already present in `self`, it is updated with the strings from `followers`.
     /// Events associated to the follower are added to the database.
+    ///
+    /// # Errors
+    /// Errors if a follower cannot be found in the regular database.
     pub fn add_followers_and_events(
         &mut self,
         followers: Vec<CodexFollower>,
         data: &OrnaData,
     ) -> Result<(), Error> {
-        for follower in followers.into_iter() {
+        for follower in followers {
             let follower_data = data
                 .codex
                 .followers
                 .find_by_uri(&format!("/codex/followers/{}/", follower.slug))
                 .ok_or_else(|| {
-                    ErrorKind::Misc(format!(
+                    Kind::Misc(format!(
                         "Failed to find follower {} (found in locale {})",
                         follower.slug, self.locale
                     ))
@@ -330,82 +346,98 @@ impl LocaleStrings {
     }
 
     /// Get the given item from the locale database.
+    #[must_use]
     pub fn item(&self, name: &str) -> Option<&ItemTranslation> {
         self.items.get(name)
     }
 
     /// Get the name of the given item from the locale database.
+    #[must_use]
     pub fn item_name(&self, name: &str) -> Option<&str> {
         self.item(name).map(|item| item.name.as_str())
     }
 
     /// Get the description of the given item from the locale database.
+    #[must_use]
     pub fn item_description(&self, item_name: &str) -> Option<&str> {
         self.item(item_name).map(|item| item.description.as_str())
     }
 
     /// Get the given raid from the locale database.
+    #[must_use]
     pub fn raid(&self, name: &str) -> Option<&RaidTranslation> {
         self.raids.get(name)
     }
 
     /// Get the name of the given raid from the locale database.
+    #[must_use]
     pub fn raid_name(&self, name: &str) -> Option<&str> {
         self.raid(name).map(|raid| raid.name.as_str())
     }
 
     /// Get the description of the given raid from the locale database.
+    #[must_use]
     pub fn raid_description(&self, raid_name: &str) -> Option<&str> {
         self.raid(raid_name).map(|raid| raid.description.as_str())
     }
 
     /// Get the given monster from the locale database.
+    #[must_use]
     pub fn monster(&self, name: &str) -> Option<&MonsterTranslation> {
         self.monsters.get(name)
     }
 
     /// Get the name of the given monster from the locale database.
+    #[must_use]
     pub fn monster_name(&self, name: &str) -> Option<&str> {
         self.monster(name).map(|monster| monster.name.as_str())
     }
 
     /// Get the given boss from the locale database.
+    #[must_use]
     pub fn boss(&self, name: &str) -> Option<&BossTranslation> {
         self.bosses.get(name)
     }
 
     /// Get the name of the given boss from the locale database.
+    #[must_use]
     pub fn boss_name(&self, name: &str) -> Option<&str> {
         self.boss(name).map(|boss| boss.name.as_str())
     }
 
     /// Get the given skill from the locale database.
+    #[must_use]
     pub fn skill(&self, name: &str) -> Option<&SkillTranslation> {
         self.skills.get(name)
     }
 
     /// Get the name of the given skill from the locale database.
+    #[must_use]
     pub fn skill_name(&self, name: &str) -> Option<&str> {
         self.skill(name).map(|skill| skill.name.as_str())
     }
 
     /// Get the description of the given skill from the locale database.
+    #[must_use]
     pub fn skill_description(&self, skill_name: &str) -> Option<&str> {
         self.skill(skill_name)
             .map(|skill| skill.description.as_str())
     }
 
     /// Get the given follower from the locale database.
+    #[must_use]
     pub fn follower(&self, name: &str) -> Option<&FollowerTranslation> {
         self.followers.get(name)
     }
 
     /// Get the name of the given follower from the locale database.
+    #[must_use]
     pub fn follower_name(&self, name: &str) -> Option<&str> {
         self.follower(name).map(|follower| follower.name.as_str())
     }
 
     /// Get the description of the given follower from the locale database.
+    #[must_use]
     pub fn follower_description(&self, follower_name: &str) -> Option<&str> {
         self.follower(follower_name)
             .map(|follower| follower.description.as_str())
@@ -437,17 +469,19 @@ impl LocaleStrings {
     }
 
     /// Save translations to a json file.
+    ///
+    /// # Errors
+    /// Errors on I/O error or parsing error.
     pub fn load_from(file: &str) -> Result<Self, Error> {
         serde_json::from_reader(BufReader::new(File::open(file)?)).map_err(|err| {
-            ErrorKind::Misc(format!(
-                "Failed to parse json from lang db {}: {}",
-                file, err
-            ))
-            .into()
+            Kind::Misc(format!("Failed to parse json from lang db {file}: {err}")).into()
         })
     }
 
     /// Save translations to a json file.
+    ///
+    /// # Errors
+    /// Errors on I/O error.
     pub fn save_to(&self, file: &str) -> Result<(), Error> {
         Ok(serde_json::to_writer_pretty(
             BufWriter::new(File::create(file)?),
@@ -456,6 +490,9 @@ impl LocaleStrings {
     }
 
     /// Save translations as json to a writer.
+    ///
+    /// # Errors
+    /// Errors on I/O error.
     pub fn save_to_writer<W: Write>(&self, out: W) -> Result<(), Error> {
         Ok(serde_json::to_writer_pretty(out, &self)?)
     }
@@ -481,6 +518,7 @@ impl LocaleStrings {
 
 impl LocaleDB {
     /// Get the given item from the locale database.
+    #[must_use]
     pub fn item(&self, locale: &str, name: &str) -> Option<&ItemTranslation> {
         self.locales
             .get(locale)
@@ -488,6 +526,7 @@ impl LocaleDB {
     }
 
     /// Get the name of the given item from the locale database.
+    #[must_use]
     pub fn item_name(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -495,6 +534,7 @@ impl LocaleDB {
     }
 
     /// Get the description of the given item from the locale database.
+    #[must_use]
     pub fn item_description(&self, locale: &str, item_name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -502,6 +542,7 @@ impl LocaleDB {
     }
 
     /// Get the given raid from the locale database.
+    #[must_use]
     pub fn raid(&self, locale: &str, name: &str) -> Option<&RaidTranslation> {
         self.locales
             .get(locale)
@@ -509,6 +550,7 @@ impl LocaleDB {
     }
 
     /// Get the name of the given raid from the locale database.
+    #[must_use]
     pub fn raid_name(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -516,6 +558,7 @@ impl LocaleDB {
     }
 
     /// Get the description of the given raid from the locale database.
+    #[must_use]
     pub fn raid_description(&self, locale: &str, raid_name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -523,6 +566,7 @@ impl LocaleDB {
     }
 
     /// Get the given monster from the locale database.
+    #[must_use]
     pub fn monster(&self, locale: &str, name: &str) -> Option<&MonsterTranslation> {
         self.locales
             .get(locale)
@@ -530,6 +574,7 @@ impl LocaleDB {
     }
 
     /// Get the name of the given monster from the locale database.
+    #[must_use]
     pub fn monster_name(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -537,6 +582,7 @@ impl LocaleDB {
     }
 
     /// Get the given boss from the locale database.
+    #[must_use]
     pub fn boss(&self, locale: &str, name: &str) -> Option<&BossTranslation> {
         self.locales
             .get(locale)
@@ -544,6 +590,7 @@ impl LocaleDB {
     }
 
     /// Get the name of the given boss from the locale database.
+    #[must_use]
     pub fn boss_name(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -551,6 +598,7 @@ impl LocaleDB {
     }
 
     /// Get the given skill from the locale database.
+    #[must_use]
     pub fn skill(&self, locale: &str, name: &str) -> Option<&SkillTranslation> {
         self.locales
             .get(locale)
@@ -558,6 +606,7 @@ impl LocaleDB {
     }
 
     /// Get the name of the given skill from the locale database.
+    #[must_use]
     pub fn skill_name(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -565,6 +614,7 @@ impl LocaleDB {
     }
 
     /// Get the description of the given skill from the locale database.
+    #[must_use]
     pub fn skill_description(&self, locale: &str, skill_name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -572,6 +622,7 @@ impl LocaleDB {
     }
 
     /// Get the given follower from the locale database.
+    #[must_use]
     pub fn follower(&self, locale: &str, name: &str) -> Option<&FollowerTranslation> {
         self.locales
             .get(locale)
@@ -579,6 +630,7 @@ impl LocaleDB {
     }
 
     /// Get the name of the given follower from the locale database.
+    #[must_use]
     pub fn follower_name(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -586,6 +638,7 @@ impl LocaleDB {
     }
 
     /// Get the description of the given follower from the locale database.
+    #[must_use]
     pub fn follower_description(&self, locale: &str, follower_name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -593,6 +646,7 @@ impl LocaleDB {
     }
 
     /// Get the status effect from the locale database.
+    #[must_use]
     pub fn status(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -600,6 +654,7 @@ impl LocaleDB {
     }
 
     /// Get the event from the locale database.
+    #[must_use]
     pub fn event(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -607,6 +662,7 @@ impl LocaleDB {
     }
 
     /// Get the spawn from the locale database.
+    #[must_use]
     pub fn spawns(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -614,6 +670,7 @@ impl LocaleDB {
     }
 
     /// Get the family from the locale database.
+    #[must_use]
     pub fn family(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -621,6 +678,7 @@ impl LocaleDB {
     }
 
     /// Get the rarity from the locale database.
+    #[must_use]
     pub fn rarity(&self, locale: &str, name: &str) -> Option<&str> {
         self.locales
             .get(locale)
@@ -629,12 +687,15 @@ impl LocaleDB {
 
     /// Write the contents of the locale database with the given helper functions.
     /// `Writer` is called for each file there is to write.
+    ///
+    /// # Errors
+    /// Errors on I/O error.
     pub fn save_to_generic<Writer>(&self, directory: &str, mut writer: Writer) -> Result<(), Error>
     where
         Writer: FnMut(&str, &dyn Fn(&mut dyn Write) -> Result<(), Error>) -> Result<(), Error>,
     {
-        for (lang, db) in self.locales.iter() {
-            writer(&format!("{}/{}.json", directory, lang), &|out| {
+        for (lang, db) in &self.locales {
+            writer(&format!("{directory}/{lang}.json"), &|out| {
                 db.save_to_writer(out)
             })?;
         }
@@ -643,45 +704,47 @@ impl LocaleDB {
     }
 
     /// Save translations to a set of json files in the given directory.
+    ///
+    /// # Errors
+    /// Errors on I/O error.
     pub fn save_to(&self, directory: &str) -> Result<(), Error> {
-        for (lang, db) in self.locales.iter() {
-            db.save_to(&format!("{}/{}.json", directory, lang))?;
+        for (lang, db) in &self.locales {
+            db.save_to(&format!("{directory}/{lang}.json"))?;
         }
 
         Ok(())
     }
 
     /// Load translations from a set of json files in the given directory.
+    ///
+    /// # Errors
+    /// Errors if an I/O error occurs
     pub fn load_from(directory: &str) -> Result<Self, Error> {
         let mut ret = Self::default();
         // List files from folder ending with `.json`.
         for entry in std::fs::read_dir(directory)?
-            .filter_map(|entry| entry.ok())
+            .filter_map(std::result::Result::ok)
             .filter(|entry| {
-                entry
-                    .file_name()
-                    .to_str()
-                    .map(|name| name.ends_with(".json"))
-                    .unwrap_or(false)
+                entry.file_name().to_str().map_or(false, |name| {
+                    std::path::Path::new(name)
+                        .extension()
+                        .map_or(false, |ext| ext.eq_ignore_ascii_case("json"))
+                })
             })
         {
             let filename = entry.file_name();
-            let name = filename.to_str().unwrap();
+            let Some(name) = filename.to_str() else { continue; };
             if let Some(lang) = name.strip_suffix(".json") {
-                match LocaleStrings::load_from(&format!("{}/{}", directory, name)) {
+                match LocaleStrings::load_from(&format!("{directory}/{name}")) {
                     Ok(db) => {
                         ret.locales.insert(lang.to_string(), db);
                     }
-                    Err(err) => println!(
-                        "Failed to parse json from lang db {}/{}: {}",
-                        directory, name, err
-                    ),
+                    Err(err) => {
+                        println!("Failed to parse json from lang db {directory}/{name}: {err}");
+                    }
                 }
             } else {
-                println!(
-                    "Failed to get lang name from lang db {}/{}",
-                    directory, name
-                );
+                println!("Failed to get lang name from lang db {directory}/{name}");
             }
         }
 

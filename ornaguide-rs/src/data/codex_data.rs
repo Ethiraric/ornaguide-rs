@@ -53,12 +53,12 @@ impl<'a> CodexData {
                     .find(|raid| raid.slug == slug)
                     .map(CodexGenericMonster::Raid),
                 _ => {
-                    println!("Unknown kind for generic monster {}", uri);
+                    println!("Unknown kind for generic monster {uri}");
                     None
                 }
             }
         } else {
-            println!("Failed to find generic monster for {}", uri);
+            println!("Failed to find generic monster for {uri}");
             None
         }
     }

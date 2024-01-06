@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use ornaguide_rs::{
     data::OrnaData,
-    error::{Error as OError, ErrorKind},
+    error::{Error as OError, Kind},
 };
 
 use lazy_static::lazy_static;
@@ -18,6 +18,7 @@ lazy_static! {
 /// Run a callable with a reference to the `OrnaData`.
 /// The data given is localized to the given locale. If a locale is specified but not found, an
 /// error is returned.
+#[allow(clippy::module_name_repetitions)]
 pub fn with_data<F, T>(f: F) -> Result<T, Error>
 where
     F: FnOnce(&'static OrnaData) -> Result<T, Error>,
@@ -33,6 +34,7 @@ lazy_static! {
 
 /// Run a callable with a reference to an `OrnaData` instance, translated to the given locale, if
 /// any. The default locale is `en`.
+#[allow(clippy::module_name_repetitions)]
 pub fn with_locale_data<F, T>(f: F, lang: &Option<String>) -> Result<T, Error>
 where
     F: FnOnce(&'static OrnaData) -> Result<T, Error>,
@@ -47,7 +49,7 @@ where
             if let Some(data) = locale_data.get(lang) {
                 f(data)
             } else {
-                Err(ErrorKind::Misc(format!("Failed to find locale {}", lang)).into_err())
+                Err(Kind::Misc(format!("Failed to find locale {lang}")).into_err())
                     .to_internal_server_error()
             }
         }

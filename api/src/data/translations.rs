@@ -35,7 +35,6 @@ pub(crate) fn generate_locale_data() -> Result<HashMap<String, OrnaData>, Error>
             })
             .to_internal_server_error()?
             .locales
-            .into_iter()
         {
             let mut localized: OrnaData = data.clone();
 
@@ -87,19 +86,19 @@ pub(crate) fn generate_locale_data() -> Result<HashMap<String, OrnaData>, Error>
             });
 
             // Translate status effects.
-            for status in localized.guide.static_.status_effects.iter_mut() {
+            for status in &mut localized.guide.static_.status_effects {
                 if let Some(localized_effect) = db.status(&status.name) {
                     status.name = localized_effect.to_string();
                 }
             }
             // Translate spawns.
-            for spawn in localized.guide.static_.spawns.iter_mut() {
+            for spawn in &mut localized.guide.static_.spawns {
                 if let Some(localized_spawn) = db.spawn(&spawn.name) {
                     spawn.name = localized_spawn.to_string();
                 }
             }
             // Translate monster families.
-            for family in localized.guide.static_.monster_families.iter_mut() {
+            for family in &mut localized.guide.static_.monster_families {
                 if let Some(localized_family) = db.spawn(&family.name) {
                     family.name = localized_family.to_string();
                 }

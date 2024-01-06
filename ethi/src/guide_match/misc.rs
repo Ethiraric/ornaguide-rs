@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     codex::{FollowerAbility, ItemDroppedBy, ItemUpgradeMaterial, MonsterAbility},
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::Static,
     items::admin::AdminItems,
     monsters::admin::AdminMonsters,
@@ -11,6 +11,11 @@ use ornaguide_rs::{
 /// A trait to extend `Vec<ItemDroppedBy>` specifically.
 pub trait ItemDroppedBys {
     /// Convert `self` to a `Vec<u32>`, with `u32`s being the guide monster ids.
+    ///
+    /// # Errors
+    /// Errors if the array could not be converted in its entirety. Should the array be partially
+    /// converted, partially converted content can be found in the error variant.
+    ///
     /// Returns `ErrorKind::PartialCodexItemDroppedBysConversion` if all fields have not been
     /// successfully converted.
     fn try_to_guide_ids(&self, monsters: &AdminMonsters) -> Result<Vec<u32>, Error>;
@@ -31,7 +36,7 @@ impl ItemDroppedBys for Vec<ItemDroppedBy> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(ErrorKind::PartialCodexItemDroppedBysConversion(successes, failures).into())
+            Err(Kind::PartialCodexItemDroppedBysConversion(successes, failures).into())
         }
     }
 }
@@ -41,6 +46,10 @@ pub trait ItemUpgradeMaterials {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide item ids.
     /// Returns `ErrorKind::PartialCodexItemDroppedBysConversion` if all fields have not been
     /// successfully converted.
+    ///
+    /// # Errors
+    /// Errors if the array could not be converted in its entirety. Should the array be partially
+    /// converted, partially converted content can be found in the error variant.
     fn try_to_guide_ids(&self, items: &AdminItems) -> Result<Vec<u32>, Error>;
 }
 
@@ -59,7 +68,7 @@ impl ItemUpgradeMaterials for Vec<ItemUpgradeMaterial> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(ErrorKind::PartialCodexItemUpgradeMaterialsConversion(successes, failures).into())
+            Err(Kind::PartialCodexItemUpgradeMaterialsConversion(successes, failures).into())
         }
     }
 }
@@ -67,6 +76,11 @@ impl ItemUpgradeMaterials for Vec<ItemUpgradeMaterial> {
 /// A trait to extend `Vec`s of codex abilities.
 pub trait CodexAbilities {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide skill ids.
+    ///
+    /// # Errors
+    /// Errors if the array could not be converted in its entirety. Should the array be partially
+    /// converted, partially converted content can be found in the error variant.
+    ///
     /// Returns `ErrorKind::PartialCodexFollowerAbilitiesConversion` or
     /// `ErrorKind::PartialCodexMonsterAbilitiesConversion` if all fields have not been successfully
     /// converted.
@@ -88,7 +102,7 @@ impl CodexAbilities for Vec<FollowerAbility> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(ErrorKind::PartialCodexFollowerAbilitiesConversion(successes, failures).into())
+            Err(Kind::PartialCodexFollowerAbilitiesConversion(successes, failures).into())
         }
     }
 }
@@ -108,7 +122,7 @@ impl CodexAbilities for Vec<MonsterAbility> {
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(ErrorKind::PartialCodexMonsterAbilitiesConversion(successes, failures).into())
+            Err(Kind::PartialCodexMonsterAbilitiesConversion(successes, failures).into())
         }
     }
 }
@@ -116,6 +130,10 @@ impl CodexAbilities for Vec<MonsterAbility> {
 /// A trait to extend `Vec`s of event names.
 pub trait EventsNames {
     /// Try to convert `self` to a `Vec<u32>`, with `u32`s being the guide event ids.
+    ///
+    /// # Errors
+    /// Errors if the array could not be converted in its entirety. Should the array be partially
+    /// converted, partially converted content can be found in the error variant.
     fn try_to_guide_ids(&self, static_: &Static) -> Result<Vec<u32>, Error>;
 }
 
@@ -128,14 +146,14 @@ impl EventsNames for Vec<&str> {
                     .iter_events()
                     .find(|spawn| spawn.event_name() == *event)
                     .map(|spawn| spawn.id)
-                    .ok_or_else(|| event.to_string())
+                    .ok_or_else(|| (*event).to_string())
             })
             .partition_result();
 
         if failures.is_empty() {
             Ok(successes)
         } else {
-            Err(ErrorKind::PartialCodexEventsConversion(successes, failures).into())
+            Err(Kind::PartialCodexEventsConversion(successes, failures).into())
         }
     }
 }

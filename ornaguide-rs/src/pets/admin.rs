@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::html_form_parser::ParsedForm,
     parse_stat, parse_stat_vec,
 };
@@ -14,6 +14,7 @@ pub enum CostType {
 }
 
 /// A pet fetched from the admin panel.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug, Serialize, Deserialize, Derivative)]
 #[derivative(PartialEq)]
 #[serde(default)]
@@ -64,6 +65,7 @@ pub struct AdminPet {
 impl AdminPet {
     /// Return the slug of the pet.
     /// If the pet has no `codex_uri`, return an empty string.
+    #[must_use]
     pub fn slug(&self) -> &str {
         if self.codex_uri.is_empty() {
             ""
@@ -108,7 +110,7 @@ impl TryFrom<ParsedForm> for AdminPet {
             ..Default::default()
         };
 
-        for (key, value) in form.fields.into_iter() {
+        for (key, value) in form.fields {
             // Helper macros to parse and add meaningful error messages.
             macro_rules! stat {
                 ($field:ident) => {
@@ -146,7 +148,7 @@ impl TryFrom<ParsedForm> for AdminPet {
                 "limited_details" => pet.limited_details = value,
                 "skills" => push!(skills),
                 key => {
-                    return Err(ErrorKind::ExtraField(key.to_string(), value).into());
+                    return Err(Kind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
@@ -169,7 +171,7 @@ impl From<AdminPet> for ParsedForm {
         push("tier", pet.tier.to_string());
         push("image_name", pet.image_name);
         push("description", pet.description);
-        for x in pet.event.iter() {
+        for x in &pet.event {
             push("event", x.to_string());
         }
         push("attack", pet.attack.to_string());
@@ -191,7 +193,7 @@ impl From<AdminPet> for ParsedForm {
             push("limited", "on".to_string());
         }
         push("limited_details", pet.limited_details.to_string());
-        for x in pet.skills.iter() {
+        for x in &pet.skills {
             push("skills", x.to_string());
         }
 
@@ -200,6 +202,7 @@ impl From<AdminPet> for ParsedForm {
 }
 
 /// Collection of pets from the guide's admin view.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct AdminPets {
     /// Pets from the guide's admin view.
@@ -208,6 +211,7 @@ pub struct AdminPets {
 
 impl<'a> AdminPets {
     /// Find the admin pet associated with the given slug.
+    #[must_use]
     pub fn find_by_slug(&'a self, needle: &str) -> Option<&'a AdminPet> {
         self.pets.iter().find(|pet| {
             !pet.codex_uri.is_empty()
@@ -216,27 +220,27 @@ impl<'a> AdminPets {
     }
 
     /// Find the admin pet associated with the given codex follower.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_slug(&'a self, needle: &str) -> Result<&'a AdminPet, Error> {
         self.find_by_slug(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!(
-                "No match for admin pet with codex slug '{}'",
-                needle
-            ))
-            .into()
+            Kind::Misc(format!("No match for admin pet with codex slug '{needle}'")).into()
         })
     }
 
     /// Find the admin pet associated with the given id.
+    #[must_use]
     pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminPet> {
         self.pets.iter().find(|pet| pet.id == needle)
     }
 
     /// Find the admin pet associated with the given id.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminPet, Error> {
-        self.find_by_id(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for admin pet with id #{}", needle)).into()
-        })
+        self.find_by_id(needle)
+            .ok_or_else(|| Kind::Misc(format!("No match for admin pet with id #{needle}")).into())
     }
 }

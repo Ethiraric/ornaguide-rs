@@ -1,10 +1,8 @@
-use std::ops::Deref;
-
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeDataRef, NodeRef};
 
 use crate::{
     codex::{CodexFollower, FollowerAbility},
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     misc::truncate_str_until,
     utils::html::{
         descend_iter, descend_to, get_attribute_from_node, list_attributes_form_node, node_to_text,
@@ -32,9 +30,8 @@ fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
         it.next(); // Skip over the star.
         Ok(it.as_str().parse()?)
     } else {
-        Err(ErrorKind::HTMLParsingError(format!(
-            "Failed to find ':' when parsing skill tier: \"{}\"",
-            text
+        Err(Kind::HTMLParsingError(format!(
+            "Failed to find ':' when parsing skill tier: \"{text}\""
         ))
         .into())
     }
@@ -52,7 +49,7 @@ fn parse_description_nodes<T>(
     let description = if let Some(description_node) = iter.next() {
         node_to_text(description_node.as_node())
     } else {
-        return Err(ErrorKind::HTMLParsingError(
+        return Err(Kind::HTMLParsingError(
             "No description node when parsing follower".to_string(),
         )
         .into());
@@ -83,13 +80,12 @@ fn parse_description_nodes<T>(
         if let Some(rarity_str) = truncate_str_until(&node_to_text(rarity_node.as_node()), ':') {
             rarity = rarity_str.trim().to_string();
         } else {
-            return Err(ErrorKind::HTMLParsingError(
-                "Failed to find ':' in rarity node".to_string(),
-            )
-            .into());
+            return Err(
+                Kind::HTMLParsingError("Failed to find ':' in rarity node".to_string()).into(),
+            );
         }
     } else {
-        return Err(ErrorKind::HTMLParsingError("Failed to find rarity node".to_string()).into());
+        return Err(Kind::HTMLParsingError("Failed to find rarity node".to_string()).into());
     }
 
     Ok(DescriptionNode {
@@ -123,13 +119,13 @@ fn parse_name_uri_icon_list(
             }) = node.data()
             {
                 let tag = name.local.to_string();
-                match tag.deref() {
+                match &*tag {
                     "h4" | "hr" => None,
                     "div" => Some(
                         descend_to(&node, "a", "div drop or ability")
                             .and_then(|node| a_to_name_uri_icon(node.as_node())),
                     ),
-                    _ => Some(Err(ErrorKind::HTMLParsingError(format!(
+                    _ => Some(Err(Kind::HTMLParsingError(format!(
                         "Unknown node tag when parsing drop or ability: {}",
                         &tag
                     ))

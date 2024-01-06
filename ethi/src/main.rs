@@ -1,3 +1,10 @@
+#![warn(clippy::pedantic)]
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_lossless,
+    clippy::cast_sign_loss
+)]
+
 use std::{path::PathBuf, time::Instant};
 
 use crate::backups::Backup;
@@ -8,7 +15,7 @@ use ornaguide_rs::{codex::translation::LocaleDB, data::OrnaData};
 #[allow(unused_imports)]
 use ornaguide_rs::{
     codex::{Codex, CodexItem},
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::{AdminGuide, OrnaAdminGuide},
 };
 
@@ -29,7 +36,7 @@ mod translation;
 fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
     std::fs::read_dir("data/merges")?
         // Filter out directory entries we can't read.
-        .filter_map(|entry| entry.ok())
+        .filter_map(std::result::Result::ok)
         // Filter out directories.
         .filter(|entry| entry.file_type().map(|t| t.is_file()).unwrap_or(false))
         // Keep only merge files.
@@ -50,7 +57,7 @@ fn get_merge_archive() -> Result<(PathBuf, Backup), Error> {
                 None
             }
         })
-        .ok_or_else(|| ErrorKind::Misc("Failed to find a merge file".to_string()).into())
+        .ok_or_else(|| Kind::Misc("Failed to find a merge file".to_string()).into())
 }
 
 #[allow(unused_variables, unused_mut)]
@@ -87,12 +94,12 @@ fn main2() -> Result<(), Error> {
 
     match cli::Cli::parse().command {
         Some(command) => match command {
-            cli::Command::Backups(cmd) => backups::cli(cmd, &guide, data()?),
-            cli::Command::Codex(cmd) => codex::cli(cmd, &guide, data()?),
+            cli::Command::Backups(cmd) => backups::cli(&cmd, &guide, data()?),
+            cli::Command::Codex(cmd) => codex::cli(&cmd, &guide, &data()?),
             cli::Command::Json(cmd) => output::cli(cmd, &guide, data),
-            cli::Command::Match(cmd) => guide_match::cli(cmd, &guide, data()?),
+            cli::Command::Match(cmd) => guide_match::cli(&cmd, &guide, data()?),
             cli::Command::Merge(cmd) => merge::cli(cmd, &guide, data()?),
-            cli::Command::Translation(cmd) => translation::cli(cmd, &guide, data()?, localedb()?),
+            cli::Command::Translation(cmd) => translation::cli(cmd, &guide, &data()?, localedb()?),
         },
         None => ethi(&guide, data()?),
     }
@@ -116,7 +123,7 @@ fn main() {
     let begin = Instant::now();
     match main2() {
         Ok(_) => println!("OK"),
-        Err(err) => eprintln!("Error: {}", err),
+        Err(err) => eprintln!("Error: {err}"),
     }
     let end = Instant::now();
     let elapsed = end.duration_since(begin);

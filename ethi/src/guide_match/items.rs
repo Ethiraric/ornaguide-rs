@@ -2,7 +2,7 @@ use itertools::Itertools;
 use ornaguide_rs::{
     codex::{CodexElement, ItemStatusEffects},
     data::OrnaData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::{AdminGuide, OrnaAdminGuide, VecElements},
 };
 
@@ -51,7 +51,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
     if !missing_on_guide.is_empty() {
         println!("{} items missing on guide:", missing_on_guide.len());
-        for item in missing_on_guide.iter() {
+        for item in &missing_on_guide {
             println!(
                 "\t- {:20} (https://playorna.com/codex/items/{})",
                 item.name, item.slug
@@ -60,7 +60,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
     }
     if !not_on_codex.is_empty() {
         println!("{} items not on codex:", not_on_codex.len());
-        for item in not_on_codex.iter() {
+        for item in &not_on_codex {
             println!(
                 "\t- {:20} (https://orna.guide/items?show={})",
                 item.name, item.id
@@ -70,8 +70,8 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
     // Create the new items on the guide, if asked to.
     if fix && !missing_on_guide.is_empty() {
-        for item in missing_on_guide.iter() {
-            retry_once!(guide.admin_add_item(item.try_to_admin_item(&data.guide)?))?;
+        for item in &missing_on_guide {
+            retry_once!(guide.admin_add_item(item.to_admin_item(&data.guide)))?;
         }
 
         // Retrieve the new list of items, and keep only those we didn't know of before.
@@ -100,7 +100,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
             new_items.len(),
             missing_on_guide.len()
         );
-        for item in new_items.iter() {
+        for item in &new_items {
             println!(
                 "\t\x1B[0;32m- {:20} (https://orna.guide/items?show={})\x1B[0m",
                 item.name, item.id
@@ -130,6 +130,7 @@ pub fn get_iter_element_statuses(element: Option<&CodexElement>) -> std::vec::In
 }
 
 /// Check for mismatches in the stats.
+#[allow(clippy::too_many_lines)]
 fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     let guide_weapon_id = data
         .guide
@@ -357,7 +358,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 .stats
                 .as_ref()
                 .and_then(|stats| stats.element.as_ref())
-                .map(|element| element.to_string());
+                .map(std::string::ToString::to_string);
             check.debug(
                 "element",
                 guide_element,
@@ -387,7 +388,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 .ability
                 .as_ref()
                 .map(|ability| ability.name.as_str())
-                .map(|name| format!("{} (Off-hand)", name));
+                .map(|name| format!("{name} (Off-hand)"));
             check.debug(
                 "ability",
                 &guide_ability,
@@ -408,14 +409,14 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
 
             // Causes
-            let guide_causes = guide_item.causes.iter().cloned().sorted().collect_vec();
+            let guide_causes = guide_item.causes.iter().copied().sorted().collect_vec();
             let codex_causes = codex_item
                 .causes
                 .try_to_guide_ids(&data.guide.static_)
                 // TODO(ethiraric, 27/07/2022): Add diagnostics.
                 .unwrap_or_else(|err| match err {
                     Error {
-                        kind: ErrorKind::PartialCodexStatusEffectsConversion(x, _),
+                        kind: Kind::PartialCodexStatusEffectsConversion(x, _),
                         ..
                     } => x,
                     _ => panic!("try_to_guide_ids returned a weird error"),
@@ -473,7 +474,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
 
             // Cures
-            let guide_cures = guide_item.cures.iter().cloned().sorted().collect_vec();
+            let guide_cures = guide_item.cures.iter().copied().sorted().collect_vec();
             let codex_cures = codex_item
                 .cures
                 .try_to_guide_ids(&data.guide.static_)?
@@ -493,7 +494,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
 
             // Gives
-            let guide_gives = guide_item.gives.iter().cloned().sorted().collect_vec();
+            let guide_gives = guide_item.gives.iter().copied().sorted().collect_vec();
             let codex_gives = codex_item
                 .gives
                 .try_to_guide_ids(&data.guide.static_)?
@@ -513,7 +514,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
             )?;
 
             // Immunities
-            let guide_immunities = guide_item.prevents.iter().cloned().sorted().collect_vec();
+            let guide_immunities = guide_item.prevents.iter().copied().sorted().collect_vec();
             let codex_immunities = codex_item
                 .immunities
                 .try_to_guide_ids(&data.guide.static_)?
@@ -562,7 +563,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                 // TODO(ethiraric, 27/07/2022): Add diagnostics.
                 .unwrap_or_else(|err| match err {
                     Error {
-                        kind: ErrorKind::PartialCodexItemDroppedBysConversion(ok, _),
+                        kind: Kind::PartialCodexItemDroppedBysConversion(ok, _),
                         ..
                     } => ok,
                     _ => panic!("try_to_guide_ids returned a weird error"),
@@ -617,7 +618,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
 
             // Upgrade Materials
             let guide_upgrade_materials =
-                guide_item.materials.iter().cloned().sorted().collect_vec();
+                guide_item.materials.iter().copied().sorted().collect_vec();
             let codex_upgrade_materials = codex_item
                 .upgrade_materials
                 .try_to_guide_ids(&data.guide.items)?

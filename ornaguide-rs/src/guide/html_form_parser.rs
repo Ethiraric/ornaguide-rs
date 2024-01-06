@@ -1,8 +1,9 @@
-use std::ops::Deref;
-
 use kuchiki::{parse_html, traits::TendrilSink, Attributes, ElementData, NodeData, NodeRef};
 
-use crate::{error::{Error,ErrorKind}, utils::html::descend_to};
+use crate::{
+    error::{Error, Kind},
+    utils::html::descend_to,
+};
 
 /// Parsed form, csrf token included.
 #[derive(Debug, Default)]
@@ -45,7 +46,7 @@ fn find_input_field_value(attrs: &Attributes) -> Option<String> {
                 None
             }
         }
-        _ => panic!("Unknown input type: {}", type_),
+        _ => panic!("Unknown input type: {type_}"),
     }
 }
 
@@ -84,18 +85,17 @@ fn add_field_value(
     field_name: &str,
     fields: &mut Vec<(String, String)>,
 ) -> Result<(), Error> {
-    let html_id = format!("#id_{}", field_name);
+    let html_id = format!("#id_{field_name}");
     let field_node = form
         .select(&html_id)
         .map_err(|()| {
-            ErrorKind::HTMLParsingError(format!(
-                "Failed to select html id {} in guide form parsing",
-                html_id
+            Kind::HTMLParsingError(format!(
+                "Failed to select html id {html_id} in guide form parsing"
             ))
         })?
         .next()
         .ok_or_else(|| {
-            ErrorKind::HTMLParsingError(format!("No node {} in guide form parsing", html_id))
+            Kind::HTMLParsingError(format!("No node {html_id} in guide form parsing"))
         })?;
     let field_node = field_node.as_node();
     if let NodeData::Element(ElementData {
@@ -105,10 +105,10 @@ fn add_field_value(
     }) = field_node.data()
     {
         let tag = name.local.to_string();
-        match tag.deref() {
+        match &*tag {
             "input" => {
                 if let Some(value) = find_input_field_value(&attributes.borrow()) {
-                    fields.push((field_name.to_string(), value))
+                    fields.push((field_name.to_string(), value));
                 }
             }
             "select" => {
@@ -123,10 +123,10 @@ fn add_field_value(
                     find_textarea_field_value(field_node),
                 ));
             }
-            _ => panic!("Unknown node tag for field {}: {}", field_name, tag.deref()),
+            _ => panic!("Unknown node tag for field {}: {}", field_name, &*tag),
         };
     } else {
-        panic!("Failed to find node with id {}", html_id)
+        panic!("Failed to find node with id {html_id}")
     }
     Ok(())
 }

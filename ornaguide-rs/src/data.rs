@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::Static,
     monsters::admin::AdminMonster,
 };
@@ -13,12 +13,15 @@ mod codex_data;
 mod codex_generic_monster;
 mod guide_data;
 
+#[allow(clippy::module_name_repetitions)]
 pub use codex_data::CodexData;
 pub use codex_generic_monster::CodexGenericMonster;
+#[allow(clippy::module_name_repetitions)]
 pub use guide_data::GuideData;
 use serde::Serialize;
 
 /// Aggregate for both the codex and the guide data.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Default, PartialEq)]
 pub struct OrnaData {
     /// Data from the codex.
@@ -29,87 +32,81 @@ pub struct OrnaData {
 
 impl OrnaData {
     /// Load data from a set of json files located in the given directory.
+    ///
+    /// # Errors
+    /// Errors on I/O error, parsing error or if a file is missing.
     pub fn load_from(directory: &str) -> Result<Self, Error> {
         Ok(OrnaData {
             codex: CodexData {
                 items: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/codex_items.json",
-                    directory
+                    "{directory}/codex_items.json"
                 ))?))?,
                 raids: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/codex_raids.json",
-                    directory
+                    "{directory}/codex_raids.json"
                 ))?))?,
                 monsters: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/codex_monsters.json",
-                    directory
+                    "{directory}/codex_monsters.json"
                 ))?))?,
                 bosses: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/codex_bosses.json",
-                    directory
+                    "{directory}/codex_bosses.json"
                 ))?))?,
                 skills: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/codex_skills.json",
-                    directory
+                    "{directory}/codex_skills.json"
                 ))?))?,
                 followers: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/codex_followers.json",
-                    directory
+                    "{directory}/codex_followers.json"
                 ))?))?,
             },
             guide: GuideData {
                 items: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/guide_items.json",
-                    directory
+                    "{directory}/guide_items.json"
                 ))?))?,
                 monsters: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/guide_monsters.json",
-                    directory
+                    "{directory}/guide_monsters.json"
                 ))?))?,
                 skills: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/guide_skills.json",
-                    directory
+                    "{directory}/guide_skills.json"
                 ))?))?,
                 pets: serde_json::from_reader(BufReader::new(File::open(format!(
-                    "{}/guide_pets.json",
-                    directory
+                    "{directory}/guide_pets.json"
                 ))?))?,
                 static_: Static {
                     spawns: serde_json::from_reader(BufReader::new(File::open(format!(
-                        "{}/guide_spawns.json",
-                        directory
+                        "{directory}/guide_spawns.json"
                     ))?))?,
                     elements: serde_json::from_reader(BufReader::new(File::open(format!(
-                        "{}/guide_elements.json",
-                        directory
+                        "{directory}/guide_elements.json"
                     ))?))?,
                     item_types: serde_json::from_reader(BufReader::new(File::open(format!(
-                        "{}/guide_item_types.json",
-                        directory
+                        "{directory}/guide_item_types.json"
                     ))?))?,
                     equipped_bys: serde_json::from_reader(BufReader::new(File::open(format!(
-                        "{}/guide_equipped_bys.json",
-                        directory
+                        "{directory}/guide_equipped_bys.json"
                     ))?))?,
                     status_effects: serde_json::from_reader(BufReader::new(File::open(format!(
-                        "{}/guide_status_effects.json",
-                        directory
+                        "{directory}/guide_status_effects.json"
                     ))?))?,
                     item_categories: serde_json::from_reader(BufReader::new(File::open(
-                        format!("{}/guide_item_categories.json", directory),
+                        format!("{directory}/guide_item_categories.json"),
                     )?))?,
                     monster_families: serde_json::from_reader(BufReader::new(File::open(
-                        format!("{}/guide_monster_families.json", directory),
+                        format!("{directory}/guide_monster_families.json"),
                     )?))?,
                     skill_types: serde_json::from_reader(BufReader::new(File::open(format!(
-                        "{}/guide_skill_types.json",
-                        directory
+                        "{directory}/guide_skill_types.json"
                     ))?))?,
                 },
             },
         })
     }
 
+    /// Save data to a set of json files in the given writer.
+    ///
+    /// The generic functio is given the directory in which to save, the name of the file, and a
+    /// function to call back with a writer.
+    ///
+    /// # Errors
+    /// Errors on I/O error.
     pub fn save_to_generic<Writer>(&self, dir: &str, mut writer: Writer) -> Result<(), Error>
     where
         Writer: FnMut(&str, &dyn Fn(&mut dyn Write) -> Result<(), Error>) -> Result<(), Error>,
@@ -191,6 +188,9 @@ impl OrnaData {
     }
 
     /// Save data to a set of json files in the given directory.
+    ///
+    /// # Errors
+    /// Errors on I/O error.
     pub fn save_to(&self, directory: &str) -> Result<(), Error> {
         self.save_to_generic(directory, |path, callback| -> Result<(), Error> {
             let mut file = File::create(path)?;
@@ -199,12 +199,15 @@ impl OrnaData {
     }
 
     /// Find which monster/boss/raid in the codex corresponds to the given admin monster.
+    ///
+    /// # Errors
+    /// Errors if the monster cannot be found.
     pub fn find_generic_codex_monster_from_admin_monster<'a>(
         &'a self,
         admin_monster: &AdminMonster,
     ) -> Result<CodexGenericMonster<'a>, Error> {
         if admin_monster.codex_uri.is_empty() {
-            return Err(ErrorKind::Misc(format!(
+            return Err(Kind::Misc(format!(
                 "Empty codex_uri for admin monster '{}'",
                 admin_monster.name
             ))
@@ -221,7 +224,7 @@ impl OrnaData {
                 .find(|codex_monster| codex_monster.slug == slug)
                 .map(CodexGenericMonster::Monster)
                 .ok_or_else(|| {
-                    ErrorKind::Misc(format!(
+                    Kind::Misc(format!(
                         "No codex monster match for admin monster {} (#{})",
                         admin_monster.name, admin_monster.id
                     ))
@@ -237,7 +240,7 @@ impl OrnaData {
                 .find(|codex_boss| codex_boss.slug == slug)
                 .map(CodexGenericMonster::Boss)
                 .ok_or_else(|| {
-                    ErrorKind::Misc(format!(
+                    Kind::Misc(format!(
                         "No codex monster match for admin boss {} (#{})",
                         admin_monster.name, admin_monster.id
                     ))
@@ -253,7 +256,7 @@ impl OrnaData {
                 .find(|codex_raid| codex_raid.slug == slug)
                 .map(CodexGenericMonster::Raid)
                 .ok_or_else(|| {
-                    ErrorKind::Misc(format!(
+                    Kind::Misc(format!(
                         "No codex monster match for admin raid {} (#{})",
                         admin_monster.name, admin_monster.id
                     ))
@@ -264,14 +267,17 @@ impl OrnaData {
 }
 
 /// Save a structure into a file in a directory.
+///
+/// # Errors
+/// Errors on I/O error.
 fn save<Writer, T>(directory: &str, filename: &str, mut writer: Writer, t: T) -> Result<(), Error>
 where
     Writer: FnMut(&str, &dyn Fn(&mut dyn Write) -> Result<(), Error>) -> Result<(), Error>,
     T: Serialize,
 {
-    writer(&format!("{}/{}", directory, filename), &|out| {
+    writer(&format!("{directory}/{filename}"), &|out| {
         serde_json::to_writer_pretty(out, &t)
-            .map_err(ErrorKind::from)
+            .map_err(Kind::from)
             .map_err(Error::from)
     })
 }

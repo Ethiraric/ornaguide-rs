@@ -1,7 +1,4 @@
-use ornaguide_rs::{
-    data::OrnaData,
-    error::{ErrorKind},
-};
+use ornaguide_rs::{data::OrnaData, error::Kind};
 
 use crate::error::{Error, ToErrorable};
 
@@ -17,11 +14,11 @@ where
             *json = serde_json::Value::String(s.to_string());
             Ok(())
         } else {
-            Err(ErrorKind::Misc(format!("Failed to find {} #{}", kind, id)).into_err())
+            Err(Kind::Misc(format!("Failed to find {kind} #{id}")).into_err())
                 .to_internal_server_error()
         }
     } else {
-        Err(ErrorKind::Misc(format!("Json node {} is not of json type u64", kind)).into_err())
+        Err(Kind::Misc(format!("Json node {kind} is not of json type u64")).into_err())
             .to_internal_server_error()
     }
 }
@@ -41,28 +38,25 @@ where
                     if let Some(s) = id_to_str(id) {
                         Ok(serde_json::Value::String(s.to_string()))
                     } else {
-                        Err(ErrorKind::Misc(format!("Failed to find {} #{}", kind, id)).into_err())
+                        Err(Kind::Misc(format!("Failed to find {kind} #{id}")).into_err())
                             .to_internal_server_error()
                     }
                 } else {
-                    Err(
-                        ErrorKind::Misc(format!("Json node {} is not of json type u64", kind))
-                            .into_err(),
-                    )
-                    .to_internal_server_error()
+                    Err(Kind::Misc(format!("Json node {kind} is not of json type u64")).into_err())
+                        .to_internal_server_error()
                 }
             })
             .collect::<Result<Vec<_>, Error>>()?;
         *json = serde_json::Value::Array(names);
         Ok(())
     } else {
-        Err(ErrorKind::Misc(format!("Array of {} is not of json type array", kind)).into_err())
+        Err(Kind::Misc(format!("Array of {kind} is not of json type array")).into_err())
             .to_internal_server_error()
     }
 }
 
 /// Replace the skill type ID in `json` with the skill type name.
-pub fn deref_skill_type(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn skill_type(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_id(
         json,
         |id| {
@@ -78,7 +72,7 @@ pub fn deref_skill_type(json: &mut serde_json::Value, data: &OrnaData) -> Result
 }
 
 /// Replace the item type ID in `json` with the item type name.
-pub fn deref_item_type(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn item_type(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_id(
         json,
         |id| {
@@ -94,7 +88,7 @@ pub fn deref_item_type(json: &mut serde_json::Value, data: &OrnaData) -> Result<
 }
 
 /// Replace the item category ID in `json` with the item category name.
-pub fn deref_item_category(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn item_category(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_id(
         json,
         |id| {
@@ -110,7 +104,7 @@ pub fn deref_item_category(json: &mut serde_json::Value, data: &OrnaData) -> Res
 }
 
 /// Replace the element ID in `json` with the element name.
-pub fn deref_element(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn element(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_id(
         json,
         |id| {
@@ -126,7 +120,7 @@ pub fn deref_element(json: &mut serde_json::Value, data: &OrnaData) -> Result<()
 }
 
 /// Replace the skill ID in `json` with the skill name.
-pub fn deref_skill(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn skill(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_id(
         json,
         |id| {
@@ -142,7 +136,7 @@ pub fn deref_skill(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), 
 }
 
 /// Replace the monster familiy ID in `json` with the monster familiy name.
-pub fn deref_monster_family(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn monster_family(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_id(
         json,
         |id| {
@@ -158,7 +152,7 @@ pub fn deref_monster_family(json: &mut serde_json::Value, data: &OrnaData) -> Re
 }
 
 /// Replace the status effects IDs in `json` with the status effects' names.
-pub fn deref_status_effects(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn status_effects(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_ids(
         json,
         |id| {
@@ -174,7 +168,7 @@ pub fn deref_status_effects(json: &mut serde_json::Value, data: &OrnaData) -> Re
 }
 
 /// Replace the monster IDs in `json` with the monsters' names.
-pub fn deref_monsters(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn monsters(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_ids(
         json,
         |id| {
@@ -189,8 +183,8 @@ pub fn deref_monsters(json: &mut serde_json::Value, data: &OrnaData) -> Result<(
     )
 }
 
-/// Replace the equipped_by IDs in `json` with the equipped_bys' names.
-pub fn deref_equipped_bys(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+/// Replace the `equipped_by` IDs in `json` with the `equipped_by`s' names.
+pub fn equipped_bys(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_ids(
         json,
         |id| {
@@ -206,7 +200,7 @@ pub fn deref_equipped_bys(json: &mut serde_json::Value, data: &OrnaData) -> Resu
 }
 
 /// Replace the item IDs in `json` with the items' names.
-pub fn deref_items(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn items(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_ids(
         json,
         |id| {
@@ -222,7 +216,7 @@ pub fn deref_items(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), 
 }
 
 /// Replace the skill IDs in `json` with the skills' names.
-pub fn deref_skills(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn skills(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_ids(
         json,
         |id| {
@@ -238,7 +232,7 @@ pub fn deref_skills(json: &mut serde_json::Value, data: &OrnaData) -> Result<(),
 }
 
 /// Replace the spawn IDs in `json` with the spawns' names.
-pub fn deref_spawns(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn spawns(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_ids(
         json,
         |id| {
@@ -254,7 +248,7 @@ pub fn deref_spawns(json: &mut serde_json::Value, data: &OrnaData) -> Result<(),
 }
 
 /// Replace the element IDs in `json` with the elements' names.
-pub fn deref_elements(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
+pub fn elements(json: &mut serde_json::Value, data: &OrnaData) -> Result<(), Error> {
     deref_ids(
         json,
         |id| {

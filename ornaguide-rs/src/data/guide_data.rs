@@ -1,7 +1,7 @@
 use crate::{
     codex::{CodexBoss, CodexMonster, CodexRaid},
     data::CodexGenericMonster,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::Static,
     items::admin::AdminItems,
     monsters::admin::{AdminMonster, AdminMonsters},
@@ -26,7 +26,9 @@ pub struct GuideData {
 
 impl GuideData {
     /// Find the admin monster associated with the given codex monster.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn find_match_for_codex_generic_monster<'a>(
         &'a self,
         needle: CodexGenericMonster,
@@ -41,7 +43,9 @@ impl GuideData {
     }
 
     /// Find the admin monster associated with the given codex monster.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn find_match_for_codex_regular_monster<'a>(
         &'a self,
         needle: &CodexMonster,
@@ -56,7 +60,7 @@ impl GuideData {
                         == needle.slug
             })
             .ok_or_else(|| {
-                ErrorKind::Misc(format!(
+                Kind::Misc(format!(
                     "No match for codex regular monster '{}'",
                     needle.slug
                 ))
@@ -65,7 +69,9 @@ impl GuideData {
     }
 
     /// Find the admin monster associated with the given codex boss.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn find_match_for_codex_boss<'a>(
         &'a self,
         needle: &CodexBoss,
@@ -79,13 +85,13 @@ impl GuideData {
                     && admin.codex_uri["/codex/bosses/".len()..].trim_end_matches('/')
                         == needle.slug
             })
-            .ok_or_else(|| {
-                ErrorKind::Misc(format!("No match for codex boss '{}'", needle.slug)).into()
-            })
+            .ok_or_else(|| Kind::Misc(format!("No match for codex boss '{}'", needle.slug)).into())
     }
 
     /// Find the admin monster associated with the given codex raid.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn find_match_for_codex_raid<'a>(
         &'a self,
         needle: &CodexRaid,
@@ -98,8 +104,6 @@ impl GuideData {
                     && admin.is_raid(&self.static_.spawns)
                     && admin.codex_uri["/codex/raids/".len()..].trim_end_matches('/') == needle.slug
             })
-            .ok_or_else(|| {
-                ErrorKind::Misc(format!("No match for codex raid '{}'", needle.slug)).into()
-            })
+            .ok_or_else(|| Kind::Misc(format!("No match for codex raid '{}'", needle.slug)).into())
     }
 }

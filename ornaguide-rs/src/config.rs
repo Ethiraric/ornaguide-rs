@@ -2,7 +2,7 @@ use std::sync::RwLock;
 
 use dotenv::dotenv;
 
-use crate::error::{Error,ErrorKind};
+use crate::error::{Error, Kind};
 
 use lazy_static::lazy_static;
 
@@ -25,7 +25,7 @@ lazy_static! {
 
 /// Load the config from the environment.
 fn load() -> Result<Config, Error> {
-    let _ = dotenv().map_err(|err| ErrorKind::Misc(format!("Failed to load .env: {}", err)))?;
+    let _ = dotenv().map_err(|err| Kind::Misc(format!("Failed to load .env: {err}")))?;
     let config = Config {
         debug_urls: dotenv::var("ORNAGUIDERS_DEBUG_URLS")
             .unwrap_or_else(|_| "false".to_string())
@@ -36,20 +36,25 @@ fn load() -> Result<Config, Error> {
 }
 
 /// Run a callable with a reference to the `Config` instance.
+///
+/// # Errors
+/// Errors if the config has not been successfully loaded.
+#[allow(clippy::module_name_repetitions)]
 pub fn with_config<F, T>(f: F) -> Result<T, Error>
 where
     F: FnOnce(&Config) -> Result<T, Error>,
 {
     let config = CONFIG
         .as_ref()
-        .map_err(|err| ErrorKind::Misc(format!("{}", err)))?;
-    let config = config
-        .read()
-        .map_err(|err| ErrorKind::Misc(format!("{}", err)))?;
+        .map_err(|err| Kind::Misc(format!("{err}")))?;
+    let config = config.read().map_err(|err| Kind::Misc(format!("{err}")))?;
     f(&config)
 }
 
 /// Return the `debug_urls` config value.
+///
+/// # Errors
+/// Errors if the config has not been successfully loaded.
 pub fn debug_urls() -> Result<bool, Error> {
     with_config(|config| Ok(config.debug_urls))
 }

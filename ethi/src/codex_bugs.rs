@@ -1,7 +1,7 @@
 use ornaguide_rs::{
     codex::{Codex, CodexBoss, CodexMonster, CodexRaid, Tag},
     data::OrnaData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::OrnaAdminGuide,
 };
 
@@ -42,7 +42,7 @@ fn get_generic_monster(
         "raids" => guide
             .codex_fetch_raid(slug)
             .map(CodexGenericMonsterOwned::Raid),
-        _ => panic!("Unknown kind: {} ({})", kind, slug),
+        _ => panic!("Unknown kind: {kind} ({slug})"),
     }
 }
 
@@ -54,11 +54,9 @@ fn weapons_missing_elemental_status_effects(
     let demeter = match guide.codex_fetch_item("arisen-demeters-staff") {
         Ok(x) => x,
         Err(msg) => {
-            return Err(ErrorKind::Misc(format!(
-                "Failed to retrieve arisen-demeters-staff: {}",
-                msg
-            ))
-            .into());
+            return Err(
+                Kind::Misc(format!("Failed to retrieve arisen-demeters-staff: {msg}")).into(),
+            );
         }
     };
 
@@ -74,7 +72,7 @@ fn weapons_missing_elemental_status_effects(
             let item = match guide.codex_fetch_item(&item.slug) {
                 Ok(x) => x,
                 Err(Error {
-                    kind: ErrorKind::ResponseError(_, _, 404, _),
+                    kind: Kind::ResponseError(_, _, 404, _),
                     ..
                 }) => continue,
                 Err(x) => return Err(x),
@@ -100,7 +98,7 @@ fn monsters_missing_bind_bite(data: &OrnaData, guide: &OrnaAdminGuide) -> Result
     let gull = match guide.codex_fetch_monster("gull") {
         Ok(x) => x,
         Err(msg) => {
-            return Err(ErrorKind::Misc(format!("Failed to retrieve gull: {}", msg)).into());
+            return Err(Kind::Misc(format!("Failed to retrieve gull: {msg}")).into());
         }
     };
 
@@ -111,14 +109,14 @@ fn monsters_missing_bind_bite(data: &OrnaData, guide: &OrnaAdminGuide) -> Result
             .skills
             .iter()
             .find(|skill| skill.name == "Bind")
-            .ok_or_else(|| ErrorKind::Misc("Failed to find Bind".to_string()))?;
+            .ok_or_else(|| Kind::Misc("Failed to find Bind".to_string()))?;
         let bite = data
             .guide
             .skills
             .skills
             .iter()
             .find(|skill| skill.name == "Bite")
-            .ok_or_else(|| ErrorKind::Misc("Failed to find Bite".to_string()))?;
+            .ok_or_else(|| Kind::Misc("Failed to find Bite".to_string()))?;
         for monster in data.guide.monsters.monsters.iter().filter(|monster| {
             monster
                 .skills
@@ -149,10 +147,12 @@ fn monsters_missing_bind_bite(data: &OrnaData, guide: &OrnaAdminGuide) -> Result
 /// Check for Yggdrasils' raid tags.
 fn trees_missing_raid_tags(_: &OrnaData, guide: &OrnaAdminGuide) -> Result<Status, Error> {
     let ygg = guide.codex_fetch_raid("yggdrasil")?;
-    let aygg = guide.codex_fetch_raid("arisen-yggdrasil")?;
+    let arisen_ygg = guide.codex_fetch_raid("arisen-yggdrasil")?;
 
     if ygg.tags.contains(&ornaguide_rs::codex::Tag::WorldRaid)
-        && aygg.tags.contains(&ornaguide_rs::codex::Tag::WorldRaid)
+        && arisen_ygg
+            .tags
+            .contains(&ornaguide_rs::codex::Tag::WorldRaid)
     {
         Ok(Status::Fixed)
     } else {
@@ -227,7 +227,7 @@ fn giants_titans_tag(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<Status, 
         let tags = match get_generic_monster(guide, &monster.codex_uri)? {
             CodexGenericMonsterOwned::Raid(x) => x.tags,
             _ => {
-                return Err(ErrorKind::Misc(format!(
+                return Err(Kind::Misc(format!(
                     "Monster {} should be a raid (URI: {})",
                     monster.name, monster.codex_uri
                 ))
@@ -255,70 +255,68 @@ fn twin_attack_missing_offhand_suffix(
 }
 
 /// Check whether a specific bug we found on the codex has been fixed and display the results.
-fn do_check<F>(data: &OrnaData, guide: &OrnaAdminGuide, name: &str, checker: F) -> Result<(), Error>
+fn do_check<F>(data: &OrnaData, guide: &OrnaAdminGuide, name: &str, checker: F)
 where
     F: FnOnce(&OrnaData, &OrnaAdminGuide) -> Result<Status, Error>,
 {
     match checker(data, guide) {
         Ok(Status::NotFixed) => println!("[\x1B[0;31m{:^15}\x1B[0m] {}", "Not fixed", name),
         Ok(Status::PartiallyFixed) => {
-            println!("[\x1B[0;33m{:^15}\x1B[0m] {}", "Partially fixed", name)
+            println!("[\x1B[0;33m{:^15}\x1B[0m] {}", "Partially fixed", name);
         }
         Ok(Status::Fixed) => println!("[\x1B[0;32m{:^15}\x1B[0m] {}", "Fixed", name),
         Err(x) => println!("[\x1B[41;30m{:^15}\x1B[0m] {}: {}", "Errored", name, x),
     }
-    Ok(())
 }
 
 /// Check whether the bugs we found on the codex have been fixed.
-pub fn check(data: &OrnaData, guide: &OrnaAdminGuide) -> Result<(), Error> {
+pub fn check(data: &OrnaData, guide: &OrnaAdminGuide) {
     do_check(
         data,
         guide,
         "Weapons missing elemental status effects",
         weapons_missing_elemental_status_effects,
-    )?;
+    );
     do_check(
         data,
         guide,
         "Monsters missing skills Bind or Bite",
         monsters_missing_bind_bite,
-    )?;
+    );
     do_check(
         data,
         guide,
         "Yggdrasils missing their raid tags",
         trees_missing_raid_tags,
-    )?;
+    );
     do_check(
         data,
         guide,
         "Swansong missing its Blind cause",
         swansong_missing_blind,
-    )?;
+    );
     do_check(
         data,
         guide,
         "Kerberos missing Rise of Kerberos event",
         kerberos_missing_event,
-    )?;
+    );
     do_check(
         data,
         guide,
         "Phoenix missing Rise of the Phoenix event",
         phoenix_missing_event,
-    )?;
+    );
     do_check(
         data,
         guide,
         "Giants missing their World Raid tag",
         giants_titans_tag,
-    )?;
+    );
     do_check(
         data,
         guide,
         "Twin attack missing its \" (Off-hand)\" suffix",
         twin_attack_missing_offhand_suffix,
-    )?;
-    Ok(())
+    );
 }
