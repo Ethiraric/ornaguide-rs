@@ -221,11 +221,14 @@ fn parse_html_page(
     if !skip_abilities_drops_tags {
         for h4 in descend_iter(page.as_node(), "h4", "page")? {
             match h4.text_contents().trim() {
-                "Abilities:" | "Skills:" => {
+                "Skills:" => {
                     abilities = parse_abilities(h4.as_node())?;
                 }
                 "Drops:" => {
                     drops = parse_drops(h4.as_node())?;
+                }
+                "Abilities:" => {
+                    // TODO(ethiraric, 06/01/2024): Parse passive abilities.
                 }
                 x => panic!("{}", x),
             }
