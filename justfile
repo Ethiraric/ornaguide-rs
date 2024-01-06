@@ -51,5 +51,5 @@ new_merge_now: json_refresh quick_merge_now
 
 cron: new_jsons backup_htmls backup_current_entries
 
-t:
-  echo current_entries-${NOW}
+www:
+  cd ~/Projects/www && screen -S www cargo run --release
