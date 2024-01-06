@@ -1,11 +1,13 @@
 use std::{
-    backtrace::Backtrace,
     fmt::{Debug, Display},
     io::IntoInnerError,
     num::{ParseFloatError, ParseIntError},
     str::ParseBoolError,
     string::FromUtf8Error,
 };
+
+use backtrace::Backtrace;
+use color_backtrace::termcolor::Ansi;
 
 /// Generic error type.
 pub enum ErrorKind {
@@ -149,7 +151,18 @@ impl Error {
 
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:#?}", &self)
+        write!(
+            f,
+            "Error {{\n  kind: {:?},\n  context: {:?}\n}}\n",
+            self.kind, self.context
+        )?;
+        color_backtrace::BacktracePrinter::new()
+            .print_trace(
+                &self.backtrace,
+                &mut Ansi::new(WritableFormatter(f)), // &mut color_backtrace::default_output_stream(),
+            )
+            .unwrap();
+        Ok(())
     }
 }
 
@@ -157,7 +170,7 @@ impl<T: Into<ErrorKind>> From<T> for Error {
     fn from(err: T) -> Self {
         Self {
             kind: err.into(),
-            backtrace: Box::new(std::backtrace::Backtrace::capture()),
+            backtrace: Box::new(Backtrace::new()),
             context: vec![],
         }
     }
@@ -299,5 +312,21 @@ impl<T> From<IntoInnerError<T>> for ErrorKind {
 impl From<FromUtf8Error> for ErrorKind {
     fn from(err: FromUtf8Error) -> Self {
         Self::InvalidUTF8Conversion(err.to_string())
+    }
+}
+
+/// A newtype to have `Formatter` impl `io::Write`
+struct WritableFormatter<'a, 'b>(&'a mut std::fmt::Formatter<'b>);
+
+impl<'a, 'b> std::io::Write for WritableFormatter<'a, 'b> {
+    fn write(&mut self, bytes: &[u8]) -> std::result::Result<usize, std::io::Error> {
+        self.0
+            .write_str(&String::from_utf8_lossy(bytes))
+            .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))?;
+
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::result::Result<(), std::io::Error> {
+        todo!()
     }
 }
