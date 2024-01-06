@@ -2,13 +2,14 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::{html_form_parser::ParsedForm, Spawn},
     misc::sanitize_guide_name,
     parse_stat, parse_stat_opt, parse_stat_vec,
 };
 
 /// An item fetched from the admin panel.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Clone, Debug, Default, Serialize, Deserialize, Derivative)]
 #[derivative(PartialEq)]
 pub struct AdminMonster {
@@ -64,6 +65,10 @@ impl AdminMonster {
     /// If the monster has no `codex_uri`, return an empty string.
     /// Returns the slug no matter if the monster is considered a monster, raid or boss on the
     /// codex.
+    ///
+    /// # Panics
+    /// Panics if the URI in `self` is invalid.
+    #[must_use]
     pub fn slug(&self) -> &str {
         if self.codex_uri.is_empty() {
             ""
@@ -88,7 +93,7 @@ impl TryFrom<ParsedForm> for AdminMonster {
             ..Default::default()
         };
 
-        for (key, value) in form.fields.into_iter() {
+        for (key, value) in form.fields {
             // Helper macros to parse and add meaningful error messages.
             macro_rules! stat {
                 ($field:ident) => {
@@ -124,7 +129,7 @@ impl TryFrom<ParsedForm> for AdminMonster {
                 "drops" => push!(drops),
                 "skills" => push!(skills),
                 key => {
-                    return Err(ErrorKind::ExtraField(key.to_string(), value).into());
+                    return Err(Kind::ExtraField(key.to_string(), value).into());
                 }
             }
         }
@@ -148,8 +153,7 @@ impl From<AdminMonster> for ParsedForm {
         push(
             "family",
             item.family
-                .map(|family| family.to_string())
-                .unwrap_or_else(String::new),
+                .map_or_else(String::new, |family| family.to_string()),
         );
         push("image_name", item.image_name);
         if item.boss {
@@ -159,28 +163,28 @@ impl From<AdminMonster> for ParsedForm {
         push("hp", item.hp.to_string());
         push("notes", item.notes);
 
-        for x in item.spawns.iter() {
+        for x in &item.spawns {
             push("spawns", x.to_string());
         }
-        for x in item.weak_to.iter() {
+        for x in &item.weak_to {
             push("weak_to", x.to_string());
         }
-        for x in item.resistant_to.iter() {
+        for x in &item.resistant_to {
             push("resistant_to", x.to_string());
         }
-        for x in item.immune_to.iter() {
+        for x in &item.immune_to {
             push("immune_to", x.to_string());
         }
-        for x in item.immune_to_status.iter() {
+        for x in &item.immune_to_status {
             push("immune_to_status", x.to_string());
         }
-        for x in item.vulnerable_to_status.iter() {
+        for x in &item.vulnerable_to_status {
             push("vulnerable_to_status", x.to_string());
         }
-        for x in item.drops.iter() {
+        for x in &item.drops {
             push("drops", x.to_string());
         }
-        for x in item.skills.iter() {
+        for x in &item.skills {
             push("skills", x.to_string());
         }
 
@@ -190,11 +194,13 @@ impl From<AdminMonster> for ParsedForm {
 
 impl AdminMonster {
     /// Returns true if the monster is a regular one (not a boss, nor a raid).
+    #[must_use]
     pub fn is_regular_monster(&self) -> bool {
         !self.boss
     }
 
     /// Returns true if the monster is a boss (not a regular monster, nor a raid).
+    #[must_use]
     pub fn is_boss(&self, guide_spawns: &[Spawn]) -> bool {
         self.boss
             && !self
@@ -209,6 +215,7 @@ impl AdminMonster {
     }
 
     /// Returns true if the monster is a raid (not a regular monster, nor a boss).
+    #[must_use]
     pub fn is_raid(&self, guide_spawns: &[Spawn]) -> bool {
         self.boss
             && self
@@ -223,6 +230,7 @@ impl AdminMonster {
     }
 
     /// Returns true if the monster is a world raid.
+    #[must_use]
     pub fn is_world_raid(&self, guide_spawns: &[Spawn]) -> bool {
         self.boss
             && self
@@ -233,6 +241,7 @@ impl AdminMonster {
     }
 
     /// Returns true if the monster is a kingdom raid.
+    #[must_use]
     pub fn is_kingdom_raid(&self, guide_spawns: &[Spawn]) -> bool {
         self.boss
             && self
@@ -243,12 +252,13 @@ impl AdminMonster {
     }
 
     /// Try to guess what the codex name for the monster is.
+    #[must_use]
     pub fn codex_name(&self) -> String {
         let monster_name = if self.is_regular_monster() {
-            self.name
-                .strip_prefix("Arisen ")
-                .map(|stripped| format!("{} (Arisen)", stripped))
-                .unwrap_or_else(|| self.name.clone())
+            self.name.strip_prefix("Arisen ").map_or_else(
+                || self.name.clone(),
+                |stripped| format!("{stripped} (Arisen)"),
+            )
         } else if self.name == "Arisen Kin of Kerberos" {
             "Kin of Kerberos (Arisen)".to_string()
         } else {
@@ -259,6 +269,7 @@ impl AdminMonster {
 
     /// List the events to which the monster belongs.
     /// The events returned won't have the `Event:` or `Past Event` prefix.
+    #[must_use]
     pub fn get_events<'a>(&self, guide_spawns: &'a [Spawn]) -> Vec<&'a str> {
         self.spawns
             .iter()
@@ -277,6 +288,7 @@ impl AdminMonster {
     }
 
     /// List the events IDs to which the monster belongs.
+    #[must_use]
     pub fn get_event_ids(&self, guide_spawns: &[Spawn]) -> Vec<u32> {
         self.spawns
             .iter()
@@ -293,6 +305,10 @@ impl AdminMonster {
 
     /// List the raid spawns associated to the monster.
     /// The spawns are either "Kingdom Raid" or "World Raid" (may be inclusive).
+    ///
+    /// # Panics
+    /// Panics if there are no raid spawns. This is a logic error.
+    #[must_use]
     pub fn get_raid_spawns<'a>(&self, guide_spawns: &'a [Spawn]) -> Vec<&'a str> {
         self.spawns
             .iter()
@@ -310,6 +326,7 @@ impl AdminMonster {
 }
 
 /// Collection of monsters from the guide's admin view.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq)]
 pub struct AdminMonsters {
     /// Monsters from the guide's admin view.
@@ -318,19 +335,23 @@ pub struct AdminMonsters {
 
 impl<'a> AdminMonsters {
     /// Find the monster with the given id.
+    #[must_use]
     pub fn find_by_id(&'a self, needle: u32) -> Option<&'a AdminMonster> {
         self.monsters.iter().find(|monster| monster.id == needle)
     }
 
     /// Find the monster with the given id
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_id(&'a self, needle: u32) -> Result<&'a AdminMonster, Error> {
         self.find_by_id(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!("No match for admin monster with id {}", needle)).into()
+            Kind::Misc(format!("No match for admin monster with id {needle}")).into()
         })
     }
 
     /// Find the monster with the given codex uri.
+    #[must_use]
     pub fn find_by_uri(&'a self, needle: &str) -> Option<&'a AdminMonster> {
         self.monsters
             .iter()
@@ -338,12 +359,13 @@ impl<'a> AdminMonsters {
     }
 
     /// Find the monster with the given codex uri.
-    /// If there is no match, return an `Err`.
+    ///
+    /// # Errors
+    /// Errors if there is no match.
     pub fn get_by_uri(&'a self, needle: &str) -> Result<&'a AdminMonster, Error> {
         self.find_by_uri(needle).ok_or_else(|| {
-            ErrorKind::Misc(format!(
-                "No match for admin monster with codex_uri '{}'",
-                needle
+            Kind::Misc(format!(
+                "No match for admin monster with codex_uri '{needle}'"
             ))
             .into()
         })

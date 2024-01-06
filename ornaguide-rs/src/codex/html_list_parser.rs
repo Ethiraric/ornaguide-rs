@@ -1,7 +1,7 @@
 use kuchiki::{parse_html, traits::TendrilSink, NodeRef};
 
 use crate::{
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     utils::html::{descend_iter, descend_to, get_attribute_from_node, node_to_text},
 };
 
@@ -39,9 +39,8 @@ fn node_to_entry(node: &NodeRef) -> Result<Entry, Error> {
     if let Some(name_node) = it.next() {
         entry.value = node_to_text(&name_node);
     } else {
-        return Err(ErrorKind::HTMLParsingError(format!(
-            "Failed to find name in codex entry: {:#?}",
-            all_contents
+        return Err(Kind::HTMLParsingError(format!(
+            "Failed to find name in codex entry: {all_contents:#?}"
         ))
         .into());
     }
@@ -67,23 +66,21 @@ fn node_to_entry(node: &NodeRef) -> Result<Entry, Error> {
                 chars.next();
                 entry.tier = chars.as_str().trim().parse()?;
             } else {
-                return Err(ErrorKind::HTMLParsingError(format!(
-                    "Failed to find the star in tier in codex entry field: {:#?}",
-                    tier_str
+                return Err(Kind::HTMLParsingError(format!(
+                    "Failed to find the star in tier in codex entry field: {tier_str:#?}"
                 ))
                 .into());
             }
         } else {
-            return Err(ErrorKind::HTMLParsingError(format!(
+            return Err(Kind::HTMLParsingError(format!(
                 "The tier string is empty in: {:#?}",
                 node_to_text(&tier_node)
             ))
             .into());
         }
     } else {
-        return Err(ErrorKind::HTMLParsingError(format!(
-            "Failed to find tier in codex entry: {:#?}",
-            all_contents
+        return Err(Kind::HTMLParsingError(format!(
+            "Failed to find tier in codex entry: {all_contents:#?}"
         ))
         .into());
     }

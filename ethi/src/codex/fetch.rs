@@ -495,8 +495,8 @@ pub fn missing_translations(
 ) -> Result<LocaleDB, Error> {
     let mut ret = LocaleDB::default();
 
-    for (locale, db) in locale_db.locales.iter() {
-        println!("Fetching missing translations for locale {}", locale);
+    for (locale, db) in &locale_db.locales {
+        println!("Fetching missing translations for locale {locale}");
         let mut strings = LocaleStrings::default();
 
         let items = missing_items_translations(guide, db, locale)?;
@@ -562,6 +562,7 @@ pub fn follower_slugs(guide: &OrnaAdminGuide, slugs: &[&str]) -> Result<CodexFol
 
 /// Loop fetching entities and displaying a progress bar.
 /// Errors out after the first failed fetch.
+#[allow(clippy::module_name_repetitions)]
 pub fn fetch_loop<Entry, F, Entity>(
     entries: &[Entry],
     fetch: F,
@@ -579,14 +580,14 @@ where
         bar.set_message(slug.to_string());
         match fetch(slug) {
             Ok(item) => ret.push(item),
-            Err(x) => eprintln!("Failed to fetch {} {}: {}\n", kind, slug, x),
+            Err(x) => eprintln!("Failed to fetch {kind} {slug}: {x}\n"),
         }
         bar.inc(1);
         if sleep > 0 {
             std::thread::sleep(std::time::Duration::from_secs(sleep));
         }
     }
-    bar.finish_with_message(format!("{:7 } fetched", kind));
+    bar.finish_with_message(format!("{kind:7 } fetched"));
     Ok(ret)
 }
 
@@ -604,16 +605,16 @@ where
     let mut ret = Vec::with_capacity(slugs.len());
     let bar = bar(slugs.len() as u64);
     for slug in slugs.iter() {
-        bar.set_message(slug.to_string());
+        bar.set_message((*slug).to_string());
         match fetch(slug) {
             Ok(item) => ret.push(item),
-            Err(x) => eprintln!("Failed to fetch {} {}: {}\n", kind, slug, x),
+            Err(x) => eprintln!("Failed to fetch {kind} {slug}: {x}\n"),
         }
         bar.inc(1);
         if sleep > 0 {
             std::thread::sleep(std::time::Duration::from_secs(sleep));
         }
     }
-    bar.finish_with_message(format!("{:7 } fetched", kind));
+    bar.finish_with_message(format!("{kind:7 } fetched"));
     Ok(ret)
 }

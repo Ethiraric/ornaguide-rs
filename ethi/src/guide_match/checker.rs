@@ -1,6 +1,6 @@
 use ornaguide_rs::{
     data::OrnaData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
 };
 
 use std::fmt::{Debug, Display};
@@ -168,9 +168,7 @@ where
                 .iter()
                 .find(|status| status.id == *id)
                 .map(|status| status.name.as_str())
-                .ok_or_else(|| {
-                    ErrorKind::Misc(format!("Failed to find status effect #{}", id)).into_err()
-                })
+                .ok_or_else(|| Kind::Misc(format!("Failed to find status effect #{id}")).into_err())
         },
     )
 }
@@ -201,7 +199,7 @@ where
                 .iter()
                 .find(|spawn| spawn.id == *id)
                 .map(|spawn| spawn.name.as_str())
-                .ok_or_else(|| ErrorKind::Misc(format!("Failed to find spawn #{}", id)).into_err())
+                .ok_or_else(|| Kind::Misc(format!("Failed to find spawn #{id}")).into_err())
         },
     )
 }
@@ -258,7 +256,9 @@ where
     ADebuggable: Debug,
     CDebuggable: Debug,
 {
-    if admin_field != codex_field {
+    if admin_field == codex_field {
+        Ok(true)
+    } else {
         println!(
             "\x1B[0;34m{:30}:{:11}:\x1B[0m\ncodex= {:?}\nguide= {:?}",
             entity_name,
@@ -273,8 +273,6 @@ where
             guide_retriever(entity_id)?;
         }
         Ok(false)
-    } else {
-        Ok(true)
     }
 }
 
@@ -300,10 +298,11 @@ where
     GuideRetriever: Fn(u32) -> Result<AdminEntity, Error>,
     GuideSaver: FnOnce(AdminEntity) -> Result<(), Error>,
 {
-    if admin_field != codex_field {
+    if admin_field == codex_field {
+        Ok(true)
+    } else {
         println!(
-            "\x1B[0;34m{:30}:{:11}:\x1B[0m\ncodex= {:?}\nguide= {:?}",
-            entity_name, field_name, codex_field, admin_field
+            "\x1B[0;34m{entity_name:30}:{field_name:11}:\x1B[0m\ncodex= {codex_field:?}\nguide= {admin_field:?}"
         );
         if fix {
             let mut entity = guide_retriever(entity_id)?;
@@ -312,8 +311,6 @@ where
             guide_retriever(entity_id)?;
         }
         Ok(false)
-    } else {
-        Ok(true)
     }
 }
 
@@ -338,10 +335,11 @@ where
     GuideRetriever: Fn(u32) -> Result<AdminEntity, Error>,
     GuideSaver: FnOnce(AdminEntity) -> Result<(), Error>,
 {
-    if admin_field != codex_field {
+    if admin_field == codex_field {
+        Ok(true)
+    } else {
         println!(
-            "\x1B[0;34m{:30}:{:11}:\x1B[0m codex= {:<20} guide= {:<20}",
-            entity_name, field_name, codex_field, admin_field
+            "\x1B[0;34m{entity_name:30}:{field_name:11}:\x1B[0m codex= {codex_field:<20} guide= {admin_field:<20}"
         );
         if fix {
             let mut entity = guide_retriever(entity_id)?;
@@ -350,8 +348,6 @@ where
             guide_retriever(entity_id)?;
         }
         Ok(false)
-    } else {
-        Ok(true)
     }
 }
 

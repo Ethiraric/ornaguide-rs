@@ -8,7 +8,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use itertools::Itertools;
 use ornaguide_rs::{
     data::OrnaData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
 };
 use serde::{
     de::{Unexpected, Visitor},
@@ -42,29 +42,29 @@ pub fn diff_sorted_slices<'a, T: PartialEq + PartialOrd>(
     let mut left = Vec::new();
     let mut right = Vec::new();
 
-    let mut ait = a.iter().peekable();
-    let mut bit = b.iter().peekable();
+    let mut a_it = a.iter().peekable();
+    let mut b_it = b.iter().peekable();
 
     loop {
-        match (ait.peek(), bit.peek()) {
+        match (a_it.peek(), b_it.peek()) {
             (Some(a), Some(b)) => {
                 if a == b {
-                    ait.next();
-                    bit.next();
+                    a_it.next();
+                    b_it.next();
                 } else if a < b {
                     left.push(*a);
-                    ait.next();
+                    a_it.next();
                 } else {
                     right.push(*b);
-                    bit.next();
+                    b_it.next();
                 }
             }
             (Some(_), None) => {
-                left.extend(ait);
+                left.extend(a_it);
                 break;
             }
             (None, Some(_)) => {
-                right.extend(bit);
+                right.extend(b_it);
                 break;
             }
             (None, None) => break,
@@ -117,7 +117,7 @@ impl VecStatusEffectIds for Vec<u32> {
                     .status_effects
                     .iter()
                     .find(|status| status.id == *id)
-                    .unwrap_or_else(|| panic!("Failed to find status effect {}", id))
+                    .unwrap_or_else(|| panic!("Failed to find status effect {id}"))
                     .name
                     .as_str()
             })
@@ -145,7 +145,7 @@ where
     R: Read,
     T: serde::de::DeserializeOwned,
 {
-    serde_json::from_reader(rdr).map_err(|err| ErrorKind::SerdeJson(err, path.to_string()).into())
+    serde_json::from_reader(rdr).map_err(|err| Kind::SerdeJson(err, path.to_string()).into())
 }
 
 /// Same as a `serde_json::from_reader` with a file, but adds the filename to the error message, if any.
@@ -221,7 +221,7 @@ where
 }
 
 /// Turns a PascalCase name into a kebab-case one.
-#[allow(dead_code)]
+#[allow(dead_code, clippy::doc_markdown)]
 pub fn kebab_casify(slug: &str) -> String {
     let mut new_slug = String::new();
     let mut capital = true;

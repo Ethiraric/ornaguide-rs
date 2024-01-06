@@ -5,7 +5,7 @@ use crate::{
         MonsterEntry as CodexMonsterEntry, RaidEntry as CodexRaidEntry,
         SkillEntry as CodexSkillEntry,
     },
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::{
         html_form_parser::ParsedForm, http::Http, AdminGuide, Element, EquippedBy, ItemCategory,
         ItemRow, ItemType, MonsterFamily, MonsterRow, PetRow, SkillRow, SkillType, Spawn,
@@ -25,6 +25,7 @@ pub struct OrnaGuide {
 
 impl OrnaGuide {
     /// Construct a bare instance of the guide.
+    #[must_use]
     pub fn new() -> Self {
         Self { http: Http::new() }
     }
@@ -53,6 +54,9 @@ pub struct OrnaAdminGuide {
 
 impl OrnaAdminGuide {
     /// Construct a bare instance of the guide.
+    ///
+    /// # Errors
+    /// Errors if the HTTP client could not be built.
     pub fn new(cookie: &str) -> Result<Self, Error> {
         Ok(Self {
             guide: OrnaGuide::from_http(Http::new_with_cookie(cookie)?),
@@ -60,6 +64,9 @@ impl OrnaAdminGuide {
     }
 
     /// Construct an instance of the guide with the given hosts.
+    ///
+    /// # Errors
+    /// Errors if the HTTP client could not be built.
     pub fn new_with_hosts(
         cookie: &str,
         orna_guide: String,
@@ -73,6 +80,9 @@ impl OrnaAdminGuide {
     }
 
     /// Retrieve the item with the given id from the guide (asynchronous).
+    ///
+    /// # Errors
+    /// Errors on I/O, HTTP or parsing error.
     pub async fn async_admin_retrieve_item_by_id(&self, id: u32) -> Result<AdminItem, Error> {
         Ok(AdminItem {
             id,
@@ -86,6 +96,10 @@ impl OrnaAdminGuide {
         })
     }
 
+    /// Retrieve the monster with the given id from the guide (asynchronous).
+    ///
+    /// # Errors
+    /// Errors on I/O, HTTP or parsing error.
     pub async fn async_admin_retrieve_monster_by_id(&self, id: u32) -> Result<AdminMonster, Error> {
         Ok(AdminMonster {
             id,
@@ -99,6 +113,10 @@ impl OrnaAdminGuide {
         })
     }
 
+    /// Retrieve the skill with the given id from the guide (asynchronous).
+    ///
+    /// # Errors
+    /// Errors on I/O, HTTP or parsing error.
     pub async fn async_admin_retrieve_skill_by_id(&self, id: u32) -> Result<AdminSkill, Error> {
         Ok(AdminSkill {
             id,
@@ -112,6 +130,10 @@ impl OrnaAdminGuide {
         })
     }
 
+    /// Retrieve the pet with the given id from the guide (asynchronous).
+    ///
+    /// # Errors
+    /// Errors on I/O, HTTP or parsing error.
     pub async fn async_admin_retrieve_pet_by_id(&self, id: u32) -> Result<AdminPet, Error> {
         Ok(AdminPet {
             id,
@@ -414,7 +436,7 @@ impl Codex for OrnaAdminGuide {
                 Ok(CodexMonsterEntry {
                     name: entry.value,
                     family: entry.meta.ok_or_else(|| {
-                        ErrorKind::HTMLParsingError(
+                        Kind::HTMLParsingError(
                             "Failed to retrieve meta field of monster".to_string(),
                         )
                     })?,
@@ -442,9 +464,7 @@ impl Codex for OrnaAdminGuide {
                 Ok(CodexBossEntry {
                     name: entry.value,
                     family: entry.meta.ok_or_else(|| {
-                        ErrorKind::HTMLParsingError(
-                            "Failed to retrieve meta field of boss".to_string(),
-                        )
+                        Kind::HTMLParsingError("Failed to retrieve meta field of boss".to_string())
                     })?,
                     tier: entry.tier,
                     uri: entry.uri,

@@ -39,7 +39,7 @@ where
         match self {
             Filter::Value(x) => value == x,
             Filter::Expr(str) => {
-                panic!("Uncompiled filter '{}'", str);
+                panic!("Uncompiled filter '{str}'");
             }
             Filter::Compiled(f) => f(value),
             Filter::None => true,

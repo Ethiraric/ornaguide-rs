@@ -8,20 +8,21 @@ use bzip2::{read::BzDecoder, write::BzEncoder, Compression};
 use ornaguide_rs::{
     codex::translation::{LocaleDB, LocaleStrings},
     data::OrnaData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
 };
 use tar::{Archive, Builder, EntryType, Header};
 
 use crate::{backups::Backup, misc::json_read};
 
 /// See [`crate::backups::Backup::save_to`].
+#[allow(clippy::similar_names)]
 pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> Result<(), Error> {
     // Create archive path, from path, name and timestamp.
     // Keep the archive basename, as it will be the root directory from inside the archive.
     let now = chrono::Local::now();
     let archive_basename = format!("{}-{}", name, now.format("%FT%H-%M"));
     let mut archive_path = path.as_ref().to_path_buf();
-    archive_path.push(format!("{}.tar.bz2", archive_basename));
+    archive_path.push(format!("{archive_basename}.tar.bz2"));
 
     // Open the archive.
     let mut archive = Builder::new(BzEncoder::new(
@@ -65,8 +66,8 @@ pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> R
     archive.append(&header, &*Vec::<u8>::new()).unwrap();
 
     // Create translation folders.
-    let locale_dir = format!("{}/i18n", archive_basename);
-    let manual_locale_dir = format!("{}/i18n/manual", archive_basename);
+    let locale_dir = format!("{archive_basename}/i18n");
+    let manual_locale_dir = format!("{archive_basename}/i18n/manual");
     let mut header = new_header(&locale_dir, true);
     header.set_size(0);
     header.set_cksum();
@@ -105,12 +106,11 @@ pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> R
 }
 
 /// See [`crate::backups::Backup::load_from`].
+#[allow(clippy::too_many_lines)]
 pub(crate) fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error> {
     let archive_path: &Path = archive_path.as_ref();
     if !archive_path.to_string_lossy().ends_with(".tar.bz2") {
-        return Err(
-            ErrorKind::Misc(format!("Invalid backup output file: {:?}", archive_path)).into(),
-        );
+        return Err(Kind::Misc(format!("Invalid backup output file: {archive_path:?}")).into());
     }
 
     // Take path, and remove the `.tar.bz2` extension.
@@ -206,9 +206,8 @@ pub(crate) fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error
                         json_read(entry, base_pathstr).unwrap_or_default();
                 }
                 _ => {
-                    return Err(ErrorKind::Misc(format!(
-                        "Unexpected file in {:?}: {:?}",
-                        archive_path, path
+                    return Err(Kind::Misc(format!(
+                        "Unexpected file in {archive_path:?}: {path:?}"
                     ))
                     .into());
                 }
@@ -237,11 +236,9 @@ pub(crate) fn load_from<P: AsRef<Path>>(archive_path: P) -> Result<Backup, Error
             } else if path.starts_with("guide_api") {
                 // Ok, skip this file.
             } else {
-                return Err(ErrorKind::Misc(format!(
-                    "Unexpected file in {:?}: {:?}",
-                    archive_path, path
-                ))
-                .into());
+                return Err(
+                    Kind::Misc(format!("Unexpected file in {archive_path:?}: {path:?}")).into(),
+                );
             }
         }
     }
@@ -267,7 +264,7 @@ where
     let lang = filename
         .strip_suffix(".json")
         .ok_or_else(|| {
-            ErrorKind::Misc(format!("{}: lang file doesn't end in `.json`", fullpath)).into_err()
+            Kind::Misc(format!("{fullpath}: lang file doesn't end in `.json`")).into_err()
         })?
         .to_string();
     db.locales.insert(lang, strings);

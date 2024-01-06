@@ -46,7 +46,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
     if !missing_on_guide.is_empty() {
         println!("{} skills missing on guide:", missing_on_guide.len());
-        for skill in missing_on_guide.iter() {
+        for skill in &missing_on_guide {
             println!(
                 "\t- {:20} (https://playorna.com/codex/spells/{}/)",
                 skill.name, skill.slug
@@ -55,7 +55,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
     }
     if !not_on_codex.is_empty() {
         println!("{} skills not on codex:", not_on_codex.len());
-        for skill in not_on_codex.iter() {
+        for skill in &not_on_codex {
             println!(
                 "\t- {:20} (https://orna.guide/skills?show={})",
                 skill.name, skill.id
@@ -65,8 +65,8 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
     // Create the new skills on the guide, if asked to.
     if fix && !missing_on_guide.is_empty() {
-        for skill in missing_on_guide.iter() {
-            retry_once!(guide.admin_add_skill(skill.try_to_admin_skill(&data.guide.static_)?))?;
+        for skill in &missing_on_guide {
+            retry_once!(guide.admin_add_skill(skill.to_admin_skill(&data.guide.static_)))?;
         }
 
         // Retrieve the new list of skills, and keep only those we didn't know of before.
@@ -95,7 +95,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
             new_skills.len(),
             missing_on_guide.len()
         );
-        for skill in new_skills.iter() {
+        for skill in &new_skills {
             println!(
                 "\t\x1B[0;32m- {:20} (https://orna.guide/skills?show={})\x1B[0m",
                 skill.name, skill.id
@@ -130,16 +130,16 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
             // TODO(ethiraric, 10/02/2023): Remove this once codex is updated.
             if codex_name != "Twin Attack" {
                 check.display("name", &admin_name, &codex_name, |skill, name| {
-                    skill.name = name.to_string();
+                    skill.name = (*name).to_string();
                     Ok(())
                 })?;
             }
 
             // Description
-            let codex_description = if !codex_skill.description.is_empty() {
-                codex_skill.description.clone()
-            } else {
+            let codex_description = if codex_skill.description.is_empty() {
                 ".".to_string()
+            } else {
+                codex_skill.description.clone()
             };
             check.display(
                 "description",
@@ -174,7 +174,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
             )?;
 
             // Causes
-            let admin_causes = admin_skill.causes.iter().cloned().sorted().collect_vec();
+            let admin_causes = admin_skill.causes.iter().copied().sorted().collect_vec();
             let codex_causes = codex_skill
                 .causes
                 .try_to_guide_ids(&data.guide.static_)?
@@ -196,7 +196,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
             // Gives
             // I think I have no way of translating those two.
             if codex_skill.slug != "defend-2" && codex_skill.slug != "defend-3" {
-                let admin_gives = admin_skill.gives.iter().cloned().sorted().collect_vec();
+                let admin_gives = admin_skill.gives.iter().copied().sorted().collect_vec();
                 let codex_gives = codex_skill
                     .gives
                     .try_to_guide_ids(&data.guide.static_)?

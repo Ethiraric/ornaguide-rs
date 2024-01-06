@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     data::OrnaData,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::{AdminGuide, OrnaAdminGuide},
     pets::admin::AdminPet,
 };
@@ -35,7 +35,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
     if !missing_on_guide.is_empty() {
         println!("{} followers missing on guide:", missing_on_guide.len());
-        for follower in missing_on_guide.iter() {
+        for follower in &missing_on_guide {
             println!(
                 "\t- {} (https://playorna.com/codex/followers/{})",
                 follower.name, follower.slug
@@ -44,15 +44,15 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
     }
     if !not_on_codex.is_empty() {
         println!("{} pets not on codex:", not_on_codex.len());
-        for pet in not_on_codex.iter() {
+        for pet in &not_on_codex {
             println!("\t- {} (https://orna.guide/pets?show={})", pet.name, pet.id);
         }
     }
 
     // Create the new pets on the guide, if asked to.
     if fix && !missing_on_guide.is_empty() {
-        for pet in missing_on_guide.iter() {
-            retry_once!(guide.admin_add_pet(pet.try_to_admin_pet(&data.guide)?))?;
+        for pet in &missing_on_guide {
+            retry_once!(guide.admin_add_pet(pet.to_admin_pet(&data.guide)))?;
         }
 
         // Retrieve the new list of pets, and keep only those we didn't know of before.
@@ -81,7 +81,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
             new_pets.len(),
             missing_on_guide.len()
         );
-        for pet in new_pets.iter() {
+        for pet in &new_pets {
             println!(
                 "\t\x1B[0;32m- {:20} (https://orna.guide/pets?show={})\x1B[0m",
                 pet.name, pet.id
@@ -98,7 +98,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 /// Compare fields of every codex follower and their counterpart on the guide.
 /// Attempt to fix discrepancies.
 fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
-    for follower in data.codex.followers.followers.iter() {
+    for follower in &data.codex.followers.followers {
         if let Ok(pet) = data.guide.pets.get_by_slug(&follower.slug) {
             let check = Checker {
                 entity_name: &pet.name,
@@ -131,10 +131,10 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
             )?;
 
             // Description
-            let follower_description = if !follower.description.is_empty() {
-                follower.description.clone()
-            } else {
+            let follower_description = if follower.description.is_empty() {
                 ".".to_string()
+            } else {
+                follower.description.clone()
             };
             check.display(
                 "description",
@@ -161,7 +161,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
             let pet_skills_ids = pet
                 .skills
                 .iter()
-                .cloned()
+                .copied()
                 // TODO(ethiraric, 11/07/2022): Remove filter when the codex fixes Bind and Bite.
                 .filter(|id| {
                     !data
@@ -180,7 +180,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 // TODO(ethiraric, 27/07/2022): Add diagnostics.
                 .unwrap_or_else(|err| match err {
                     Error {
-                        kind: ErrorKind::PartialCodexFollowerAbilitiesConversion(ok, _),
+                        kind: Kind::PartialCodexFollowerAbilitiesConversion(ok, _),
                         ..
                     } => ok,
                     _ => panic!("try_to_guide_ids returned a weird error"),
@@ -190,7 +190,9 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 .collect_vec();
             // TODO(ethiraric, 17/10/22): Remove once we cycle all events. Skill slugs were
             // kebab-caseified.
-            if !expected_skills_ids.is_empty() {
+            if expected_skills_ids.is_empty() {
+                // println!("Follower {} has no ability on codex.", follower.name);
+            } else {
                 check.skill_id_vec(
                     "abilities",
                     &pet_skills_ids,
@@ -206,8 +208,6 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                     },
                     data,
                 )?;
-            } else {
-                // println!("Follower {} has no ability on codex.", follower.name);
             }
         }
     }

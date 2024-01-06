@@ -68,6 +68,7 @@ pub struct Override {
 }
 
 /// Hardcoded changes to be made to the backup data.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct BackupChanges {
@@ -141,7 +142,7 @@ impl Override {
 impl CodexOverride {
     /// Apply the changes from `self` to the data.
     pub fn apply_to(&self, data: &mut CodexData) {
-        for override_item in self.items.iter() {
+        for override_item in &self.items {
             if let Some(item) = data
                 .items
                 .items
@@ -151,7 +152,7 @@ impl CodexOverride {
                 *item = override_item.clone();
             }
         }
-        for override_monster in self.monsters.iter() {
+        for override_monster in &self.monsters {
             if let Some(monster) = data
                 .monsters
                 .monsters
@@ -161,7 +162,7 @@ impl CodexOverride {
                 *monster = override_monster.clone();
             }
         }
-        for override_raids in self.raids.iter() {
+        for override_raids in &self.raids {
             if let Some(raid) = data
                 .raids
                 .raids
@@ -171,7 +172,7 @@ impl CodexOverride {
                 *raid = override_raids.clone();
             }
         }
-        for override_skill in self.skills.iter() {
+        for override_skill in &self.skills {
             if let Some(skill) = data
                 .skills
                 .skills
@@ -181,7 +182,7 @@ impl CodexOverride {
                 *skill = override_skill.clone();
             }
         }
-        for override_follower in self.followers.iter() {
+        for override_follower in &self.followers {
             if let Some(follower) = data
                 .followers
                 .followers

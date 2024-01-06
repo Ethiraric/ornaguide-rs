@@ -1,3 +1,5 @@
+#![warn(clippy::pedantic)]
+
 mod api_filter;
 
 use proc_macro::TokenStream;
@@ -6,7 +8,6 @@ use proc_macro::TokenStream;
 #[proc_macro_attribute]
 pub fn api_filter(attr: TokenStream, item: TokenStream) -> TokenStream {
     match api_filter::api_filter(attr, item) {
-        Ok(x) => x,
-        Err(x) => x,
+        Ok(x) | Err(x) => x,
     }
 }

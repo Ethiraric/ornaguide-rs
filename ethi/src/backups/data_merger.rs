@@ -30,6 +30,7 @@ pub struct DataMerger {
 /// A structure capable of aggregating multiple `GuideData`s and summing them all into one
 /// `GuideData` that contains every entry met.
 /// Newer entries replace older ones.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default)]
 pub struct GuideDataMerger {
     /// All items encountered until now, hashed by their admin ID.
@@ -61,6 +62,7 @@ pub struct GuideDataMerger {
 /// A structure capable of aggregating multiple `CodexData`s and summing them all into one
 /// `CodexData` that contains every entry met.
 /// Newer entries replace older ones.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Default)]
 pub struct CodexDataMerger {
     /// All items encountered until now, hashed by their URI.

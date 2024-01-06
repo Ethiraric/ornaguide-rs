@@ -2,7 +2,7 @@ use itertools::Itertools;
 use ornaguide_rs::{
     codex::Codex,
     data::{CodexData, GuideData, OrnaData},
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::{AdminGuide, OrnaAdminGuide},
 };
 
@@ -68,7 +68,7 @@ fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result
                         data.raids.raids.push(guide.codex_fetch_raid(slug)?);
                     }
                     _ => {
-                        println!("Unknown monster kind for URI {}", uri);
+                        println!("Unknown monster kind for URI {uri}");
                     }
                 }
                 Ok(())
@@ -76,7 +76,7 @@ fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result
             // Ignore 404s.
             match result {
                 Err(Error {
-                    kind: ErrorKind::ResponseError(_, _, 404, _),
+                    kind: Kind::ResponseError(_, _, 404, _),
                     ..
                 }) => {}
                 Err(x) => return Err(x),
@@ -84,7 +84,7 @@ fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result
             }
             bar.inc(1);
         } else {
-            println!("Failed to parse monster for URI {}", uri);
+            println!("Failed to parse monster for URI {uri}");
         }
     }
     bar.finish_with_message("CUnlstM fetched");
@@ -154,7 +154,7 @@ fn add_event_followers(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result<(
 
     let bar = bar(event_pets.len() as u64);
     for slug in event_pets {
-        bar.set_message(slug.to_string());
+        bar.set_message((*slug).to_string());
         // Don't include a follower twice.
         if !data
             .followers
@@ -165,7 +165,7 @@ fn add_event_followers(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result<(
             match guide.codex_fetch_follower(slug) {
                 Ok(follower) => data.followers.followers.push(follower),
                 Err(Error {
-                    kind: ErrorKind::ResponseError(_, _, 404, _),
+                    kind: Kind::ResponseError(_, _, 404, _),
                     ..
                 }) => {}
                 Err(x) => return Err(x),
@@ -519,14 +519,14 @@ pub fn refresh_codex_skills(
 
 /// Iterate over all of the guide entries and fetch every corresponding entity from the codex that
 /// we have the URI for.
-pub fn fetch_all_matches_from_guide(guide: &OrnaAdminGuide, data: OrnaData) -> Result<(), Error> {
+pub fn fetch_all_matches_from_guide(guide: &OrnaAdminGuide, data: &OrnaData) -> Result<(), Error> {
     crate::codex::fetch::try_fetch_loop_slugs(
         &data
             .guide
             .items
             .items
             .iter()
-            .map(|item| item.slug())
+            .map(ornaguide_rs::items::admin::AdminItem::slug)
             .filter(|s| !s.is_empty())
             .collect_vec(),
         |slug| guide.codex_fetch_item_page(slug).map(|_| ()),
@@ -539,7 +539,7 @@ pub fn fetch_all_matches_from_guide(guide: &OrnaAdminGuide, data: OrnaData) -> R
             .monsters
             .iter()
             .filter(|monster| monster.codex_uri.starts_with("/codex/raids/"))
-            .map(|monster| monster.slug())
+            .map(ornaguide_rs::monsters::admin::AdminMonster::slug)
             .filter(|s| !s.is_empty())
             .collect_vec(),
         |slug| guide.codex_fetch_raid_page(slug).map(|_| ()),
@@ -552,7 +552,7 @@ pub fn fetch_all_matches_from_guide(guide: &OrnaAdminGuide, data: OrnaData) -> R
             .monsters
             .iter()
             .filter(|monster| monster.codex_uri.starts_with("/codex/monsters/"))
-            .map(|monster| monster.slug())
+            .map(ornaguide_rs::monsters::admin::AdminMonster::slug)
             .filter(|s| !s.is_empty())
             .collect_vec(),
         |slug| guide.codex_fetch_monster_page(slug).map(|_| ()),
@@ -565,7 +565,7 @@ pub fn fetch_all_matches_from_guide(guide: &OrnaAdminGuide, data: OrnaData) -> R
             .monsters
             .iter()
             .filter(|monster| monster.codex_uri.starts_with("/codex/bosses/"))
-            .map(|monster| monster.slug())
+            .map(ornaguide_rs::monsters::admin::AdminMonster::slug)
             .filter(|s| !s.is_empty())
             .collect_vec(),
         |slug| guide.codex_fetch_monster_page(slug).map(|_| ()),
@@ -577,7 +577,7 @@ pub fn fetch_all_matches_from_guide(guide: &OrnaAdminGuide, data: OrnaData) -> R
             .skills
             .skills
             .iter()
-            .map(|skill| skill.slug())
+            .map(ornaguide_rs::skills::admin::AdminSkill::slug)
             .filter(|s| !s.is_empty())
             .collect_vec(),
         |slug| guide.codex_fetch_skill_page(slug).map(|_| ()),
@@ -589,7 +589,7 @@ pub fn fetch_all_matches_from_guide(guide: &OrnaAdminGuide, data: OrnaData) -> R
             .pets
             .pets
             .iter()
-            .map(|pet| pet.slug())
+            .map(ornaguide_rs::pets::admin::AdminPet::slug)
             .filter(|s| !s.is_empty())
             .collect_vec(),
         |slug| guide.codex_fetch_skill_page(slug).map(|_| ()),
@@ -645,7 +645,7 @@ where
 {
     match command {
         cli::json::Command::FetchAllMatchesFromGuide => {
-            fetch_all_matches_from_guide(guide, data()?)
+            fetch_all_matches_from_guide(guide, &data()?)
         }
         cli::json::Command::Refresh(cmd) => cli_refresh(cmd, guide, data()?),
     }

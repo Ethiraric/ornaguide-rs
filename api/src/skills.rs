@@ -1,12 +1,12 @@
 use itertools::Itertools;
-use ornaguide_rs::{data::OrnaData, error::ErrorKind, skills::admin::AdminSkill};
+use ornaguide_rs::{data::OrnaData, error::Kind, skills::admin::AdminSkill};
 use proc_macros::api_filter;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     data::with_locale_data,
-    deref::{deref_element, deref_monsters, deref_skill_type, deref_status_effects},
+    deref,
     error::{Error, MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
     make_post_impl,
@@ -77,33 +77,33 @@ impl SkillFilters<'_> {
             for skill in skills.iter_mut() {
                 if let serde_json::Value::Object(skill) = skill {
                     if let Some(type_) = skill.get_mut("type_") {
-                        deref_skill_type(type_, data)?;
+                        deref::skill_type(type_, data)?;
                     }
                     if let Some(element) = skill.get_mut("element") {
                         if !element.is_null() {
-                            deref_element(element, data)?;
+                            deref::element(element, data)?;
                         }
                     }
                     if let Some(buffed_by) = skill.get_mut("buffed_by") {
-                        deref_monsters(buffed_by, data)?;
+                        deref::monsters(buffed_by, data)?;
                     }
                     if let Some(causes) = skill.get_mut("causes") {
-                        deref_status_effects(causes, data)?;
+                        deref::status_effects(causes, data)?;
                     }
                     if let Some(cures) = skill.get_mut("cures") {
-                        deref_status_effects(cures, data)?;
+                        deref::status_effects(cures, data)?;
                     }
                     if let Some(gives) = skill.get_mut("gives") {
-                        deref_status_effects(gives, data)?;
+                        deref::status_effects(gives, data)?;
                     }
                 } else {
-                    return Err(ErrorKind::Misc("Skill should be an object".to_string()).into_err())
+                    return Err(Kind::Misc("Skill should be an object".to_string()).into_err())
                         .to_internal_server_error();
                 }
             }
             Ok(())
         } else {
-            Err(ErrorKind::Misc("Skills should be an array".to_string()).into_err())
+            Err(Kind::Misc("Skills should be an array".to_string()).into_err())
                 .to_internal_server_error()
         }
     }

@@ -5,12 +5,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     data::with_data,
-    error::{og_error, Error, MaybeResponse},
+    error::{from_og, Error, MaybeResponse},
 };
 
 /// The body of an assessat request.
 #[derive(Serialize, Deserialize)]
-pub struct AssessatRequest {
+pub struct Request {
     /// The ID of the item to assess.
     item: u32,
     /// The quality of the item to assess.
@@ -19,7 +19,7 @@ pub struct AssessatRequest {
 
 /// Response for an assessat request.
 #[derive(Serialize)]
-pub struct AssessatResponse {
+pub struct Response {
     /// Base stats for the item.
     pub base_item: &'static AdminItem,
     /// Stats for the item at level 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, MF, DF, GF.
@@ -30,18 +30,18 @@ pub struct AssessatResponse {
 /// The `Content-Type` header must be set to `application/json` when calling this route.
 /// Even when using no filter, the body should be an empty JSON object (`{}`).
 #[post("/assessat", format = "json", data = "<request>")]
-pub fn post(request: Json<AssessatRequest>) -> MaybeResponse {
+pub fn post(request: Json<Request>) -> MaybeResponse {
     MaybeResponse {
-        contents: post_impl(request.into_inner()),
+        contents: post_impl(&request.into_inner()),
     }
 }
 
 /// Implementation method for `/assessat`.
 /// Performs request checks to ensure the assessment can proceed without error.
-fn post_impl(request: AssessatRequest) -> Result<serde_json::Value, Error> {
+fn post_impl(request: &Request) -> Result<serde_json::Value, Error> {
     let quality_tier = QualityTier::from_percent(request.quality);
     if quality_tier == QualityTier::Impossible {
-        return Err(og_error(
+        return Err(from_og(
             Status::BadRequest,
             format!("{}: Invalid quality", request.quality),
         ));
@@ -50,7 +50,7 @@ fn post_impl(request: AssessatRequest) -> Result<serde_json::Value, Error> {
     let response = match with_data(|data| Ok(data.guide.items.find_by_id(request.item)))? {
         Some(x) => assessat(x, request.quality, quality_tier),
         None => {
-            return Err(og_error(
+            return Err(from_og(
                 Status::NotFound,
                 format!("{}: Unknown item id", request.item),
             ))
@@ -66,15 +66,12 @@ fn post_impl(request: AssessatRequest) -> Result<serde_json::Value, Error> {
 /// Assess an item at the given quality.
 /// This function holds the logic behind the `/assessat` call. Logic is extracted here for ease of
 /// testing.
-pub fn assessat(
-    item: &'static AdminItem,
-    quality: u8,
-    quality_tier: QualityTier,
-) -> AssessatResponse {
+pub fn assessat(item: &'static AdminItem, quality: u8, quality_tier: QualityTier) -> Response {
     AssessCtx::assess(item, quality, quality_tier)
 }
 
 /// Stats at a specific level.
+#[allow(clippy::module_name_repetitions)]
 #[derive(Serialize)]
 pub struct AssessatStats {
     /// How much HP the item gives, if equippable.
@@ -147,7 +144,7 @@ struct AssessCtx {
     /// By how much stats increase per level,
     increment: FloatStats,
     /// Route response.
-    response: AssessatResponse,
+    response: Response,
 }
 
 impl AssessCtx {
@@ -161,7 +158,7 @@ impl AssessCtx {
             lv1_boni: Boni::default(),
             increment: FloatStats::default(),
             is_adorn: item.type_ == 11, /* Adornment */
-            response: AssessatResponse {
+            response: Response {
                 base_item: item,
                 stats: vec![],
             },
@@ -328,11 +325,7 @@ impl AssessCtx {
     }
 
     /// Assess an item at the given quality.
-    fn assess(
-        item: &'static AdminItem,
-        quality: u8,
-        quality_tier: QualityTier,
-    ) -> AssessatResponse {
+    fn assess(item: &'static AdminItem, quality: u8, quality_tier: QualityTier) -> Response {
         dbg!(item);
         let mut ctx = Self::new(item, quality, quality_tier);
         ctx.compute_lv1_stats();
@@ -524,7 +517,8 @@ impl QualityTier {
     }
 
     /// Return the bonus multiplier associated to the given quality tier.
-    pub fn bonus_multiplier(&self) -> f64 {
+    #[allow(clippy::match_same_arms)]
+    pub fn bonus_multiplier(self) -> f64 {
         match self {
             QualityTier::Broken => 0.1,
             QualityTier::Poor => 1.0,
@@ -542,7 +536,7 @@ impl QualityTier {
 
     /// Return the bonus% of an item of `self` quality tier with the given base bonus percent.
     /// For adornments, use `adorn_bonus`. They follow a different formula.
-    pub fn item_bonus(&self, base_bonus: f64) -> f64 {
+    pub fn item_bonus(self, base_bonus: f64) -> f64 {
         // The formula, with the base B expressed as a percent (ranging from 1 to 100) is:
         //      ((base / 100 + 1) * quality - 1) * 100
         //       ^                ^           ^  ^ rescale to a percentage
@@ -561,23 +555,24 @@ impl QualityTier {
 
     /// Return the bonus% of an adornment of `self` quality tier with the given base bonus percent.
     /// For items, use `item_bonus`. They follow a different formula.
-    pub fn adorn_bonus(&self, base_bonus: f64) -> f64 {
+    pub fn adorn_bonus(self, base_bonus: f64) -> f64 {
         // The formula is simply B * quality.
         // Courtesy of Rubenir.
         base_bonus * self.bonus_multiplier()
     }
 
     /// Call either `item_bonus` or `adorn_bonus`.
-    pub fn bonus(&self, is_adorn: bool, base_bonus: f64) -> f64 {
-        if !is_adorn {
-            self.item_bonus(base_bonus)
-        } else {
+    pub fn bonus(self, is_adorn: bool, base_bonus: f64) -> f64 {
+        if is_adorn {
             self.adorn_bonus(base_bonus)
+        } else {
+            self.item_bonus(base_bonus)
         }
     }
 
     /// Return the number of bonus adornment slots to the item given by the quality tier.
-    pub fn bonus_adorns(&self) -> u8 {
+    #[allow(clippy::match_same_arms)]
+    pub fn bonus_adorns(self) -> u8 {
         match self {
             QualityTier::Broken => 0,
             QualityTier::Poor => 0,
@@ -601,7 +596,7 @@ fn adorn_slots_at(item: &AdminItem, level: i16, quality_tier: QualityTier) -> u8
     // For some reason, items of tiers 1 and 2, and off-hands do not scale their adorn slots with
     // quality.
     if item.type_ !=  10 /* Off-hand */ && item.tier > 2 {
-        max_adorn_slots += quality_tier.bonus_adorns()
+        max_adorn_slots += quality_tier.bonus_adorns();
     };
 
     // If the item is level 10, it unlocks all slots. This was an issue with some Ornate items who
@@ -629,10 +624,10 @@ fn increment_at<T: NumCast + num::Signed>(
     quality_ratio: f32,
 ) -> f32 {
     if affected {
-        if !base_stat.is_negative() {
-            (<f32 as num::NumCast>::from(base_stat).unwrap() * multiplier).ceil() * quality_ratio
-        } else {
+        if base_stat.is_negative() {
             1.0 * quality_ratio
+        } else {
+            (<f32 as num::NumCast>::from(base_stat).unwrap() * multiplier).ceil() * quality_ratio
         }
     } else {
         0.0

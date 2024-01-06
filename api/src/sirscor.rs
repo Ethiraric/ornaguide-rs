@@ -103,8 +103,7 @@ fn check_item_missing_price(data: &OrnaData, response: &mut String) -> Result<()
                     .codex
                     .items
                     .find_by_uri(&item.codex_uri)
-                    .map(|item| item.found_in_shops())
-                    .unwrap_or(false)
+                    .map_or(false, ornaguide_rs::codex::CodexItem::found_in_shops)
                 && item.price == 0
         }),
         "Missing <pre>price</pre>",
@@ -174,11 +173,11 @@ pub fn get() -> Html<String> {
     let data = match DATA.as_ref() {
         Ok(x) => x,
         Err(x) => {
-            return format!("Error: {}", x).into();
+            return format!("Error: {x}").into();
         }
     };
 
-    let mut response = format!("<html>{}<body>", STYLE);
+    let mut response = format!("<html>{STYLE}<body>");
 
     Ok(())
         .and_then(|_| writeln!(&mut response, "<h1>Items</h1>"))
@@ -195,7 +194,6 @@ pub fn get() -> Html<String> {
         .and_then(|_| writeln!(&mut response, "<hr/><h1>Pets</h1>"))
         .and_then(|_| check_pet_missing_price(data, &mut response))
         .and_then(|_| writeln!(&mut response, "</body></html>"))
-        .map(move |_| response)
-        .unwrap_or_else(|err| format!("Error: {}", err))
+        .map_or_else(|err| format!("Error: {err}"), move |_| response)
         .into()
 }

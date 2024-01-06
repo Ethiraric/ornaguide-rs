@@ -79,21 +79,21 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
             "{} status effects missing on guide:",
             missing_on_guide.len()
         );
-        for item in missing_on_guide.iter() {
-            println!("\t- {}", item);
+        for item in &missing_on_guide {
+            println!("\t- {item}");
         }
     }
 
     if !not_on_codex.is_empty() {
         println!("{} status effects not on codex:", not_on_codex.len());
-        for item in not_on_codex.iter() {
+        for item in &not_on_codex {
             println!("\t- {}", item.name);
         }
     }
 
     // Create the new status effects on the guide, if asked to.
     if fix && !missing_on_guide.is_empty() {
-        for status in missing_on_guide.iter() {
+        for status in &missing_on_guide {
             retry_once!(guide.admin_add_status_effect(status))?;
         }
 

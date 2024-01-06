@@ -22,7 +22,7 @@ use crate::{
         CodexBoss, CodexFollower, CodexItem, CodexMonster, CodexRaid, CodexSkill,
     },
     config::debug_urls,
-    error::{Error, ErrorKind},
+    error::{Error, Kind},
     guide::{
         html_form_parser::{
             parse_item_html, parse_monster_html, parse_pet_html, parse_skill_html,
@@ -50,7 +50,7 @@ async fn async_post_forms_to(
     form_root_name: &str,
 ) -> Result<(), Error> {
     if debug_urls()? {
-        eprintln!("--- POST {}", url);
+        eprintln!("--- POST {url}");
     }
 
     let mut tmpurl = reqwest::Url::parse("http://x").unwrap();
@@ -76,10 +76,7 @@ async fn async_post_forms_to(
     if status.is_success() {
         Ok(())
     } else {
-        Err(
-            ErrorKind::ResponseError("POST".to_string(), url.to_string(), status.as_u16(), text)
-                .into(),
-        )
+        Err(Kind::ResponseError("POST".to_string(), url.to_string(), status.as_u16(), text).into())
     }
 }
 
@@ -101,7 +98,7 @@ async fn get_expect_200(http: &Client, url: &str) -> Result<Response, Error> {
     if response.status() == StatusCode::OK {
         Ok(response)
     } else {
-        Err(ErrorKind::ResponseError(
+        Err(Kind::ResponseError(
             "GET".to_string(),
             url.to_string(),
             response.status().as_u16(),
@@ -114,7 +111,7 @@ async fn get_expect_200(http: &Client, url: &str) -> Result<Response, Error> {
 /// Execute a GET HTTP request and save the output.
 async fn async_get_and_save(http: &Client, url: &str) -> Result<String, Error> {
     if debug_urls()? {
-        eprintln!("--- GET {}", url);
+        eprintln!("--- GET {url}");
     }
     let response = get_expect_200(http, url).await?;
     let body = response.text().await?;
@@ -122,7 +119,7 @@ async fn async_get_and_save(http: &Client, url: &str) -> Result<String, Error> {
     if url.host_str().unwrap() != "localhost" {
         let path = url.path().replace('/', "_");
         let param = if let Some(x) = url.query() {
-            format!("?{}", x)
+            format!("?{x}")
         } else {
             String::new()
         };
@@ -133,7 +130,7 @@ async fn async_get_and_save(http: &Client, url: &str) -> Result<String, Error> {
             param
         );
         let mut writer = BufWriter::new(File::create(filename)?);
-        write!(writer, "{}", body)?;
+        write!(writer, "{body}")?;
     }
     Ok(body)
 }
@@ -161,10 +158,7 @@ fn query_all_pages(base_url: &str, http: &Client) -> Result<Vec<Entry>, Error> {
             let ParsedTable {
                 mut entries,
                 number_entries: _,
-            } = parse_list_html(&get_and_save(
-                http,
-                &format!("{}/?p={}", base_url, page_no),
-            )?)?;
+            } = parse_list_html(&get_and_save(http, &format!("{base_url}/?p={page_no}"))?)?;
             page_no += 1;
             ret.append(&mut entries);
         }
@@ -179,24 +173,21 @@ fn query_all_codex_pages(base_url: &str, http: &Client) -> Result<Vec<CodexListE
         mut has_next_page,
     } = parse_html_codex_list(&get_and_save(http, base_url)?)?;
 
-    if !has_next_page {
-        Ok(entries)
-    } else {
+    if has_next_page {
         let mut ret = entries;
         let mut page_no = 2;
         while has_next_page {
             let ParsedList {
                 mut entries,
                 has_next_page: not_done,
-            } = parse_html_codex_list(&get_and_save(
-                http,
-                &format!("{}/?p={}", base_url, page_no),
-            )?)?;
+            } = parse_html_codex_list(&get_and_save(http, &format!("{base_url}/?p={page_no}"))?)?;
             page_no += 1;
             ret.append(&mut entries);
             has_next_page = not_done;
         }
         Ok(ret)
+    } else {
+        Ok(entries)
     }
 }
 
@@ -474,7 +465,7 @@ impl Http {
     pub(crate) fn codex_retrieve_monster(&self, monster_name: &str) -> Result<CodexMonster, Error> {
         parse_html_codex_monster(
             &self.codex_retrieve_monster_page(monster_name)?,
-            monster_name.to_string(),
+            monster_name,
         )
     }
 
@@ -490,10 +481,7 @@ impl Http {
     }
 
     pub(crate) fn codex_retrieve_boss(&self, boss_name: &str) -> Result<CodexBoss, Error> {
-        parse_html_codex_boss(
-            &self.codex_retrieve_boss_page(boss_name)?,
-            boss_name.to_string(),
-        )
+        parse_html_codex_boss(&self.codex_retrieve_boss_page(boss_name)?, boss_name)
     }
 
     // Codex Raids
@@ -508,10 +496,7 @@ impl Http {
     }
 
     pub(crate) fn codex_retrieve_raid(&self, raid_name: &str) -> Result<CodexRaid, Error> {
-        parse_html_codex_raid(
-            &self.codex_retrieve_raid_page(raid_name)?,
-            raid_name.to_string(),
-        )
+        parse_html_codex_raid(&self.codex_retrieve_raid_page(raid_name)?, raid_name)
     }
 
     // Codex Items
@@ -579,10 +564,7 @@ impl Http {
             "{}/codex/monsters/{}/?lang={}",
             self.playorna_host, monster_name, locale
         );
-        parse_html_codex_monster_translation(
-            &get_and_save(&self.http, &url)?,
-            monster_name.to_string(),
-        )
+        parse_html_codex_monster_translation(&get_and_save(&self.http, &url)?, monster_name)
     }
 
     pub(crate) fn codex_retrieve_boss_translation(
@@ -594,7 +576,7 @@ impl Http {
             "{}/codex/bosses/{}/?lang={}",
             self.playorna_host, boss_name, locale
         );
-        parse_html_codex_boss_translation(&get_and_save(&self.http, &url)?, boss_name.to_string())
+        parse_html_codex_boss_translation(&get_and_save(&self.http, &url)?, boss_name)
     }
 
     pub(crate) fn codex_retrieve_raid_translation(
@@ -606,7 +588,7 @@ impl Http {
             "{}/codex/raids/{}/?lang={}",
             self.playorna_host, raid_name, locale
         );
-        parse_html_codex_raid_translation(&get_and_save(&self.http, &url)?, raid_name.to_string())
+        parse_html_codex_raid_translation(&get_and_save(&self.http, &url)?, raid_name)
     }
 
     pub(crate) fn codex_retrieve_item_translation(

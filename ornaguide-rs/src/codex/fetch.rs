@@ -3,11 +3,15 @@ use crate::{
         Codex, CodexBosses, CodexFollowers, CodexItems, CodexMonsters, CodexRaids, CodexSkills,
         Sluggable,
     },
-    error::{Error},
+    error::Error,
     guide::OrnaAdminGuide,
 };
 
 /// Retrieve all items from the codex.
+///
+/// # Errors
+/// Errors if there's an IO, HTTP or parsing error.
+/// This function is not able to return partial results.
 pub fn items(guide: &OrnaAdminGuide) -> Result<CodexItems, Error> {
     Ok(CodexItems {
         items: guide
@@ -20,6 +24,10 @@ pub fn items(guide: &OrnaAdminGuide) -> Result<CodexItems, Error> {
 
 /// Retrieve all searchable monsters from the codex.
 /// This does not fetch monsters from non-active events.
+///
+/// # Errors
+/// Errors if there's an IO, HTTP or parsing error.
+/// This function is not able to return partial results.
 pub fn monsters(guide: &OrnaAdminGuide) -> Result<CodexMonsters, Error> {
     Ok(CodexMonsters {
         monsters: guide
@@ -32,6 +40,10 @@ pub fn monsters(guide: &OrnaAdminGuide) -> Result<CodexMonsters, Error> {
 
 /// Retrieve all searchable bosses from the codex.
 /// This does not fetch bosses from non-active events.
+///
+/// # Errors
+/// Errors if there's an IO, HTTP or parsing error.
+/// This function is not able to return partial results.
 pub fn bosses(guide: &OrnaAdminGuide) -> Result<CodexBosses, Error> {
     Ok(CodexBosses {
         bosses: guide
@@ -44,6 +56,10 @@ pub fn bosses(guide: &OrnaAdminGuide) -> Result<CodexBosses, Error> {
 
 /// Retrieve all searchable raids from the codex.
 /// This does not fetch raids from non-active events.
+///
+/// # Errors
+/// Errors if there's an IO, HTTP or parsing error.
+/// This function is not able to return partial results.
 pub fn raids(guide: &OrnaAdminGuide) -> Result<CodexRaids, Error> {
     Ok(CodexRaids {
         raids: guide
@@ -55,6 +71,10 @@ pub fn raids(guide: &OrnaAdminGuide) -> Result<CodexRaids, Error> {
 }
 
 /// Retrieve all skills from the codex.
+///
+/// # Errors
+/// Errors if there's an IO, HTTP or parsing error.
+/// This function is not able to return partial results.
 pub fn skills(guide: &OrnaAdminGuide) -> Result<CodexSkills, Error> {
     Ok(CodexSkills {
         skills: guide
@@ -67,6 +87,10 @@ pub fn skills(guide: &OrnaAdminGuide) -> Result<CodexSkills, Error> {
 
 /// Retrieve all searchable followers from the codex.
 /// This does not fetch followers from non-active events.
+///
+/// # Errors
+/// Errors if there's an IO, HTTP or parsing error.
+/// This function is not able to return partial results.
 pub fn followers(guide: &OrnaAdminGuide) -> Result<CodexFollowers, Error> {
     Ok(CodexFollowers {
         followers: guide

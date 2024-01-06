@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use ornaguide_rs::{
     data::OrnaData,
-    error::ErrorKind,
+    error::Kind,
     pets::admin::{AdminPet, CostType},
 };
 use proc_macros::api_filter;
@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     data::with_locale_data,
-    deref::deref_skills,
+    deref,
     error::{Error, MaybeResponse, ToErrorable},
     filter::{compilable::Compilable, Filter},
     make_post_impl,
@@ -73,16 +73,16 @@ impl PetFilters<'_> {
             for pet in pets.iter_mut() {
                 if let serde_json::Value::Object(pet) = pet {
                     if let Some(skills) = pet.get_mut("skills") {
-                        deref_skills(skills, data)?;
+                        deref::skills(skills, data)?;
                     }
                 } else {
-                    return Err(ErrorKind::Misc("Skill should be an object".to_string()).into_err())
+                    return Err(Kind::Misc("Skill should be an object".to_string()).into_err())
                         .to_internal_server_error();
                 }
             }
             Ok(())
         } else {
-            Err(ErrorKind::Misc("Skills should be an array".to_string()).into_err())
+            Err(Kind::Misc("Skills should be an array".to_string()).into_err())
                 .to_internal_server_error()
         }
     }

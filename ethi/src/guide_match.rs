@@ -23,7 +23,7 @@ pub fn all(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
 
 /// Execute a CLI subcommand on matching.
 pub fn cli(
-    command: cli::match_::Command,
+    command: &cli::match_::Command,
     guide: &OrnaAdminGuide,
     mut data: OrnaData,
 ) -> Result<(), Error> {
@@ -31,7 +31,7 @@ pub fn cli(
     match command.c {
         Some(cli::match_::Subcommand::Items) => items::perform(&mut data, fix, guide),
         Some(cli::match_::Subcommand::Monsters) => monsters::perform(&mut data, fix, guide),
-        Some(cli::match_::Subcommand::Pets) => monsters::perform(&mut data, fix, guide),
+        Some(cli::match_::Subcommand::Pets) => pets::perform(&mut data, fix, guide),
         Some(cli::match_::Subcommand::Skills) => skills::perform(&mut data, fix, guide),
         Some(cli::match_::Subcommand::StatusEffects) => {
             status_effects::perform(&mut data, fix, guide)
