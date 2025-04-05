@@ -42,6 +42,12 @@ backup_current_entries_now:
   mv data/current_entries-${NOWDT}.tar.bz2 data/backups/current_entries
   rm -r data/current_entries-${NOWDT}
 
+json_refresh_ornaguide:
+  ORNAGUIDE_HOST=https://orna.guide cargo run --bin ethi json refresh guide
+
+json_refresh_playorna:
+  PLAYORNA_HOST=https://playorna.com PLAYORNA_SLEEP=5 cargo run --bin ethi json refresh codex
+
 merge:
   cargo run --release --bin ethi backups merge
 

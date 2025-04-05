@@ -511,10 +511,7 @@ impl Http {
     }
 
     pub(crate) fn codex_retrieve_item(&self, item_name: &str) -> Result<CodexItem, Error> {
-        parse_html_codex_item(
-            &self.codex_retrieve_item_page(item_name)?,
-            item_name.to_string(),
-        )
+        parse_html_codex_item(&self.codex_retrieve_item_page(item_name)?, item_name)
     }
 
     // Codex Followers

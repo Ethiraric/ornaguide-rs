@@ -365,7 +365,13 @@ fn parse_ability(node: Option<&NodeRef>) -> Result<Option<Ability>, Error> {
 }
 
 /// Parses an item page from `playorna.com` and returns the details about the given item.
-pub fn parse_html_codex_item(contents: &str, slug: String) -> Result<Item, Error> {
+pub fn parse_html_codex_item(contents: &str, slug: &str) -> Result<Item, Error> {
+    parse_html_codex_item_impl(contents, slug.into())
+        .map_err(|e| e.ctx_push(format!("parsing {slug}")))
+}
+
+/// Parses an item page from `playorna.com` and returns the details about the given item.
+fn parse_html_codex_item_impl(contents: &str, slug: String) -> Result<Item, Error> {
     let html = parse_html().one(contents);
 
     let name = descend_to(&html, ".herotext", "html")?;
