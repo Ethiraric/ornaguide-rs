@@ -725,15 +725,17 @@ impl LocaleDB {
         for entry in std::fs::read_dir(directory)?
             .filter_map(std::result::Result::ok)
             .filter(|entry| {
-                entry.file_name().to_str().map_or(false, |name| {
+                entry.file_name().to_str().is_some_and(|name| {
                     std::path::Path::new(name)
                         .extension()
-                        .map_or(false, |ext| ext.eq_ignore_ascii_case("json"))
+                        .is_some_and(|ext| ext.eq_ignore_ascii_case("json"))
                 })
             })
         {
             let filename = entry.file_name();
-            let Some(name) = filename.to_str() else { continue; };
+            let Some(name) = filename.to_str() else {
+                continue;
+            };
             if let Some(lang) = name.strip_suffix(".json") {
                 match LocaleStrings::load_from(&format!("{directory}/{name}")) {
                     Ok(db) => {
@@ -775,26 +777,26 @@ pub trait TranslationFor<T> {
 
 impl TranslationFor<AdminItem> for ItemTranslation {
     fn apply_to(&self, item: &mut AdminItem) {
-        item.name = self.name.clone();
-        item.description = self.description.clone();
+        item.name.clone_from(&self.name);
+        item.description.clone_from(&self.description);
     }
 }
 
 impl TranslationFor<AdminMonster> for RaidTranslation {
     fn apply_to(&self, raid: &mut AdminMonster) {
-        raid.name = self.name.clone();
+        raid.name.clone_from(&self.name);
     }
 }
 
 impl TranslationFor<AdminMonster> for BossTranslation {
     fn apply_to(&self, boss: &mut AdminMonster) {
-        boss.name = self.name.clone();
+        boss.name.clone_from(&self.name);
     }
 }
 
 impl TranslationFor<AdminMonster> for MonsterTranslation {
     fn apply_to(&self, monster: &mut AdminMonster) {
-        monster.name = self.name.clone();
+        monster.name.clone_from(&self.name);
     }
 }
 
@@ -810,14 +812,14 @@ impl TranslationFor<AdminMonster> for GenericMonsterTranslation {
 
 impl TranslationFor<AdminSkill> for SkillTranslation {
     fn apply_to(&self, skill: &mut AdminSkill) {
-        skill.name = self.name.clone();
-        skill.description = self.description.clone();
+        skill.name.clone_from(&self.name);
+        skill.description.clone_from(&self.description);
     }
 }
 
 impl TranslationFor<AdminPet> for FollowerTranslation {
     fn apply_to(&self, follower: &mut AdminPet) {
-        follower.name = self.name.clone();
-        follower.description = self.description.clone();
+        follower.name.clone_from(&self.name);
+        follower.description.clone_from(&self.description);
     }
 }

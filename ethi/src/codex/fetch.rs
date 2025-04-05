@@ -575,7 +575,7 @@ where
     let sleep = crate::config::playorna_sleep()? as u64;
     let mut ret = Vec::with_capacity(entries.len());
     let bar = bar(entries.len() as u64);
-    for entry in entries.iter() {
+    for entry in entries {
         let slug = entry.slug();
         bar.set_message(slug.to_string());
         match fetch(slug) {
@@ -604,7 +604,7 @@ where
     let sleep = crate::config::playorna_sleep()? as u64;
     let mut ret = Vec::with_capacity(slugs.len());
     let bar = bar(slugs.len() as u64);
-    for slug in slugs.iter() {
+    for slug in slugs {
         bar.set_message((*slug).to_string());
         match fetch(slug) {
             Ok(item) => ret.push(item),

@@ -21,9 +21,9 @@ pub trait Compilable<'a, T> {
 
 /// If the filter is an expression one, "compile" it to a more efficient representation.
 /// Parse the expression and create a closure from it.
-pub fn compile_from_str<'a, T: 'a>(str: &str) -> Result<Filter<'a, T>, Error>
+pub fn compile_from_str<'a, T>(str: &str) -> Result<Filter<'a, T>, Error>
 where
-    T: FromStr + std::cmp::PartialOrd,
+    T: 'a + FromStr + std::cmp::PartialOrd,
     <T as FromStr>::Err: ToString,
 {
     let result = (|| -> Result<Filter<'a, T>, OError> {
@@ -151,10 +151,7 @@ impl<'a> Compilable<'a, String> for Filter<'a, String> {
                 } else {
                     let words = str.split(' ').map(str::to_lowercase).collect_vec();
                     Ok(Filter::Compiled(Box::new(move |a| {
-                        words
-                            .iter()
-                            .map(|word| case_insensitive_contains(a, word))
-                            .all(|ok| ok)
+                        words.iter().all(|word| case_insensitive_contains(a, word))
                     })))
                 }
             }
@@ -284,7 +281,7 @@ fn case_insensitive_contains(not_lowercase_haystack: &str, lowercase_needle: &st
 
     // Get the first character from the needle.
     let Some(first_needle) = lowercase_needle.chars().next() else {
-        return true
+        return true;
     };
 
     // Iterate through that iterator.

@@ -29,6 +29,7 @@ pub(crate) fn save_to<P: AsRef<Path>>(backup: &Backup, path: P, name: &str) -> R
         File::options()
             .write(true)
             .create(true)
+            .truncate(true)
             .open(archive_path)?,
         Compression::best(),
     ));

@@ -79,9 +79,9 @@ pub enum Kind {
         /// The skills codex URIs that were not found on the guide.
         Vec<String>,
     ),
-    /// A conversion from multiple codex item dropped_bys to guide ids did not fully succeed.
+    /// A conversion from multiple codex item `dropped_bys` to guide ids did not fully succeed.
     PartialCodexItemDroppedBysConversion(
-        /// The dropped_bys that were successfully converted.
+        /// The `dropped_bys` that were successfully converted.
         Vec<u32>,
         /// The monster codex URIs that were not found on the guide.
         Vec<String>,
@@ -311,7 +311,7 @@ impl From<FromUtf8Error> for Kind {
 /// A newtype to have `Formatter` impl `io::Write`
 struct WritableFormatter<'a, 'b>(&'a mut std::fmt::Formatter<'b>);
 
-impl<'a, 'b> std::io::Write for WritableFormatter<'a, 'b> {
+impl std::io::Write for WritableFormatter<'_, '_> {
     fn write(&mut self, bytes: &[u8]) -> std::result::Result<usize, std::io::Error> {
         self.0
             .write_str(&String::from_utf8_lossy(bytes))

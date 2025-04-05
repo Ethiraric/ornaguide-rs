@@ -15,6 +15,6 @@ pub fn cli(
             crate::codex_bugs::check(data, guide);
             Ok(())
         }
-        cli::codex::Command::Missing => fetch::missing(guide, data).map(|_| ()),
+        cli::codex::Command::Missing => fetch::missing(guide, data),
     }
 }

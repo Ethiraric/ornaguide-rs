@@ -122,7 +122,7 @@ fn main2() -> Result<(), Error> {
 fn main() {
     let begin = Instant::now();
     match main2() {
-        Ok(_) => println!("OK"),
+        Ok(()) => println!("OK"),
         Err(err) => eprintln!("Error: {err}"),
     }
     let end = Instant::now();

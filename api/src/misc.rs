@@ -5,6 +5,7 @@
 ///   - Apply filters (if there are)
 ///   - Apply sorting (if there is)
 ///   - Convert to JSON
+///
 /// The function has the following signature:
 /// `fn (mut $filter_type) -> Result<serde_json::Value, $crate::error::Error>`
 #[macro_export]
@@ -28,7 +29,7 @@ macro_rules! make_post_impl {
                             .collect_vec())
                     }
                 },
-                &options.lang,
+                options.lang.as_ref(),
             )
             .and_then(|mut entity| {
                 <$filter_type>::apply_sort(&options, &mut entity)?;
@@ -43,7 +44,7 @@ macro_rules! make_post_impl {
                 if options.deref {
                     with_locale_data(
                         |data| <$filter_type>::deref(&mut entities, data),
-                        &options.lang,
+                        options.lang.as_ref(),
                     )?
                 }
                 Ok(entities)

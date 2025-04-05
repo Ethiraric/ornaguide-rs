@@ -17,6 +17,7 @@ use crate::{
 /// List monsters that are either:
 ///   - On the guide, but missing on the codex.
 ///   - On the codex, but missing on the guide.
+///
 /// None of these should happen. We can query the codex for monsters outside of their event.
 fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     let missing_on_guide = data
@@ -152,7 +153,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                 &admin_monster.image_name,
                 codex_monster.icon(),
                 |monster, image_name| {
-                    monster.image_name = image_name.clone();
+                    monster.image_name.clone_from(image_name);
                     Ok(())
                 },
             )?;
@@ -280,11 +281,11 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                             .spawns
                             .iter()
                             .find(|spawn| spawn.id == *spawn_id)
-                            .map_or(false, |spawn| {
+                            .is_some_and(|spawn| {
                                 spawn.name != "Kingdom Raid" && spawn.name != "World Raid"
                             })
                     });
-                    for tag in tags_strs.iter() {
+                    for tag in tags_strs {
                         if let Some(spawn) = data
                             .guide
                             .static_

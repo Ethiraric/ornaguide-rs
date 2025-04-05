@@ -15,6 +15,7 @@ use crate::{
 /// List skills that are either:
 ///   - On the guide, but missing on the codex.
 ///   - On the codex, but missing on the guide.
+///
 /// None of these should happen.
 fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     // Passives are not listed on the codex. We get the id to filter out passive skills.
@@ -146,7 +147,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 &admin_skill.description,
                 &codex_description,
                 |skill, description| {
-                    skill.description = description.clone();
+                    skill.description.clone_from(description);
                     Ok(())
                 },
             )?;

@@ -75,8 +75,8 @@ where
 }
 
 /// A basic style for the HTML pages.
-pub const STYLE: &str = r#"<style>
+pub const STYLE: &str = r"<style>
     pre { display: inline; margin: 0; }
     html { color: #FFFFFF; background-color: #313339; }
     a { color: #11A6E1; }
-</style>"#;
+</style>";

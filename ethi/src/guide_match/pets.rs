@@ -16,6 +16,7 @@ use super::misc::CodexAbilities;
 /// List pets that are either:
 ///   - On the guide, but missing on the codex.
 ///   - On the codex, but missing on the guide.
+///
 /// None of these should happen.
 fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     let missing_on_guide = data
@@ -114,7 +115,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 &pet.name,
                 &follower.name,
                 |pet: &mut AdminPet, name| {
-                    pet.name = name.clone();
+                    pet.name.clone_from(name);
                     Ok(())
                 },
             )?;
@@ -125,7 +126,7 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 &pet.image_name,
                 &follower.icon,
                 |pet: &mut AdminPet, image_name| {
-                    pet.image_name = image_name.clone();
+                    pet.image_name.clone_from(image_name);
                     Ok(())
                 },
             )?;

@@ -77,7 +77,7 @@ pub struct Stats {
     pub orn_bonus: Option<u8>,
     /// The luck bonus of the item (at common quality).
     pub luck_bonus: Option<u8>,
-    /// Whether the item is two_handed.
+    /// Whether the item is `two_handed`.
     /// This will be set to false for all items to which this does not apply. The online codex has
     /// no mention along the lines of "not two-handed".
     pub two_handed: bool,
@@ -211,6 +211,9 @@ impl Item {
     ///  - An unknown ability will be ignored, rather than returning an error.
     ///  - An unknown element will be ignored, rather than returning an error.
     ///  - `self.dropped_by` is ignored and will not be saved in the returned `AdminItem`.
+    ///
+    /// # Panics
+    /// Panics if an ID conversion failed.
     #[allow(clippy::too_many_lines)]
     #[must_use]
     pub fn to_admin_item(&self, guide_data: &GuideData) -> AdminItem {
@@ -329,36 +332,44 @@ impl Item {
     }
 }
 
-impl ToString for Element {
-    fn to_string(&self) -> String {
-        match self {
-            Element::Fire => "Fire".to_string(),
-            Element::Water => "Water".to_string(),
-            Element::Earthen => "Earthen".to_string(),
-            Element::Lightning => "Lightning".to_string(),
-            Element::Holy => "Holy".to_string(),
-            Element::Dark => "Dark".to_string(),
-            Element::Arcane => "Arcane".to_string(),
-            Element::Dragon => "Dragon".to_string(),
-            Element::Physical => "Physical".to_string(),
-        }
+impl std::fmt::Display for Element {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Element::Fire => "Fire",
+                Element::Water => "Water",
+                Element::Earthen => "Earthen",
+                Element::Lightning => "Lightning",
+                Element::Holy => "Holy",
+                Element::Dark => "Dark",
+                Element::Arcane => "Arcane",
+                Element::Dragon => "Dragon",
+                Element::Physical => "Physical",
+            }
+        )
     }
 }
 
-impl ToString for Place {
-    fn to_string(&self) -> String {
-        match self {
-            Place::Head => "Head".to_string(),
-            Place::Weapon => "Weapon".to_string(),
-            Place::Torso => "Torso".to_string(),
-            Place::OffHand => "Off-hand".to_string(),
-            Place::Legs => "Legs".to_string(),
-            Place::Accessory => "Accessory".to_string(),
-            Place::Armor => "Armor".to_string(),
-            Place::Augment => "Augment".to_string(),
-            // TODO(ethiraric, 26/01/2023): Check if this is a typo.
-            Place::Material => "material".to_string(),
-        }
+impl std::fmt::Display for Place {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Place::Head => "Head",
+                Place::Weapon => "Weapon",
+                Place::Torso => "Torso",
+                Place::OffHand => "Off-hand",
+                Place::Legs => "Legs",
+                Place::Accessory => "Accessory",
+                Place::Armor => "Armor",
+                Place::Augment => "Augment",
+                // TODO(ethiraric, 26/01/2023): Check if this is a typo.
+                Place::Material => "material",
+            }
+        )
     }
 }
 

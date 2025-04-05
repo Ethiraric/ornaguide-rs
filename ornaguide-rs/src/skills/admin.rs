@@ -25,7 +25,7 @@ pub struct AdminSkill {
     pub name: String,
     /// The tier of the skill.
     pub tier: u8,
-    /// The id of the type of the skill (Buff, Attack, AoE Debuff, ...).
+    /// The id of the type of the skill (Buff, Attack, `AoE` Debuff, ...).
     pub type_: u32,
     /// Whether the skill is a magic one.
     pub is_magic: bool,

@@ -77,6 +77,7 @@ pub fn diff_sorted_slices<'a, T: PartialEq + PartialOrd>(
 /// A trait to extend `Vec<u32>` specifically.
 /// Use with caution, as this should only be used on `Vec`s that hold `u32`s representing skill
 /// ids.
+#[allow(unused)]
 pub trait VecSkillIds {
     /// Convert the `Vec` of skill ids to a sorted `Vec` of codex URIs for the skills.
     fn guide_skill_ids_to_codex_uri<'a>(&self, data: &'a OrnaData) -> Vec<&'a str>;
@@ -102,6 +103,7 @@ impl VecSkillIds for Vec<u32> {
 /// A trait to extend `Vec<u32>` specifically.
 /// Use with caution, as this should only be used on `Vec`s that hold `u32`s representing status
 /// effect ids.
+#[allow(unused)]
 pub trait VecStatusEffectIds {
     /// Convert the `Vec` of status effect ids to a sorted `Vec` of codex URIs for the status
     /// effects.
@@ -182,7 +184,7 @@ where
     D: Deserializer<'de>,
 {
     struct V {}
-    impl<'de> Visitor<'de> for V {
+    impl Visitor<'_> for V {
         type Value = u8;
 
         fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {

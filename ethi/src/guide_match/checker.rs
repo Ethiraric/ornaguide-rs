@@ -9,7 +9,8 @@ use crate::misc::diff_sorted_slices;
 
 /// Compare the option in a field and fix it to what is expected.
 /// The conversion function is used to translate from the codex to the guide.
-pub fn fix_option_field<'a, AdminEntity, AdminToOption, T: 'a, U, FnConvert>(
+#[allow(clippy::ref_option)]
+pub fn fix_option_field<'a, AdminEntity, AdminToOption, T, U, FnConvert>(
     admin: &'a mut AdminEntity,
     admin_to_option: AdminToOption,
     expected_option: &Option<U>,
@@ -17,7 +18,7 @@ pub fn fix_option_field<'a, AdminEntity, AdminToOption, T: 'a, U, FnConvert>(
 ) -> Result<(), Error>
 where
     AdminToOption: FnOnce(&'a mut AdminEntity) -> Result<&'a mut Option<T>, Error>,
-    T: std::cmp::Ord + std::fmt::Debug,
+    T: 'a + std::cmp::Ord + std::fmt::Debug,
     FnConvert: FnOnce(&U) -> Result<T, Error>,
 {
     let admin_option = admin_to_option(admin)?;
@@ -32,16 +33,7 @@ where
 
 /// Compare the list of elements in a field and split them into a list to add and one to remove.
 /// Call the given callable accordingly.
-pub fn fix_vec_field<
-    'a,
-    AdminEntity,
-    AdminToVec,
-    T: 'a,
-    FnRemove,
-    FnAdd,
-    FnToDebuggable,
-    Debuggable,
->(
+pub fn fix_vec_field<'a, AdminEntity, AdminToVec, T, FnRemove, FnAdd, FnToDebuggable, Debuggable>(
     admin: &mut AdminEntity,
     admin_to_vec: AdminToVec,
     expected_vec: &'a [T],
@@ -51,7 +43,7 @@ pub fn fix_vec_field<
 ) -> Result<(), Error>
 where
     AdminToVec: FnOnce(&mut AdminEntity) -> Result<&'a Vec<T>, Error>,
-    T: std::cmp::Ord,
+    T: 'a + std::cmp::Ord,
     FnRemove: FnOnce(&mut AdminEntity, &Vec<&'a T>) -> Result<(), Error>,
     FnAdd: FnOnce(&mut AdminEntity, &Vec<&'a T>) -> Result<(), Error>,
     FnToDebuggable: Fn(&T) -> Debuggable,

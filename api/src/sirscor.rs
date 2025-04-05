@@ -102,8 +102,7 @@ fn check_item_missing_price(data: &OrnaData, response: &mut String) -> Result<()
                 && data
                     .codex
                     .items
-                    .find_by_uri(&item.codex_uri)
-                    .map_or(false, ornaguide_rs::codex::CodexItem::found_in_shops)
+                    .find_by_uri(&item.codex_uri).is_some_and(ornaguide_rs::codex::CodexItem::found_in_shops)
                 && item.price == 0
         }),
         "Missing <pre>price</pre>",
@@ -180,20 +179,20 @@ pub fn get() -> Html<String> {
     let mut response = format!("<html>{STYLE}<body>");
 
     Ok(())
-        .and_then(|_| writeln!(&mut response, "<h1>Items</h1>"))
-        .and_then(|_| check_item_empty_equipped_by(data, &mut response))
-        .and_then(|_| check_item_missing_rarity(data, &mut response))
-        .and_then(|_| check_item_tbd_type(data, &mut response))
-        .and_then(|_| check_item_missing_category(data, &mut response))
-        .and_then(|_| check_item_missing_price(data, &mut response))
-        .and_then(|_| writeln!(&mut response, "<hr/><h1>Skills</h1>"))
-        .and_then(|_| check_skill_tbd_type(data, &mut response))
-        .and_then(|_| check_skill_missing_price(data, &mut response))
-        .and_then(|_| writeln!(&mut response, "<hr/><h1>Monsters</h1>"))
-        .and_then(|_| check_monster_missing_hp(data, &mut response))
-        .and_then(|_| writeln!(&mut response, "<hr/><h1>Pets</h1>"))
-        .and_then(|_| check_pet_missing_price(data, &mut response))
-        .and_then(|_| writeln!(&mut response, "</body></html>"))
-        .map_or_else(|err| format!("Error: {err}"), move |_| response)
+        .and_then(|()| writeln!(&mut response, "<h1>Items</h1>"))
+        .and_then(|()| check_item_empty_equipped_by(data, &mut response))
+        .and_then(|()| check_item_missing_rarity(data, &mut response))
+        .and_then(|()| check_item_tbd_type(data, &mut response))
+        .and_then(|()| check_item_missing_category(data, &mut response))
+        .and_then(|()| check_item_missing_price(data, &mut response))
+        .and_then(|()| writeln!(&mut response, "<hr/><h1>Skills</h1>"))
+        .and_then(|()| check_skill_tbd_type(data, &mut response))
+        .and_then(|()| check_skill_missing_price(data, &mut response))
+        .and_then(|()| writeln!(&mut response, "<hr/><h1>Monsters</h1>"))
+        .and_then(|()| check_monster_missing_hp(data, &mut response))
+        .and_then(|()| writeln!(&mut response, "<hr/><h1>Pets</h1>"))
+        .and_then(|()| check_pet_missing_price(data, &mut response))
+        .and_then(|()| writeln!(&mut response, "</body></html>"))
+        .map_or_else(|err| format!("Error: {err}"), move |()| response)
         .into()
 }

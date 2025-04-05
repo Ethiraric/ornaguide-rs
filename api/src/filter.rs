@@ -18,7 +18,7 @@ pub enum Filter<'a, T> {
     Compiled(Box<dyn Fn(&T) -> bool + 'a>),
 }
 
-impl<'a, T> Default for Filter<'a, T> {
+impl<T> Default for Filter<'_, T> {
     fn default() -> Self {
         Self::None
     }

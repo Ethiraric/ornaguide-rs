@@ -92,6 +92,7 @@ pub struct AdminItem {
     ///   * 2 at ornate quality
     ///   * 3 when Masterforged
     ///   * 4 when Godforged
+    ///
     /// Meaning the maximum adorns that an item can have is this + 4.
     pub base_adornment_slots: u8,
     /// Rarity of the item (based on the background of the item at common quality).

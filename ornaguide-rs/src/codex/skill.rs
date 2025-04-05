@@ -110,6 +110,9 @@ impl CodexSkill {
 
     /// Try to convert `self` to an `AdminSkill`.
     /// Unknown status effects are ignored, rather than returning an error.
+    ///
+    /// # Panics
+    /// Panics if an ID conversion failed.
     #[must_use]
     pub fn to_admin_skill(&self, static_: &Static) -> AdminSkill {
         AdminSkill {

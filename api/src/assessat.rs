@@ -118,6 +118,7 @@ struct FloatStats {
 }
 
 /// Boni granted by an item at level 1.
+#[allow(clippy::struct_field_names)]
 #[derive(Default)]
 struct Boni {
     pub orn_bonus: f64,
@@ -220,7 +221,7 @@ impl AssessCtx {
             drop_bonus: self
                 .quality_tier
                 .bonus(self.is_adorn, self.item.drop_bonus as f64),
-            /// TODO(ethiraric, 22/03/2023): How does that even scale?
+            // TODO(ethiraric, 22/03/2023): How does that even scale?
             spawn_bonus: self.item.spawn_bonus as f64,
             exp_bonus: self
                 .quality_tier
@@ -405,7 +406,7 @@ fn raw_assessat(
         orn_bonus: quality_tier.bonus(is_adorn, item.orn_bonus as f64) as f32,
         gold_bonus: quality_tier.bonus(is_adorn, item.gold_bonus as f64) as f32,
         drop_bonus: quality_tier.bonus(is_adorn, item.drop_bonus as f64) as f32,
-        /// TODO(ethiraric, 22/03/2023): How does that even scale?
+        // TODO(ethiraric, 22/03/2023): How does that even scale?
         spawn_bonus: item.spawn_bonus,
         exp_bonus: quality_tier.bonus(is_adorn, item.exp_bonus as f64) as f32,
     }
@@ -498,20 +499,18 @@ impl QualityTier {
     ///   - Famed: 120-130%
     ///   - Legendary: 140-170%
     ///   - Ornate: 170-200%
+    ///
     /// In the event a quality belongs to two tiers, it is assigned the lowest tier (e.g.: 170%
     /// will return Legendary).
     pub fn from_percent(percent: u8) -> Self {
         match percent {
-            percent if percent < 70 => QualityTier::Impossible,
-            percent if percent <= 90 => QualityTier::Broken,
-            percent if percent < 100 => QualityTier::Poor,
-            percent if percent == 100 => QualityTier::Common,
-            percent if percent < 110 => QualityTier::Impossible,
-            percent if percent <= 120 => QualityTier::Superior,
-            percent if percent <= 130 => QualityTier::Famed,
-            percent if percent < 140 => QualityTier::Impossible,
-            percent if percent <= 170 => QualityTier::Legendary,
-            percent if percent <= 200 => QualityTier::Ornate,
+            70..=90 => QualityTier::Broken,
+            91..=99 => QualityTier::Poor,
+            100 => QualityTier::Common,
+            110..=120 => QualityTier::Superior,
+            121..=130 => QualityTier::Famed,
+            140..=170 => QualityTier::Legendary,
+            171..=200 => QualityTier::Ornate,
             _ => QualityTier::Impossible,
         }
     }

@@ -33,6 +33,7 @@ impl Options {
 /// Trait to be implemented by entity holding IDs which can be dereferenced.
 /// For instance, monsters have abilities that the API will by default return as IDs. Running the
 /// monster through this trait will change the IDs to the abilities' names.
+#[allow(unused)]
 pub trait IdDerefable {
     /// Turn `self` to a serde value and replace IDs to names.
     fn id_deref(&self, data: &OrnaData) -> Result<serde_json::Value, Error>;

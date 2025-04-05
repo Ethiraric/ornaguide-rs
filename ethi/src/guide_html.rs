@@ -57,11 +57,11 @@ pub fn monster_to_former_entry_html(monster: &AdminMonster, data: &OrnaData) -> 
             String::new()
         } else {
             format!(
-                r#"
+                r"
         <b>Resists</b></br>
         <ul>
             <li>{}</li>
-        </ul>"#,
+        </ul>",
                 monster
                     .resistant_to
                     .iter()
@@ -80,11 +80,11 @@ pub fn monster_to_former_entry_html(monster: &AdminMonster, data: &OrnaData) -> 
             String::new()
         } else {
             format!(
-                r#"
+                r"
         <b>Immune to</b></br>
         <ul>
             <li>{}</li>
-        </ul>"#,
+        </ul>",
                 monster
                     .immune_to_status
                     .iter()

@@ -35,13 +35,13 @@ lazy_static! {
 /// Run a callable with a reference to an `OrnaData` instance, translated to the given locale, if
 /// any. The default locale is `en`.
 #[allow(clippy::module_name_repetitions)]
-pub fn with_locale_data<F, T>(f: F, lang: &Option<String>) -> Result<T, Error>
+pub fn with_locale_data<F, T>(f: F, lang: Option<&String>) -> Result<T, Error>
 where
     F: FnOnce(&'static OrnaData) -> Result<T, Error>,
 {
     // If `lang` is `None` or `en`, get the default data. Avoids a `HashMap` lookup for the most
     // common case.
-    match lang.as_ref().map(String::as_str) {
+    match lang.map(String::as_str) {
         None | Some("en") => with_data(f),
         Some(lang) => {
             let locale_data = LOCALE_DATA.as_ref().map_err(Error::clone)?;

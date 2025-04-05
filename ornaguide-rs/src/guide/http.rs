@@ -35,6 +35,7 @@ use crate::{
     utils::block_on_this_thread,
 };
 
+#[allow(clippy::struct_field_names)]
 pub(crate) struct Http {
     http: Client,
     orna_guide_host: String,

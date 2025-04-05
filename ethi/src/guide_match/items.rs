@@ -582,7 +582,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                         dropped_by,
                         |_, ids| {
                             // For each monster thet has one too much a drop.
-                            for id in ids.iter() {
+                            for id in ids {
                                 // Fetch the monster.
                                 let mut monster = guide.admin_retrieve_monster_by_id(**id)?;
                                 // Check whether the drop was not just present in the cache.
@@ -597,7 +597,7 @@ fn check_stats(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(),
                         },
                         |_, ids| {
                             // For each monster that is missing a drop.
-                            for id in ids.iter() {
+                            for id in ids {
                                 // Fetch the monster.
                                 let mut monster = guide.admin_retrieve_monster_by_id(**id)?;
                                 // Check whether the drop was not just missing from the cache.
