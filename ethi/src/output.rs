@@ -19,9 +19,12 @@ use crate::{
 /// Also adds event monsters that have no drops.
 /// Modifies `data` in-place.
 fn add_unlisted_monsters(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result<(), Error> {
-    // Monsters that are not necessarily listed (i.e.: belong to an event) and that have no drops.
+    // Monsters that are not necessarily listed (e.g.: belong to an event) and that have no drops.
     // These won't show up when listing through item drops.
-    let unlisted_without_drops = &["/codex/monsters/elite-balor-flame/".to_string()];
+    let unlisted_without_drops = &[
+        "/codex/monsters/elite-balor-flame/".to_string(),
+        "/codex/monsters/spawn-of-anguish/".to_string(),
+    ];
 
     let uris = data
         .items
