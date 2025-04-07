@@ -446,10 +446,7 @@ impl Http {
     }
 
     pub(crate) fn codex_retrieve_skill(&self, skill_name: &str) -> Result<CodexSkill, Error> {
-        parse_html_codex_skill(
-            &self.codex_retrieve_skill_page(skill_name)?,
-            skill_name.to_string(),
-        )
+        parse_html_codex_skill(&self.codex_retrieve_skill_page(skill_name)?, skill_name)
     }
 
     // Codex Monsters
@@ -535,7 +532,7 @@ impl Http {
     ) -> Result<CodexFollower, Error> {
         parse_html_codex_follower(
             &self.codex_retrieve_follower_page(follower_name)?,
-            follower_name.to_string(),
+            follower_name,
         )
     }
 

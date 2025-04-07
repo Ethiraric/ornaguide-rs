@@ -145,7 +145,13 @@ fn parse_abilities(iter_node: &NodeRef) -> Result<Vec<FollowerAbility>, Error> {
 }
 
 /// Parse a follower page from `playorna.com` for details about a follower.
-pub fn parse_html_codex_follower(contents: &str, slug: String) -> Result<CodexFollower, Error> {
+pub fn parse_html_codex_follower(contents: &str, slug: &str) -> Result<CodexFollower, Error> {
+    parse_html_codex_follower_impl(contents, slug.into())
+        .map_err(|e| e.ctx_push(format!("parsing {slug}")))
+}
+
+/// Parse a follower page from `playorna.com` for details about a follower.
+fn parse_html_codex_follower_impl(contents: &str, slug: String) -> Result<CodexFollower, Error> {
     let html = parse_html().one(contents);
 
     let name = descend_to(&html, ".herotext", "html")?;
@@ -166,7 +172,10 @@ pub fn parse_html_codex_follower(contents: &str, slug: String) -> Result<CodexFo
             "Abilities:" | "Skills:" => {
                 abilities = parse_abilities(h4.as_node())?;
             }
-            x => panic!("{}", x),
+            "Bestial Bond:" => {
+                // TODO(ethiraric, 2025/04/07): Bestial Bonds
+            }
+            x => return Err(Kind::HTMLParsingError(format!("Unexpected h4: \"{x}\"")).into()),
         }
     }
 

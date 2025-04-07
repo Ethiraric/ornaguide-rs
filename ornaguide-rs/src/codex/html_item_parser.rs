@@ -615,7 +615,7 @@ fn parse_html_codex_item_impl(contents: &str, slug: String) -> Result<Item, Erro
             "Upgrade materials:" => {
                 upgrade_materials = parse_upgrade_materials(h4.as_node())?;
             }
-            x => panic!("{}", x),
+            x => return Err(Kind::HTMLParsingError(format!("Unexpected h4: \"{x}\"")).into()),
         }
     }
 

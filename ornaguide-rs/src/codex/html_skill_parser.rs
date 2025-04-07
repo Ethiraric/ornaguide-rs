@@ -8,20 +8,24 @@ use crate::{
 };
 
 /// Parse the tier of the skill.
+///
+/// Format: ★X Spell/Skill
 fn parse_tier(node: &NodeRef) -> Result<u8, Error> {
     let text = node_to_text(node);
     let text = text.trim();
-    if let Some(pos) = text.find(':') {
-        let (_, tier_with_star) = text.split_at(pos + 1);
-        let mut it = tier_with_star.trim().chars();
-        it.next(); // Skip over the star.
-        Ok(it.as_str().parse()?)
-    } else {
-        Err(Kind::HTMLParsingError(format!(
-            "Failed to find ':' when parsing skill tier: \"{text}\""
-        ))
-        .into())
+    if let Some(text) = text.strip_prefix('★') {
+        if let Some(tier_text) = text
+            .strip_suffix("Spell")
+            .or_else(|| text.strip_suffix("Skill"))
+            .map(str::trim)
+        {
+            return Ok(tier_text.parse()?);
+        }
     }
+    Err(Kind::HTMLParsingError(format!(
+        "Failed to find '★' when parsing skill tier: \"{text}\""
+    ))
+    .into())
 }
 
 /// Parse a status effect section.
@@ -105,7 +109,14 @@ fn parse_summons(summons_root: &NodeRef) -> Result<Vec<Vec<SkillSummon>>, Error>
 }
 
 /// Parses a skill page from `playorna.com` and returns the details about the given skill.
-pub fn parse_html_codex_skill(contents: &str, slug: String) -> Result<CodexSkill, Error> {
+pub fn parse_html_codex_skill(contents: &str, slug: &str) -> Result<CodexSkill, Error> {
+    parse_html_codex_skill_impl(contents, slug.into())
+        .map_err(|e| e.ctx_push(format!("parsing {slug}")))
+}
+
+/// Parses a skill page from `playorna.com` and returns the details about the given skill.
+#[allow(clippy::match_same_arms)]
+fn parse_html_codex_skill_impl(contents: &str, slug: String) -> Result<CodexSkill, Error> {
     let html = parse_html().one(contents);
 
     let name = descend_to(&html, ".herotext", "html")?;
@@ -126,10 +137,16 @@ pub fn parse_html_codex_skill(contents: &str, slug: String) -> Result<CodexSkill
             "Gives:" => {
                 gives = parse_status_effects(h4.as_node())?;
             }
+            "Cures:" => {
+                // TODO(ethiraric, 2025/04/07): Cures
+            }
             "Summons:" => {
                 summons = parse_summons(h4.as_node())?;
             }
-            x => panic!("{}", x),
+            "Learned by:" => {
+                // TODO(ethiraric, 2025/04/07): Learned by
+            }
+            x => return Err(Kind::HTMLParsingError(format!("Unexpected h4: \"{x}\"")).into()),
         }
     }
 

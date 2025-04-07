@@ -153,6 +153,8 @@ fn add_event_followers(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result<(
     ];
 
     let bar = bar(event_pets.len() as u64);
+    let sleep = crate::config::playorna_sleep().unwrap();
+    let mut last_err = None;
     for slug in event_pets {
         bar.set_message((*slug).to_string());
         // Don't include a follower twice.
@@ -168,13 +170,23 @@ fn add_event_followers(guide: &OrnaAdminGuide, data: &mut CodexData) -> Result<(
                     kind: Kind::ResponseError(_, _, 404, _),
                     ..
                 }) => {}
-                Err(x) => return Err(x),
+                Err(x) => {
+                    println!("Failed to parse event follower \"{slug}\": {x}");
+                    last_err = Some(x);
+                }
+            }
+            if sleep > 0 {
+                std::thread::sleep(std::time::Duration::from_secs(sleep.into()));
             }
         }
         bar.inc(1);
     }
     bar.finish_with_message("CEvtFlw fetched");
-    Ok(())
+    if let Some(last_err) = last_err {
+        Err(last_err)
+    } else {
+        Ok(())
+    }
 }
 
 /// Refresh all output jsons. Fetches all codex and guide entities.

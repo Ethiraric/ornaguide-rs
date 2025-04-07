@@ -227,7 +227,7 @@ fn parse_html_page(
                 "Abilities:" => {
                     // TODO(ethiraric, 06/01/2024): Parse passive abilities.
                 }
-                x => panic!("{}", x),
+                x => return Err(Kind::HTMLParsingError(format!("Unexpected h4: \"{x}\"")).into()),
             }
         }
         tags = parse_tags(descend_iter(page.as_node(), ".codex-page-tag", "page")?)?;
