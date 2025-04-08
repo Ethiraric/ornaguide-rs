@@ -190,7 +190,24 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                     }
                 })
                 .collect_vec()
-                .try_to_guide_ids(&data.guide.static_)?
+                .try_to_guide_ids(&data.guide.static_)
+                .unwrap_or_else(|err| {
+                    if let Error {
+                        kind: Kind::PartialCodexMonsterAbilitiesConversion(ok, missing),
+                        ..
+                    } = err
+                    {
+                        println!("Missing event for {}: {:?}", codex_monster.slug(), missing);
+                        ok
+                    } else {
+                        println!(
+                            "Missing events for {}: {:?}",
+                            codex_monster.slug(),
+                            codex_monster.events()
+                        );
+                        vec![]
+                    }
+                })
                 .into_iter()
                 .sorted()
                 .dedup()
@@ -328,7 +345,7 @@ fn check_fields(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
                         kind: Kind::PartialCodexMonsterAbilitiesConversion(ok, _),
                         ..
                     } => ok,
-                    _ => panic!("try_to_guide_ids returned a weird error"),
+                    _ => vec![],
                 })
                 .into_iter()
                 .sorted()

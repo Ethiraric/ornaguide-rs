@@ -2,7 +2,7 @@ use itertools::Itertools;
 use ornaguide_rs::{
     codex::SkillStatusEffects,
     data::OrnaData,
-    error::Error,
+    error::{Error, Kind},
     guide::{AdminGuide, OrnaAdminGuide},
     skills::admin::AdminSkill,
 };
@@ -112,6 +112,7 @@ fn list_missing(data: &mut OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Resul
 
 /// Compare fields of every codex skill and their counterpart on the guide.
 /// Attempt to fix discrepancies.
+#[allow(clippy::too_many_lines)]
 fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<(), Error> {
     for codex_skill in data.codex.skills.skills.iter().sorted_by_key(|x| &x.slug) {
         if let Ok(admin_skill) = data.guide.skills.get_by_slug(&codex_skill.slug) {
@@ -200,7 +201,26 @@ fn check_fields(data: &OrnaData, fix: bool, guide: &OrnaAdminGuide) -> Result<()
                 let admin_gives = admin_skill.gives.iter().copied().sorted().collect_vec();
                 let codex_gives = codex_skill
                     .gives
-                    .try_to_guide_ids(&data.guide.static_)?
+                    .try_to_guide_ids(&data.guide.static_)
+                    .unwrap_or_else(|err| {
+                        if let Error {
+                            kind: Kind::PartialCodexMonsterAbilitiesConversion(ok, missing),
+                            ..
+                        } = err
+                        {
+                            println!(
+                                "Missing status effects for {}: {:?}",
+                                codex_skill.slug, missing
+                            );
+                            ok
+                        } else {
+                            println!(
+                                "Missing status effects for {}: {:?}",
+                                codex_skill.slug, codex_skill.gives
+                            );
+                            vec![]
+                        }
+                    })
                     .into_iter()
                     .sorted()
                     .collect_vec();
