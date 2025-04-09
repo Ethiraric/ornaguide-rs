@@ -1,5 +1,6 @@
 use crate::error::Error;
 
+pub(crate) mod affix;
 pub(crate) mod follower;
 pub(crate) mod html_follower_parser;
 pub(crate) mod html_item_parser;
@@ -13,6 +14,8 @@ pub(crate) mod skill;
 pub mod fetch;
 pub mod translation;
 
+#[allow(clippy::module_name_repetitions)]
+pub use affix::Affix as CodexAffix;
 #[allow(clippy::module_name_repetitions)]
 pub use follower::{
     Ability as FollowerAbility, Follower as CodexFollower, Followers as CodexFollowers,

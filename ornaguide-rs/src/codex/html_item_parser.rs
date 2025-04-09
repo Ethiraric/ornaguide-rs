@@ -3,9 +3,12 @@ use std::io::BufWriter;
 use kuchiki::{parse_html, traits::TendrilSink, ElementData, NodeData, NodeRef};
 
 use crate::{
-    codex::item::{
-        Ability, Cause, Cure, DroppedBy, Element, Give, Immunity, Item, Place, Stats,
-        UpgradeMaterial,
+    codex::{
+        affix::Affix,
+        item::{
+            Ability, Cause, Cure, DroppedBy, Element, Give, Immunity, Item, Place, Stats,
+            UpgradeMaterial,
+        },
     },
     error::{Error, Kind},
     guide::html_utils::parse_tags,
@@ -205,45 +208,9 @@ fn parse_name_icon_list(
         })
 }
 
-/// Parse a % value and return it in tenth of % (e.g.: `"1%"` -> 10, `"0.5%"` -> 5).
-fn parse_tenth_percent_value(text: &str) -> Result<u16, Error> {
-    if let Some(dot_pos) = text.find('.') {
-        if dot_pos == text.len() - 2 {
-            let text = text.trim_start_matches('+');
-            let mut res = 0u16;
-            for c in text.chars().filter(|c| *c != '.') {
-                if let Some(digit) = c.to_digit(10) {
-                    res = res * 10 + u16::try_from(digit).unwrap();
-                } else {
-                    return Err(Kind::HTMLParsingError(format!(
-                        "Invalid 10th-percent value: \"{text}\""
-                    ))
-                    .into());
-                }
-            }
-            Ok(res)
-        } else {
-            Err(Kind::HTMLParsingError(format!("Invalid 10th-percent value: \"{text}\"")).into())
-        }
-    } else {
-        Ok(text.parse::<u16>()? * 10u16)
-    }
-}
-
-/// Parse a percent value which may contain a `.`.
-fn parse_percent_with_maybe_a_dot(value: &str) -> Result<i8, Error> {
-    let neg = value.starts_with('-');
-    let value = value.trim_start_matches('-');
-    let v = parse_tenth_percent_value(value)?;
-    assert!(v % 10 == 0, "Value should be a raw %");
-    let v = i8::try_from(v / 10).unwrap();
-    Ok(if neg { -v } else { v })
-}
-
 /// Parse a stat of the item.
 ///
 /// Takes as input the "xxx: x%" string.
-#[allow(clippy::too_many_lines)]
 fn parse_stat(text: &str, stats: &mut Stats) -> Result<(), Error> {
     if let Some(pos) = text.find(':') {
         let (stat, value) = text.split_at(pos + 1);
@@ -263,137 +230,10 @@ fn parse_stat(text: &str, stats: &mut Stats) -> Result<(), Error> {
             "Foresight:" => stats.foresight = Some(value.parse()?),
             // Weird things that we may consider base stats?
             "Adornment Slots:" => stats.adornment_slots = Some(value.parse()?),
-            "View distance:" | "View Distance:" => {
-                stats.view_distance = Some(value.parse()?);
-            }
-
-            // Boni (scales with quality)
-            "EXP Bonus:" => stats.exp_bonus = Some(value.parse()?),
-            "Gold Bonus:" => stats.gold_bonus = Some(value.parse()?),
-            "Luck Bonus:" => stats.luck_bonus = Some(value.parse()?),
-            "Orn Bonus:" => stats.orn_bonus = Some(value.parse()?),
-
-            // ---------------- Affixes ----------------
-
-            // Boni
-            "Blacksmith Time:" => stats.blacksmith_time = Some(value.parse()?),
-            "Drop Quality:" => stats.drop_quality = Some(value.parse()?),
-            "Dungeon Cooldown:" => stats.dungeon_cooldown = Some(value.parse()?),
-            "Gifts:" => stats.gifts = Some(value.parse()?),
-            "Godforge:" => stats.godforge = Some(value.parse()?),
-            "Line Catches:" => stats.line_catches = Some(value.parse()?),
-            "Memory Hunting:" => stats.memory_hunting = Some(value.parse()?),
-            "Monster attraction:" => stats.monster_attraction = Some(value.parse()?),
-            "Monster Encounters:" => stats.monster_encounters = Some(value.parse()?),
-            "Monster Power:" => stats.monster_power = Some(value.parse()?),
-            "Questing:" => stats.questing = Some(value.parse()?),
-            "Quest Rewards:" => stats.quest_rewards = Some(value.parse()?),
-            "Raid Rewards:" => stats.raid_rewards = Some(value.parse()?),
-
-            // Elemental
-            "Arcane Damage:" => stats.arcane_damage = Some(value.parse()?),
-            "Dark Damage:" => stats.dark_damage = Some(value.parse()?),
-            "Dragon Damage:" => stats.dragon_damage = Some(value.parse()?),
-            "Earthen Damage:" => stats.earthen_damage = Some(value.parse()?),
-            "Fire Damage:" => stats.fire_damage = Some(value.parse()?),
-            "Holy Damage:" => stats.holy_damage = Some(value.parse()?),
-            "Lightning Damage:" => stats.lightning_damage = Some(value.parse()?),
-            "Water Damage:" => stats.water_damage = Some(value.parse()?),
-
-            "Dark Res:" => stats.dark_res = Some(value.parse()?),
-            "Holy Res:" => stats.holy_res = Some(value.parse()?),
-
-            // Ward
-            "HP-Ward Recovery:" => stats.hp_ward_recovery = Some(value.parse()?),
-            "Mana-Ward Recovery:" => stats.mana_ward_recovery = Some(value.parse()?),
-            "Ward Absorption:" => stats.ward_absorption = Some(value.parse()?),
-            "Ward Power:" => stats.ward_power = Some(value.parse()?),
-            "Ward Recovery:" => stats.ward_recovery = Some(value.parse()?),
-            "Ward Start:" => {
-                if let Some(n_turns) = value.strip_suffix(" turns") {
-                    stats.ward_start = Some(n_turns.parse()?);
-                } else {
-                    return Err(Kind::HTMLParsingError(format!(
-                        "Invalid Ward Start value: \"{value}\""
-                    ))
-                    .into());
-                }
-            }
-            "Ward Turns:" => stats.ward_turns = Some(value.parse()?),
-
-            // Class identity
-            "Apex:" => stats.apex = Some(value.parse()?),
-            "Apex Rate:" => stats.apex_rate = Some(value.parse()?),
-            "Apex Start:" => stats.apex_start = Some(value.parse()?),
-            "Avidity:" => stats.avidity = Some(parse_tenth_percent_value(value)?),
-            "Manaflask Charge:" => stats.manaflask_charge = Some(value.parse()?),
-
-            // Buffs / Debuffs
-            "Assassin:" => stats.assassin = Some(value.parse()?),
-            "Buff Duration:" => stats.buff_duration = Some(value.parse()?),
-            "Debuff Duration:" => stats.debuff_duration = Some(value.parse()?),
-            "Debuff Fade:" => stats.debuff_fade = Some(value.parse()?),
-            "Effect Damage:" => stats.effect_damage = Some(value.parse()?),
-            "Self Damage Reduction:" => stats.self_damage_reduction = Some(value.parse()?),
-            "Status Protection:" => stats.status_protection = Some(value.parse()?),
-            "Status Reflection:" => stats.status_reflection = Some(value.parse()?),
-
-            // Follower / Summons
-            "Beast Taming:" => stats.beast_taming = Some(value.parse()?),
-            "Bestial Bond:" => stats.bestial_bond = Some(value.parse()?),
-            "Follower Act:" => stats.follower_act = Some(value.parse()?),
-            "Follower Stats:" => {
-                // Steady Hands of Selene has a value of "-10.0%".
-                stats.follower_stats = Some(parse_percent_with_maybe_a_dot(value)?);
-            }
-            "Follower/Summon AI:" => stats.follower_summon_ai = Some(value.parse()?),
-            "Instant Summon:" => stats.instant_summon = Some(value.parse()?),
-            "No Follower Bonus:" => stats.no_follower_bonus = Some(value.parse()?),
-            "Summon Pacts:" => stats.summon_pacts = Some(value.parse()?),
-            "Summon Protection:" => stats.summon_protection = Some(value.parse()?),
-            "Summon Stats:" => stats.summon_stats = Some(value.parse()?),
-            "Summon Turns:" => stats.summon_turns = Some(value.parse()?),
-
-            // Stat buffs
-            "Accuracy:" => stats.accuracy = Some(value.parse()?),
-            "Area Defense:" => stats.area_defense = Some(value.parse()?),
-            "Crit damage:" => stats.crit_damage = Some(value.parse()?),
-            "Double Handed:" => stats.double_handed = Some(value.parse()?),
-            "Hybrid Damage:" => stats.hybrid_damage = Some(value.parse()?),
-            "Weapon Proficiency:" => stats.weapon_proficiency = Some(value.parse()?),
-
-            // Multi-target and damage improvement
-            "Chain Damage Chance:" => stats.chain_damage_chance = Some(value.parse()?),
-            "Collateral Chance:" => stats.collateral_chance = Some(value.parse()?),
-            "Collateral Damage:" => stats.collateral_damage = Some(value.parse()?),
-            "Damage Limit Break:" => stats.damage_limit_break = Some(value.parse()?),
-            "Damage to Ward:" => stats.damage_to_ward = Some(value.parse()?),
-            "Def/Res Penetration:" => stats.defres_penetration = Some(value.parse()?),
-            "Elemental Weaknesses:" => stats.elemental_weaknesses = Some(value.parse()?),
-            "Faction Damage:" => stats.faction_damage = Some(value.parse()?),
-            "Multi-target Damage:" => stats.multitarget_damage = Some(value.parse()?),
-
-            // Defensive and regen
-            "Defend Power:" => stats.defend_power = Some(value.parse()?),
-            "Healing:" => stats.healing = Some(value.parse()?),
-            "HP Regen:" => stats.hp_regen = Some(value.parse()?),
-            "Life Siphon:" => stats.life_siphon = Some(value.parse()?),
-            "Mana Reduction:" => {
-                // Fallen Sky Shoes has a value of "-50.0%".
-                stats.mana_reduction = Some(parse_percent_with_maybe_a_dot(value)?);
-            }
-            "Mana Regen:" => stats.mana_regen = Some(parse_tenth_percent_value(value)?),
-            "Parapet:" => stats.parapet = Some(value.parse()?),
-            "Turn Reduction:" => stats.turn_reduction = Some(value.parse()?),
-            "Ult Defense:" => stats.ult_defense = Some(value.parse()?),
-
-            "Ally Effect Chance:" => stats.ally_effect_chance = Some(value.parse()?),
-            "Critical Chain:" => stats.critical_chain = Some(value.parse()?),
-
-            _ => {
-                return Err(
-                    Kind::HTMLParsingError(format!("Failed to parse stat: \"{text}\"")).into(),
-                );
+            stat => {
+                stats
+                    .affixes
+                    .push(Affix::parse_from_codex_html(stat, value)?);
             }
         }
     } else if let Some(skill_name) = text.strip_prefix('+') {

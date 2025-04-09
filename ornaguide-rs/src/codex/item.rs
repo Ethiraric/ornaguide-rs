@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
+    codex::affix::Affix,
     data::GuideData,
     error::{Error, Kind},
     guide::{html_utils::Tag, Static, VecElements},
@@ -69,190 +70,19 @@ pub struct Stats {
     pub adornment_slots: Option<u8>,
     /// The elment of the item.
     pub element: Option<Element>,
-    /// The XP bonus of the item (at common quality).
-    pub exp_bonus: Option<i16>,
-    /// The gold bonus of the item (at common quality).
-    pub gold_bonus: Option<u8>,
-    /// The orn bonus of the item (at common quality).
-    pub orn_bonus: Option<u8>,
-    /// The luck bonus of the item (at common quality).
-    pub luck_bonus: Option<u16>,
     /// Whether the item is `two_handed`.
     /// This will be set to false for all items to which this does not apply. The online codex has
     /// no mention along the lines of "not two-handed".
     pub two_handed: bool,
     /// Equipment slot on which the item is equipped.
     pub place: Option<Place>,
-    /// How much View Distance the item gives (%).
-    pub view_distance: Option<u8>,
-    /// How much stats to the follower the item gives (%).
-    pub follower_act: Option<i8>,
-    /// How much stats to the follower the item gives (%).
-    pub follower_stats: Option<i8>,
-    /// How much stats to the summons the item gives (%).
-    pub summon_stats: Option<i8>,
-    /// How much Monster Attraction the item gives (%).
-    pub monster_attraction: Option<u8>,
     /// The skills the item grants, either to oneself or the followers/summons.
     pub skills_granted: Vec<String>,
-    /// The number of Ward turn at the start of the battle the item grants.
-    pub ward_start: Option<u8>,
-    /// How much Status Reflection the item gives (%).
-    pub status_reflection: Option<u8>,
-    /// How much Beast Taming the item gives (%).
-    pub beast_taming: Option<u8>,
-    /// How much Monster Power the item gives (%).
-    pub monster_power: Option<u8>,
-    /// How much Monster Encounters the item gives (%).
-    pub monster_encounters: Option<u8>,
-    /// How much Damage to Ward the item gives (%).
-    pub damage_to_ward: Option<u8>,
-    /// How much Gifts the item gives (%).
-    pub gifts: Option<u8>,
-    /// How much Apex the item gives (%).
-    pub apex: Option<u8>,
-    /// How much Apex Rate the item gives (%).
-    pub apex_rate: Option<u8>,
-    /// How much Apex Start the item gives (%).
-    pub apex_start: Option<u8>,
-    /// How much Manaflask Charge the item gives (%).
-    pub manaflask_charge: Option<u8>,
-    /// How much Multi-target Damage the item gives (%).
-    pub multitarget_damage: Option<u8>,
-    /// How much Chain Damage Chance the item gives (%).
-    pub chain_damage_chance: Option<u8>,
-    /// How much Buff Duration the item gives (%).
-    pub buff_duration: Option<u8>,
-    /// How much Ally Effect Chance the item gives (%).
-    pub ally_effect_chance: Option<u8>,
-    /// How much Effect Damage the item gives (%).
-    pub effect_damage: Option<u8>,
-    /// How much Assassin the item gives (%).
-    pub assassin: Option<u8>,
-    /// How much Defend Power the item gives (%).
-    pub defend_power: Option<u8>,
-    /// How much Self Damage Reduction the item gives (%).
+    /// The [affixes] the item grants.
     ///
-    /// Although a reduction, a lower value means more reduction.
-    pub self_damage_reduction: Option<i8>,
-    /// How much Collateral Chance the item gives (%).
-    pub collateral_chance: Option<u8>,
-    /// How much Collateral Damage the item gives (%).
-    pub collateral_damage: Option<u8>,
-    /// How much Status Protection the item gives.
-    pub status_protection: Option<u8>,
-    /// How much Def/Res Penetration the item gives (%).
-    pub defres_penetration: Option<u8>,
-    /// How much HP Regen the item gives (%).
-    pub hp_regen: Option<u8>,
-    /// How much Healing the item gives (%).
-    pub healing: Option<u8>,
-    /// How much Accuracy the item gives (%).
-    pub accuracy: Option<u8>,
-    /// How much Avidity the item gives (tenth of %).
-    pub avidity: Option<u16>,
-    /// How much Bestial Bond the item gives (%).
-    pub bestial_bond: Option<u8>,
-    /// How much Critical Chain the item gives (%).
-    pub critical_chain: Option<u8>,
-    /// How much Crit Damage the item gives (%).
-    pub crit_damage: Option<i8>,
-    /// How much Double Handed the item gives (%).
-    pub double_handed: Option<u8>,
-    /// How much Mana-Ward Recovery the item gives (%).
-    pub mana_ward_recovery: Option<u8>,
-    /// How much HP-Ward Recovery the item gives (%).
-    pub hp_ward_recovery: Option<u8>,
-    /// How much Summon Pacts the item gives (%).
-    pub summon_pacts: Option<u8>,
-    /// How much Summon Protection the item gives (%).
-    pub summon_protection: Option<u8>,
-    /// How much Mana Reduction the item gives (%).
-    pub mana_reduction: Option<i8>,
-    /// How much Hybrid Damage the item gives (%).
-    pub hybrid_damage: Option<u8>,
-    /// How much Life Siphon the item gives (%).
-    pub life_siphon: Option<u8>,
-    /// How much Debuff Fade the item gives (%).
-    pub debuff_fade: Option<u8>,
-    /// How much Faction Damage the item gives (%).
-    pub faction_damage: Option<u8>,
-    /// How much Earthen Damage the item gives (%).
-    pub earthen_damage: Option<i8>,
-    /// How much Water Damage the item gives (%).
-    pub water_damage: Option<i8>,
-    /// How much Lightning Damage the item gives (%).
-    pub lightning_damage: Option<i8>,
-    /// How much Fire Damage the item gives (%).
-    pub fire_damage: Option<i8>,
-    /// How much Arcane Damage the item gives (%).
-    pub arcane_damage: Option<i8>,
-    /// How much Dragon Damage the item gives (%).
-    pub dragon_damage: Option<i8>,
-    /// How much Dark Damage the item gives (%).
-    pub dark_damage: Option<i8>,
-    /// How much Holy Damage the item gives (%).
-    pub holy_damage: Option<i8>,
-    /// How much Parapet the item gives (%).
-    pub parapet: Option<u8>,
-    /// How much Area Defense the item gives (%).
-    pub area_defense: Option<u8>,
-    /// How much Godforge the item gives (%).
-    pub godforge: Option<u8>,
-    /// How much Raid Rewards the item gives (%).
-    pub raid_rewards: Option<u8>,
-    /// How much Blacksmith Time the item gives (%).
-    pub blacksmith_time: Option<i8>,
-    /// How much Line Catches the item gives (%).
-    pub line_catches: Option<u8>,
-    /// How much Ult Defense the item gives (%).
-    pub ult_defense: Option<u8>,
-    /// How much Damage Limit Break the item gives (%).
-    pub damage_limit_break: Option<u8>,
-    /// How much Follower/Summon AI the item gives (%).
-    pub follower_summon_ai: Option<u8>,
-    /// How much Ward Power the item gives (%).
-    pub ward_power: Option<u8>,
-    /// How much Elemental Weaknesses the item gives (%).
-    pub elemental_weaknesses: Option<u8>,
-    /// How much Weapon Proficiency the item gives (%).
-    pub weapon_proficiency: Option<u8>,
-    /// How much No Follower Bonus the item gives (%).
-    pub no_follower_bonus: Option<u8>,
-    /// How much Ward Absorption the item gives (%).
-    pub ward_absorption: Option<u8>,
-    /// How much Instant Summon the item gives (%).
-    pub instant_summon: Option<u8>,
-    /// How much Ward Turns the item gives.
-    pub ward_turns: Option<u8>,
-    /// How much Mana Regen the item gives (tenth of %).
-    pub mana_regen: Option<u16>,
-    /// How much Quest Rewards the item gives (%).
-    pub quest_rewards: Option<u8>,
-    /// How much Ward Recovery the item gives (%).
-    pub ward_recovery: Option<u8>,
-    /// How much Turn Reduction the item gives (%).
-    pub turn_reduction: Option<u8>,
-    /// How much Debuff Duration the item gives (%).
-    pub debuff_duration: Option<u8>,
-    /// How much Questing the item gives (%).
-    pub questing: Option<u8>,
-    /// How much Dark Res the item gives (%).
-    ///
-    /// Although a resistance, a lower value means more resistance.
-    pub dark_res: Option<i8>,
-    /// How much Holy Res the item gives (%).
-    ///
-    /// Although a resistance, a lower value means more resistance.
-    pub holy_res: Option<i8>,
-    /// How many Summon Turns the item gives.
-    pub summon_turns: Option<i8>,
-    /// How much Drop Quality the item gives (%).
-    pub drop_quality: Option<u8>,
-    /// How much Memory Hunting the item gives (%).
-    pub memory_hunting: Option<u8>,
-    /// How much Dungeon Cooldown the item gives (%).
-    pub dungeon_cooldown: Option<i8>,
+    /// [affixes]: Affix
+    #[serde(flatten)]
+    pub affixes: Vec<Affix>,
 }
 
 /// The ability the item has in off-hand.
