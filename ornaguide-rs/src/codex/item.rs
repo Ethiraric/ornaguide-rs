@@ -81,7 +81,6 @@ pub struct Stats {
     /// The [affixes] the item grants.
     ///
     /// [affixes]: Affix
-    #[serde(flatten)]
     pub affixes: Vec<Affix>,
 }
 
