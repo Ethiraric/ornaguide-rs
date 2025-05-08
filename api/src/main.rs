@@ -50,7 +50,7 @@ mod foo {
         let config = Config {
             port: 12346,
             address: IpAddr::from_str("0.0.0.0").unwrap(),
-            ..Config::debug_default()
+            ..Config::default()
         };
 
         if let Err(e) = DATA.as_ref() {
